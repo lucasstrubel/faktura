@@ -1,0 +1,99 @@
+@startuml klassendiagramm_produktverwaltung
+' UML-Klassendiagramm Produktverwaltung (Pflichtenheft Teil B, Abschnitt 7.1)
+' Layout-Engine Smetana -> kein Graphviz erforderlich.
+!pragma layout smetana
+
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+
+title UML-Klassendiagramm — Produktverwaltung (Komponente B)
+
+' ===================== Domänenmodell =====================
+
+class Produkt {
+  - produktnummer : String
+  - bezeichnung : String
+  - beschreibung : String
+  - einzelpreisNetto : BigDecimal
+  - steuersatz : BigDecimal
+  - einheit : String
+}
+
+' ===================== Service-Schicht =====================
+
+interface ProduktService <<interface>> {
+  + findeProdukt(produktnummer : String) : Produkt
+  + suche(suchbegriff : String) : List<Produkt>
+}
+
+class ProduktVerwaltungsService {
+  + legeAn(produkt : Produkt) : Produkt
+  + aendere(produkt : Produkt) : Produkt
+  + loescheProdukt(produktnummer : String)
+  + alleSortiertNachBezeichnung() : List<Produkt>
+  + suche(suchbegriff : String) : List<Produkt>
+  + findeProdukt(produktnummer : String) : Produkt
+}
+
+interface ProduktnummernGenerator <<interface>> {
+  + naechsteNummer() : String
+}
+
+class EinfacherProduktnummernGenerator {
+  + naechsteNummer() : String
+}
+
+interface ProduktRepository <<interface>> {
+  + speichere(produkt : Produkt) : Produkt
+  + loesche(produktnummer : String)
+  + findeNachNummer(produktnummer : String) : Produkt
+  + alleSortiertNachBezeichnung() : List<Produkt>
+  + suche(suchbegriff : String) : List<Produkt>
+}
+
+class JsonProduktRepository {
+}
+
+class ProduktCsvExport {
+  + exportiere(produkte : List<Produkt>, zielDatei : Path)
+}
+
+class EreignisBus {
+  + abonniere(bereich : DatenBereich, beobachter : Runnable)
+  + melde(bereich : DatenBereich)
+}
+
+enum DatenBereich {
+  KUNDEN
+  PRODUKTE
+  DOKUMENTE
+}
+
+' ===================== Externe Komponente (lose Kopplung) =====================
+
+interface ProduktReferenzPruefung <<extern (Komponente A)>> {
+  + istProduktReferenziert(produktnummer : String) : boolean
+}
+
+' ===================== Realisierungen (konkrete Implementierungen) =====================
+
+ProduktService <|.. ProduktVerwaltungsService
+ProduktRepository <|.. JsonProduktRepository
+ProduktnummernGenerator <|.. EinfacherProduktnummernGenerator
+
+' ===================== Nutzungs-/Abhängigkeitsbeziehungen =====================
+
+ProduktVerwaltungsService ..> ProduktRepository
+ProduktVerwaltungsService ..> ProduktnummernGenerator
+ProduktVerwaltungsService ..> ProduktReferenzPruefung
+ProduktVerwaltungsService ..> EreignisBus
+EreignisBus ..> DatenBereich
+
+' Zugriff auf Produkt = Abhängigkeit (liefert/speichert), KEIN 1:n-Container
+ProduktVerwaltungsService ..> Produkt : verwaltet
+ProduktRepository ..> Produkt : liefert / speichert
+ProduktCsvExport ..> Produkt : exportiert
+
+@enduml

@@ -1,0 +1,43 @@
+@startuml sequenz_produkt_loeschen
+' UML-Sequenzdiagramm "Produkt löschen mit Löschsperre" (Pflichtenheft Teil B, Abschnitt 7.2)
+' Ablauf gemäß ProduktVerwaltungsService.loescheProdukt(produktnummer).
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+
+title UML-Sequenzdiagramm — „Produkt löschen mit Löschsperre" (Komponente B)
+
+participant "GUI\n(Komponente D)" as GUI
+participant "produktService :\nProduktVerwaltungsService" as PVS
+participant "referenzPruefung :\nProduktReferenzPruefung\n(Komponente A)" as RP
+participant "repository :\nProduktRepository" as REPO
+participant "ereignisBus :\nEreignisBus" as EB
+
+GUI -> PVS : loescheProdukt(produktnummer)
+activate PVS
+
+PVS -> RP : istProduktReferenziert(produktnummer)
+activate RP
+RP --> PVS : referenziert
+deactivate RP
+
+alt referenziert (Löschsperre, F-09)
+  PVS --> GUI : LoeschAbgelehntException\n(Hinweis: Produkt wird in Dokumenten verwendet)
+else nicht referenziert
+  note over GUI, PVS : Bestätigungsabfrage der Anwender:in (F-08)
+  PVS -> REPO : loesche(produktnummer)
+  activate REPO
+  REPO --> PVS
+  deactivate REPO
+  PVS -> EB : melde(DatenBereich.PRODUKTE)
+  activate EB
+  note right of EB : benachrichtigt die abonnierte\nProduktansicht (Observer-Muster)
+  EB --> PVS
+  deactivate EB
+  PVS --> GUI : Produkt gelöscht
+end
+
+deactivate PVS
+
+@enduml

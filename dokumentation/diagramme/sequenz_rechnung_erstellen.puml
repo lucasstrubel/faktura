@@ -1,0 +1,81 @@
+@startuml sequenz_rechnung_erstellen
+' UML-Sequenzdiagramm "Rechnung erstellen" (Pflichtenheft Teil A, Abschnitt 7.2)
+' Ablauf gemäß StandardDokumentService.erstelleRechnung(...) und exportierePdf(...).
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+
+title UML-Sequenzdiagramm — „Rechnung erstellen" (Komponente A)
+
+participant "GUI\n(Komponente D)" as GUI
+participant "dokumentService :\nStandardDokumentService" as DS
+participant "kundenService :\nKundenService" as KS
+participant "produktService :\nProduktService" as PS
+participant "nummernGenerator :\nBelegnummernGenerator" as NG
+participant "repository :\nDokumentRepository" as REPO
+participant "ereignisBus :\nEreignisBus" as EB
+
+GUI -> DS : erstelleRechnung(kundenNr, positionen,\nrechnungsdatum, zahlungsziel)
+activate DS
+
+DS -> KS : findeKunde(kundenNr)
+activate KS
+KS --> DS : kunde
+deactivate KS
+
+loop für jede Positionsangabe
+  DS -> PS : findeProdukt(produktnummer)
+  activate PS
+  PS --> DS : produkt
+  deactivate PS
+  DS -> DS : new Dokumentposition(...)
+  note right of DS : Preis- und Steuersatz-Snapshot\ndes Produkts (GR-03, F-23)
+end
+
+DS -> NG : naechsteNummer(RECHNUNG, jahr)
+activate NG
+NG --> DS : "R-2026-000124"
+deactivate NG
+
+DS -> DS : zahlungsziel = rechnungsdatum + 14 Tage\n(falls nicht angegeben, GR-06)
+
+create participant "rechnung :\nRechnung" as R
+DS -> R : «create»
+DS -> R : setzePositionen(positionen)
+activate R
+R -> R : berechneSummen()
+deactivate R
+DS -> R : setzeStatus(OFFEN)
+
+DS -> REPO : speichere(rechnung)
+activate REPO
+REPO --> DS : rechnung
+deactivate REPO
+
+DS -> EB : melde(DOKUMENTE)
+activate EB
+note right of EB : benachrichtigt die abonnierten\nModulansichten (Observer-Muster)
+EB --> DS
+deactivate EB
+
+DS --> GUI : rechnung
+deactivate DS
+
+group Separater Aufruf: PDF-Export (F-15, IF-01)
+  participant "pdfExporter :\nPdfExporter" as PDF
+  GUI -> DS : exportierePdf(belegnummer, zielDatei)
+  activate DS
+  DS -> REPO : findeNachNummer(belegnummer)
+  activate REPO
+  REPO --> DS : rechnung
+  deactivate REPO
+  DS -> PDF : exportiere(rechnung, zielDatei)
+  activate PDF
+  PDF --> DS
+  deactivate PDF
+  DS --> GUI : PDF im lokalen Dateisystem
+  deactivate DS
+end
+
+@enduml

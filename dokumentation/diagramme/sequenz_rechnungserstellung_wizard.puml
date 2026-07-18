@@ -1,0 +1,53 @@
+@startuml
+title UML-Sequenzdiagramm Gefuehrte Rechnungserstellung (Komponente D)
+autonumber
+
+actor "Anwender:in" as Anw
+boundary "RechnungsWizardDialog" as Dialog
+control "RechnungsWizardController" as Controller
+participant "KundenService\n(Komponente C)" as Kunden
+participant "ProduktService\n(Komponente B)" as Produkte
+participant "DokumentService\n(Komponente A)" as Dokumente
+
+Anw -> Dialog : Wizard starten
+Dialog -> Controller : getModel()
+Controller --> Dialog : aktuellerSchritt = KUNDE_WAEHLEN
+Dialog --> Anw : Schritt 1: Kunde waehlen
+
+Anw -> Dialog : Kunde suchen und auswaehlen
+Dialog -> Kunden : suche(suchbegriff)
+Kunden --> Dialog : List<Kunde>
+Dialog -> Controller : weiter()
+Controller --> Dialog : Schritt 2 anzeigen
+
+Anw -> Dialog : Produktposition und Menge erfassen
+Dialog -> Produkte : suche(suchbegriff)
+Produkte --> Dialog : List<Produkt>
+Dialog -> Controller : weiter()
+
+alt Position fehlt oder Menge <= 0
+  Controller --> Dialog : Meldung mit Feldname
+  Dialog --> Anw : Feld markieren und Meldung anzeigen
+else Eingabe vollstaendig
+  Controller --> Dialog : Schritt 3 anzeigen
+end
+
+Anw -> Dialog : Rechnungsdatum und Zahlungsziel bestaetigen
+Dialog -> Controller : weiter()
+Controller --> Dialog : Schritt 4 anzeigen
+
+Dialog -> Controller : erzeugeZusammenfassung()
+Controller -> Kunden : findeKunde(kundennummer)
+Controller -> Produkte : findeProdukt(produktnummer)
+Controller -> Dokumente : berechneSummen(positionen)
+Dokumente --> Controller : Summen
+Controller --> Dialog : Zusammenfassung
+Dialog --> Anw : Zusammenfassung anzeigen
+
+Anw -> Dialog : Speichern bestaetigen
+Dialog -> Controller : speichern()
+Controller -> Dokumente : erstelleRechnung(kundenNr, positionen,\nrechnungsdatum, zahlungsziel)
+Dokumente --> Controller : Rechnung mit Rechnungsnummer
+Controller --> Dialog : Erfolgsmeldung
+Dialog --> Anw : Rechnungsnummer anzeigen
+@enduml

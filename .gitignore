@@ -1,0 +1,30 @@
+# Maven-Build
+target/
+dependency-reduced-pom.xml
+.mvn/wrapper/maven-wrapper.jar
+
+# Java
+*.class
+*.jar
+*.war
+
+# Lokale Laufzeitdaten der Anwendung (IF-01, Q-06)
+daten/
+
+# Logs
+*.log
+
+# Generierte HTML-Dateien (aus Markdown)
+dokumentation/**/*.html
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.classpath
+.project
+.settings/
+
+# OS
+Thumbs.db
+.DS_Store

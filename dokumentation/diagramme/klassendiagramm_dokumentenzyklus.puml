@@ -1,0 +1,173 @@
+@startuml klassendiagramm_dokumentenzyklus
+' UML-Klassendiagramm Dokumentenzyklus (Pflichtenheft Teil A, Abschnitt 7.1)
+' Layout-Engine Smetana -> kein Graphviz erforderlich.
+!pragma layout smetana
+
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+
+title UML-Klassendiagramm — Dokumentenzyklus (Komponente A)
+
+' ===================== Domänenmodell =====================
+
+abstract class Dokument {
+  - belegnummer : String
+  - datum : LocalDate
+  - kundenReferenz : String
+  - kundeName : String
+  - kundeAnschrift : String
+  - status : DokumentStatus
+  - vorgaengerNr : String
+  - summeNetto : BigDecimal
+  - summeSteuer : BigDecimal
+  - summeBrutto : BigDecimal
+  + {abstract} belegtyp() : Belegtyp
+  + setzePositionen(positionen : List<Dokumentposition>)
+  + berechneSummen()
+  + versende()
+  + pruefeAenderbar()
+}
+
+class Angebot {
+  - gueltigBis : LocalDate
+}
+
+class Auftragsbestaetigung {
+}
+
+class Lieferschein {
+  - lieferdatum : LocalDate
+}
+
+class Rechnung {
+  - leistungsdatum : LocalDate
+  - zahlungsziel : LocalDate
+  - storniertAm : LocalDate
+  - storniertVon : String
+  + storniere(datum : LocalDate, benutzer : String)
+}
+
+class Dokumentposition {
+  - produktReferenz : String
+  - bezeichnung : String
+  - menge : int
+  - einzelpreisNetto : BigDecimal
+  - steuersatz : BigDecimal
+  - positionssummeNetto : BigDecimal
+  + getSteuerbetrag() : BigDecimal
+  + getPositionssummeBrutto() : BigDecimal
+}
+
+enum DokumentStatus {
+  ENTWURF
+  OFFEN
+  VERSENDET
+  STORNIERT
+}
+
+enum Belegtyp {
+  ANGEBOT
+  AUFTRAGSBESTAETIGUNG
+  LIEFERSCHEIN
+  RECHNUNG
+}
+
+' Vererbung der vier Belegtypen
+Dokument <|-- Angebot
+Dokument <|-- Auftragsbestaetigung
+Dokument <|-- Lieferschein
+Dokument <|-- Rechnung
+
+' Komposition: ein Dokument besteht aus 1..* Positionen
+Dokument "1" *-- "1..*" Dokumentposition : positionen
+
+Dokument --> DokumentStatus : status
+Dokument ..> Belegtyp : belegtyp()
+
+' ===================== Service-Schicht =====================
+
+interface DokumentService <<interface>> {
+  + erstelleAngebot(...) : Angebot
+  + erstelleAuftragsbestaetigung(...) : Auftragsbestaetigung
+  + erstelleLieferschein(...) : Lieferschein
+  + erstelleRechnung(...) : Rechnung
+  + erzeugeFolgebeleg(belegnummer : String) : Dokument
+  + storniere(rechnungsnummer : String)
+  + berechneSummen(...) : Summen
+  + exportierePdf(belegnummer : String, zielDatei : Path)
+}
+
+class StandardDokumentService {
+}
+
+interface BelegnummernGenerator <<interface>> {
+  + naechsteNummer(typ : Belegtyp, jahr : int) : String
+}
+
+interface DokumentRepository <<interface>> {
+  + speichere(dokument : Dokument) : Dokument
+  + findeNachNummer(belegnummer : String) : Dokument
+  + alle() : List<Dokument>
+}
+
+interface PdfExporter <<interface>> {
+  + exportiere(dokument : Dokument, zielDatei : Path)
+}
+
+class EreignisBus {
+  + abonniere(bereich : DatenBereich, beobachter : Runnable)
+  + melde(bereich : DatenBereich)
+}
+
+enum DatenBereich {
+  KUNDEN
+  PRODUKTE
+  DOKUMENTE
+}
+
+' DTOs (Eingabe/Ausgabe des Service)
+class Positionsangabe <<record>> {
+  + produktnummer : String
+  + menge : int
+}
+
+class Summen <<record>> {
+  + netto : BigDecimal
+  + steuer : BigDecimal
+  + brutto : BigDecimal
+}
+
+DokumentService <|.. StandardDokumentService
+
+StandardDokumentService ..> BelegnummernGenerator
+StandardDokumentService ..> DokumentRepository
+StandardDokumentService ..> PdfExporter
+StandardDokumentService ..> EreignisBus
+StandardDokumentService ..> Dokument : erzeugt
+EreignisBus ..> DatenBereich
+DokumentService ..> Positionsangabe
+DokumentService ..> Summen
+
+' ===================== Externe Komponenten (lose Kopplung) =====================
+
+interface KundenService <<extern (Komponente C)>> {
+  + findeKunde(kundennummer : String) : Kunde
+}
+
+interface ProduktService <<extern (Komponente B)>> {
+  + findeProdukt(produktnummer : String) : Produkt
+}
+
+class Kunde <<extern (Komponente C)>>
+class Produkt <<extern (Komponente B)>>
+
+StandardDokumentService ..> KundenService
+StandardDokumentService ..> ProduktService
+
+' Referenz nur über die Stammdatennummer (lose Kopplung)
+Dokument ..> Kunde : "über Kundennummer"
+Dokumentposition ..> Produkt : "über Produktnummer"
+
+@enduml

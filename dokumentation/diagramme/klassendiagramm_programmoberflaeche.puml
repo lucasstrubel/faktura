@@ -1,0 +1,110 @@
+@startuml
+!pragma layout smetana
+title UML-Klassendiagramm Programmoberflaeche (Komponente D)
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "gui" {
+  class HauptFenster {
+    - aktuellesModul : String
+    - wechsleZu(String)
+  }
+
+  class KundenPanel
+  class ProduktPanel
+  class DokumentListenPanel
+  class RechnungsWizardDialog
+
+  class StammdatenController {
+    + kundenListe(String) : List<Kunde>
+    + produkteListe(String) : List<Produkt>
+  }
+
+  class DokumentListenController {
+    + gefiltert(DokumentStatus) : List<Dokument>
+    + aktionenFuer(Dokument) : BelegAktionen
+    + storniere(String, boolean) : Meldung
+  }
+
+  class RechnungsWizardController {
+    + weiter() : boolean
+    + zurueck()
+    + erzeugeZusammenfassung() : String
+    + speichern() : Meldung
+  }
+
+  class RechnungsWizardModel {
+    - aktuellerSchritt : WizardSchritt
+    - kundenNr : String
+    - positionen : List<PositionsEingabe>
+    - rechnungsdatum : LocalDate
+    - zahlungsziel : LocalDate
+  }
+
+  enum WizardSchritt {
+    KUNDE_WAEHLEN
+    POSITIONEN_ERFASSEN
+    DATEN_BESTAETIGEN
+    ZUSAMMENFASSUNG
+    SPEICHERN
+  }
+
+  class Meldung {
+    - typ : MeldungsTyp
+    - feldname : String
+    - text : String
+  }
+
+  class BelegAktionen
+  class PositionsEingabe
+}
+
+package "Komponente A: Dokumentenzyklus" {
+  interface DokumentService
+  class StandardDokumentService
+}
+
+package "Komponente B: Produktverwaltung" {
+  interface ProduktService
+  class ProduktVerwaltungsService
+}
+
+package "Komponente C: Kundenverwaltung" {
+  interface KundenService
+  class KundenVerwaltungsService
+}
+
+package "gemeinsam" {
+  class EreignisBus
+}
+
+HauptFenster "1" *-- "1" KundenPanel
+HauptFenster "1" *-- "1" ProduktPanel
+HauptFenster "1" *-- "1" DokumentListenPanel
+
+KundenPanel --> StammdatenController
+ProduktPanel --> StammdatenController
+DokumentListenPanel --> DokumentListenController
+RechnungsWizardDialog --> RechnungsWizardController
+
+StammdatenController ..> KundenService : nutzt
+StammdatenController ..> ProduktService : nutzt
+DokumentListenController ..> DokumentService : nutzt
+RechnungsWizardController ..> DokumentService : nutzt
+RechnungsWizardController ..> KundenService : nutzt
+RechnungsWizardController ..> ProduktService : nutzt
+
+DokumentService <|.. StandardDokumentService
+ProduktService <|.. ProduktVerwaltungsService
+KundenService <|.. KundenVerwaltungsService
+
+RechnungsWizardController *-- RechnungsWizardModel
+RechnungsWizardModel --> WizardSchritt
+RechnungsWizardModel *-- PositionsEingabe
+RechnungsWizardController --> Meldung
+DokumentListenController --> BelegAktionen
+
+KundenPanel ..> EreignisBus : aktualisiert
+ProduktPanel ..> EreignisBus : aktualisiert
+DokumentListenPanel ..> EreignisBus : aktualisiert
+@enduml

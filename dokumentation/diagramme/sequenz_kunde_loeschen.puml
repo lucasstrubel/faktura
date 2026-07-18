@@ -1,0 +1,43 @@
+@startuml sequenz_kunde_loeschen
+' UML-Sequenzdiagramm "Kunde löschen mit Löschsperre (GR-04)" (Pflichtenheft Teil C, Abschnitt 7.2)
+' Ablauf gemäß KundenVerwaltungsService.loescheKunde(kundennummer).
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+
+title UML-Sequenzdiagramm — „Kunde löschen mit Löschsperre (GR-04)" (Komponente C)
+
+participant "GUI\n(Komponente D)" as GUI
+participant "kundenService :\nKundenVerwaltungsService" as KVS
+participant "referenzPruefung :\nKundenReferenzPruefung\n(Komponente A)" as RP
+participant "repository :\nKundenRepository" as REPO
+participant "ereignisBus :\nEreignisBus" as EB
+
+GUI -> KVS : loescheKunde(kundennummer)
+activate KVS
+
+KVS -> RP : anzahlVerknuepfterDokumente(kundennummer)
+activate RP
+RP --> KVS : anzahl
+deactivate RP
+
+alt anzahl > 0 (Löschsperre GR-04, F-09)
+  KVS --> GUI : LoeschAbgelehntException\n(Hinweis mit Anzahl verknüpfter Dokumente)
+else anzahl == 0
+  note over GUI, KVS : Bestätigungsabfrage der Anwender:in (F-08)
+  KVS -> REPO : loesche(kundennummer)
+  activate REPO
+  REPO --> KVS
+  deactivate REPO
+  KVS -> EB : melde(DatenBereich.KUNDEN)
+  activate EB
+  note right of EB : benachrichtigt die abonnierte\nKundenansicht (Observer-Muster)
+  EB --> KVS
+  deactivate EB
+  KVS --> GUI : Kunde gelöscht
+end
+
+deactivate KVS
+
+@enduml

@@ -1,0 +1,102 @@
+@startuml klassendiagramm_kundenverwaltung
+' UML-Klassendiagramm Kundenverwaltung (Pflichtenheft Teil C, Abschnitt 7.1)
+' Layout-Engine Smetana -> kein Graphviz erforderlich.
+!pragma layout smetana
+
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+
+title UML-Klassendiagramm — Kundenverwaltung (Komponente C)
+
+' ===================== Domänenmodell =====================
+
+class Kunde {
+  - kundennummer : String
+  - name : String
+  - strasse : String
+  - plz : String
+  - ort : String
+  - eMail : String
+  - telefon : String
+  - ustIdNr : String
+  + anschrift() : String
+}
+
+' ===================== Service-Schicht =====================
+
+interface KundenService <<interface>> {
+  + findeKunde(kundennummer : String) : Kunde
+  + suche(suchbegriff : String) : List<Kunde>
+}
+
+class KundenVerwaltungsService {
+  + legeAn(kunde : Kunde) : Kunde
+  + aendere(kunde : Kunde) : Kunde
+  + loescheKunde(kundennummer : String)
+  + alleSortiertNachName() : List<Kunde>
+  + suche(suchbegriff : String) : List<Kunde>
+  + findeKunde(kundennummer : String) : Kunde
+}
+
+interface KundennummernGenerator <<interface>> {
+  + naechsteNummer() : String
+}
+
+class EinfacherKundennummernGenerator {
+  + naechsteNummer() : String
+}
+
+interface KundenRepository <<interface>> {
+  + speichere(kunde : Kunde) : Kunde
+  + loesche(kundennummer : String)
+  + findeNachNummer(kundennummer : String) : Kunde
+  + alleSortiertNachName() : List<Kunde>
+  + suche(suchbegriff : String) : List<Kunde>
+}
+
+class JsonKundenRepository {
+}
+
+class KundenCsvExport {
+  + exportiere(kunden : List<Kunde>, zielDatei : Path)
+}
+
+class EreignisBus {
+  + abonniere(bereich : DatenBereich, beobachter : Runnable)
+  + melde(bereich : DatenBereich)
+}
+
+enum DatenBereich {
+  KUNDEN
+  PRODUKTE
+  DOKUMENTE
+}
+
+' ===================== Externe Komponente (lose Kopplung) =====================
+
+interface KundenReferenzPruefung <<extern (Komponente A)>> {
+  + anzahlVerknuepfterDokumente(kundennummer : String) : int
+}
+
+' ===================== Realisierungen (konkrete Implementierungen) =====================
+
+KundenService <|.. KundenVerwaltungsService
+KundenRepository <|.. JsonKundenRepository
+KundennummernGenerator <|.. EinfacherKundennummernGenerator
+
+' ===================== Nutzungs-/Abhängigkeitsbeziehungen =====================
+
+KundenVerwaltungsService ..> KundenRepository
+KundenVerwaltungsService ..> KundennummernGenerator
+KundenVerwaltungsService ..> KundenReferenzPruefung
+KundenVerwaltungsService ..> EreignisBus
+EreignisBus ..> DatenBereich
+
+' Zugriff auf Kunde = Abhängigkeit (liefert/speichert), KEIN 1:n-Container
+KundenVerwaltungsService ..> Kunde : verwaltet
+KundenRepository ..> Kunde : liefert / speichert
+KundenCsvExport ..> Kunde : exportiert
+
+@enduml
