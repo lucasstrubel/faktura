@@ -1,7 +1,7 @@
 package de.lucasstrubel.faktura.kunden;
 
 /**
- * Löschsperre GR-04: von Gruppe A bereitgestellt, von Gruppe C vor jedem
+ * Löschsperre GR-04: von Komponente A bereitgestellt, von Komponente C vor jedem
  * Löschvorgang genutzt (C-F-10).
  */
 public interface KundenReferenzPruefung {

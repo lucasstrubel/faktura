@@ -21,8 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Modultestplan Gruppe C (Pflichtenheft C, Kapitel 10): TC-01 bis TC-14.
- * Die Schnittstelle {@code KundenReferenzPruefung} (Gruppe A) wird durch
+ * Modultestplan Komponente C (Pflichtenheft C, Kapitel 10): TC-01 bis TC-14,
+ * ergänzt um TC-15 bis TC-17 für die erweiterte Formatvalidierung (C-F-16 bis C-F-18).
+ * Die Schnittstelle {@code KundenReferenzPruefung} (Komponente A) wird durch
  * einen Stub ersetzt.
  */
 class KundenVerwaltungTest {
@@ -197,5 +198,33 @@ class KundenVerwaltungTest {
         assertEquals(4, zeilen.size());
         assertEquals("kundennummer;name;strasse;plz;ort;eMail;telefon;ustIdNr", zeilen.get(0));
         assertTrue(zeilen.get(1).startsWith("K-000001;Albrecht;"));
+    }
+
+    @Test
+    @DisplayName("TC-15: ungültige PLZ '123' wird beim Anlegen abgelehnt und benannt (C-F-16)")
+    void tc15UngueltigePlz() {
+        ValidierungsException fehler = assertThrows(ValidierungsException.class,
+                () -> serviceAusRepository().legeAn(kunde("Muster GmbH", "Hauptstr. 1", "123", "Mannheim")));
+        assertEquals("PLZ", fehler.getFeldname());
+    }
+
+    @Test
+    @DisplayName("TC-16: ungültige USt-IdNr. wird beim Anlegen abgelehnt und benannt (C-F-17)")
+    void tc16UngueltigeUstIdNr() {
+        Kunde kunde = kunde("Muster GmbH", "Hauptstr. 1", "68163", "Mannheim");
+        kunde.setUstIdNr("AT123456789");
+        ValidierungsException fehler = assertThrows(ValidierungsException.class,
+                () -> serviceAusRepository().legeAn(kunde));
+        assertEquals("USt-IdNr.", fehler.getFeldname());
+    }
+
+    @Test
+    @DisplayName("TC-17: ungültiges Telefon wird beim Ändern abgelehnt und benannt (C-F-18)")
+    void tc17UngueltigesTelefon() {
+        Kunde kunde = lege("K-000017", "Muster GmbH");
+        kunde.setTelefon("keine-nummer");
+        ValidierungsException fehler = assertThrows(ValidierungsException.class,
+                () -> serviceAusRepository().aendere(kunde));
+        assertEquals("Telefon", fehler.getFeldname());
     }
 }

@@ -3,8 +3,8 @@ package de.lucasstrubel.faktura.kunden;
 import java.util.List;
 
 /**
- * Lesender Zugriff auf Kundenstammdaten — von Gruppe C implementiert,
- * von Gruppe A (Dokumentenzyklus) und Gruppe D (GUI) genutzt (C-F-14).
+ * Lesender Zugriff auf Kundenstammdaten — von Komponente C implementiert,
+ * von Komponente A (Dokumentenzyklus) und Komponente D (GUI) genutzt (C-F-14).
  */
 public interface KundenService {
 

@@ -3,8 +3,8 @@ package de.lucasstrubel.faktura.produkte;
 import java.util.List;
 
 /**
- * Lesender Zugriff auf Produktstammdaten — von Gruppe B implementiert,
- * von Gruppe A (Dokumentenzyklus) und Gruppe D (GUI) genutzt (B-F-14).
+ * Lesender Zugriff auf Produktstammdaten — von Komponente B implementiert,
+ * von Komponente A (Dokumentenzyklus) und Komponente D (GUI) genutzt (B-F-14).
  */
 public interface ProduktService {
 

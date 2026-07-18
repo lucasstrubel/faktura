@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * Position eines Belegs (Gruppe A, Kapitel 6.1). Bezeichnung, Einzelpreis
+ * Position eines Belegs (Komponente A, Kapitel 6.1). Bezeichnung, Einzelpreis
  * und Steuersatz sind ein unveränderlicher <b>Snapshot</b> des Produkts zum
  * Erstellzeitpunkt (GR-03, F-23). Beträge: {@code BigDecimal}, Scale 2,
  * kaufmännische Rundung.

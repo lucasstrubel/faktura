@@ -24,6 +24,9 @@ import de.lucasstrubel.faktura.produkte.ProduktVerwaltungsService;
 
 import com.formdev.flatlaf.FlatLightLaf;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import java.nio.file.Path;
@@ -36,11 +39,14 @@ import java.nio.file.Path;
  */
 public final class Main {
 
+    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
+
     private Main() {
     }
 
     public static void main(String[] args) {
         Path datenVerzeichnis = Path.of("daten");
+        LOG.info("Faktura startet; Datenverzeichnis: {}", datenVerzeichnis.toAbsolutePath());
 
         // Persistenz (IF-01)
         JsonKundenRepository kundenRepository =
@@ -50,27 +56,27 @@ public final class Main {
         JsonDokumentRepository dokumentRepository =
                 new JsonDokumentRepository(datenVerzeichnis.resolve("dokumente.json"));
 
-        // Gruppe A stellt die Referenzprüfungen für die Löschsperren bereit
+        // Komponente A stellt die Referenzprüfungen für die Löschsperren bereit
         DokumentReferenzPruefung referenzPruefung = new DokumentReferenzPruefung(dokumentRepository);
 
         // Observer-Verteiler: Services melden Datenänderungen, Panels abonnieren
         EreignisBus ereignisBus = new EreignisBus();
 
-        // Gruppe C — Kundenverwaltung
+        // Komponente C — Kundenverwaltung
         KundenVerwaltungsService kundenService = new KundenVerwaltungsService(
                 kundenRepository,
                 EinfacherKundennummernGenerator.ausRepository(kundenRepository),
                 referenzPruefung,
                 ereignisBus);
 
-        // Gruppe B — Produktverwaltung
+        // Komponente B — Produktverwaltung
         ProduktVerwaltungsService produktService = new ProduktVerwaltungsService(
                 produktRepository,
                 EinfacherProduktnummernGenerator.ausRepository(produktRepository),
                 referenzPruefung,
                 ereignisBus);
 
-        // Gruppe A — Dokumentenzyklus
+        // Komponente A — Dokumentenzyklus
         DokumentService dokumentService = new StandardDokumentService(
                 dokumentRepository,
                 EinfacherBelegnummernGenerator.ausRepository(dokumentRepository),
@@ -79,18 +85,18 @@ public final class Main {
                 new PdfBoxPdfExporter(),
                 ereignisBus);
 
-        // Gruppe D — GUI-freier Controller der Stammdaten-Ansichten (D-F-03)
+        // Komponente D — GUI-freier Controller der Stammdaten-Ansichten (D-F-03)
         StammdatenController stammdatenController =
                 new StammdatenController(kundenService, produktService);
 
-        // Gruppe D — Programmoberfläche
+        // Komponente D — Programmoberfläche
         SwingUtilities.invokeLater(() -> {
             try {
                 FlatLightLaf.setup();
                 UIManager.put("Table.alternateRowColor", new java.awt.Color(245, 246, 248));
                 UIManager.put("Table.showHorizontalLines", false);
             } catch (Exception e) {
-                // Standard-Look-and-Feel verwenden
+                LOG.warn("FlatLaf konnte nicht initialisiert werden, Standard-Look-and-Feel wird verwendet", e);
             }
             HauptFenster fenster = new HauptFenster(
                     new KundenPanel(kundenService, stammdatenController,
@@ -100,6 +106,7 @@ public final class Main {
                     new DokumentListenPanel(dokumentService, kundenService, produktService,
                             new DokumentCsvExport(dokumentRepository), ereignisBus));
             fenster.setVisible(true);
+            LOG.info("Faktura ist bedienbereit (Q-04)");
         });
     }
 }

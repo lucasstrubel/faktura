@@ -2,7 +2,7 @@ package de.lucasstrubel.faktura.dokumente;
 
 /**
  * Die vier kaufmännischen Belegtypen mit ihren Nummern-Präfixen
- * (Gruppe A, Kapitel 4: AN-, AB-, LS-, R-).
+ * (Komponente A, Kapitel 4: AN-, AB-, LS-, R-).
  */
 public enum Belegtyp {
     ANGEBOT("AN", "Angebot"),

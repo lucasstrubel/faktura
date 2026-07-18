@@ -39,8 +39,9 @@ public final class JsonPersistenz {
      */
     public static void schreibeAtomar(Path datei, ObjectWriter writer, Object daten)
             throws IOException {
-        if (datei.getParent() != null) {
-            Files.createDirectories(datei.getParent());
+        Path verzeichnis = datei.getParent();
+        if (verzeichnis != null) {
+            Files.createDirectories(verzeichnis);
         }
         Path temp = datei.resolveSibling(datei.getFileName() + ".tmp");
         writer.writeValue(temp.toFile(), daten);

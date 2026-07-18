@@ -1,5 +1,7 @@
 # Faktura
 
+[![CI](https://github.com/lucasstrubel/faktura/actions/workflows/ci.yml/badge.svg)](https://github.com/lucasstrubel/faktura/actions/workflows/ci.yml)
+
 **A lightweight desktop invoicing application for freelancers and micro-businesses — 100 % local, no cloud, no subscription.**
 
 Faktura manages customers and products and covers the full German commercial document
@@ -31,7 +33,8 @@ numbering (GoBD), and immutability of sent documents.
 
 ## Tech stack
 
-Java 21 · Swing + FlatLaf · Maven · Jackson (JSON) · Apache PDFBox · JUnit 5 (71 tests)
+Java 21 · Swing + FlatLaf · Maven · Jackson (JSON) · Apache PDFBox · SLF4J/Logback ·
+JUnit 5 (170+ test executions) · JaCoCo · SpotBugs · GitHub Actions
 
 ## Build & run
 
@@ -67,7 +70,7 @@ Tests: [`src/test/java/de/lucasstrubel/faktura/`](src/test/java/de/lucasstrubel/
 
 Turning the course project into a customer-ready product, step by step:
 
-- [ ] **Quality baseline** — stricter input validation (postal code, VAT ID, email),
+- [x] **Quality baseline** — stricter input validation (postal code, VAT ID, email),
       logging (SLF4J/Logback), CI with GitHub Actions, coverage & static analysis
 - [ ] **Spring Boot** — IoC container replacing manual wiring, configuration via
       `application.yml`, Spring application events

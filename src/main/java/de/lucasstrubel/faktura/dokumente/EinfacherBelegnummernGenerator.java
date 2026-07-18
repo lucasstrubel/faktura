@@ -10,6 +10,9 @@ import java.util.regex.Pattern;
  * Jahr wird ein eigener fortlaufender Zähler auf Basis der höchsten bisher
  * vergebenen Nummer geführt; Rechnungsnummern sind damit lückenlos, da
  * Belege nie gelöscht werden (GR-01, F-12).
+ *
+ * <p>Nicht threadsicher: alle Aufrufe erfolgen auf dem Event-Dispatch-Thread
+ * (Einzelplatzbetrieb, vgl. {@code EreignisBus}).
  */
 public class EinfacherBelegnummernGenerator implements BelegnummernGenerator {
 
@@ -40,7 +43,7 @@ public class EinfacherBelegnummernGenerator implements BelegnummernGenerator {
     }
 
     @Override
-    public synchronized String naechsteNummer(Belegtyp typ, int jahr) {
+    public String naechsteNummer(Belegtyp typ, int jahr) {
         String schluessel = typ.praefix() + "-" + jahr;
         int naechste = zaehler.getOrDefault(schluessel, 1);
         zaehler.put(schluessel, naechste + 1);

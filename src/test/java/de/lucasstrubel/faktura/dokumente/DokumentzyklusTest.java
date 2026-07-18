@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Modultestplan Gruppe A (separates Dokument Modultestplan_GruppeA.md): TC-01 bis TC-13.
- * Die Schnittstellen der Gruppen B und C werden durch Stubs ersetzt,
+ * Modultestplan Komponente A (separates Dokument Modultestplan_GruppeA.md): TC-01 bis TC-13.
+ * Die Schnittstellen der Komponenten B und C werden durch Stubs ersetzt,
  * der PDF-Export durch einen No-Op-Stub.
  */
 class DokumentzyklusTest {

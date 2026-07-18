@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Standardimplementierung des {@link DokumentService} (Gruppe A, Kapitel 7):
+ * Standardimplementierung des {@link DokumentService} (Komponente A, Kapitel 7):
  * orchestriert {@link BelegnummernGenerator}, {@link KundenService},
  * {@link ProduktService}, {@link DokumentRepository} und {@link PdfExporter}.
  */

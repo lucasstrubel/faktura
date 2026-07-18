@@ -38,7 +38,7 @@
             <version>${jackson.version}</version>
         </dependency>
 
-        <!-- PDF-Export der Belege (Gruppe A, F-04/F-07/F-10/F-15) -->
+        <!-- PDF-Export der Belege (Komponente A, F-04/F-07/F-10/F-15) -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
@@ -52,7 +52,19 @@
             <version>3.6</version>
         </dependency>
 
-        <!-- Modultests (JUnit 5; Modultestplan_GruppeA.md bzw. Kapitel 10 der Pflichtenhefte B–D) -->
+        <!-- Logging: SLF4J-Fassade mit Logback-Backend -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.16</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.5.16</version>
+        </dependency>
+
+        <!-- Modultests (JUnit 5; Modultestplan.md bzw. Kapitel 10 der Pflichtenheft-Teile B–D) -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -67,6 +79,43 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
+            </plugin>
+            <!-- Testabdeckung: Bericht unter target/site/jacoco (Phase "verify") -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.15</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Statische Analyse: bricht den Build bei Befunden ab (Phase "verify") -->
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>4.10.3.0</version>
+                <configuration>
+                    <excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

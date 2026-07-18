@@ -1,8 +1,8 @@
 package de.lucasstrubel.faktura.produkte;
 
 /**
- * Löschsperre für referenzierte Produkte: von Gruppe A bereitgestellt,
- * von Gruppe B vor jedem Löschvorgang genutzt (B-F-10).
+ * Löschsperre für referenzierte Produkte: von Komponente A bereitgestellt,
+ * von Komponente B vor jedem Löschvorgang genutzt (B-F-10).
  */
 public interface ProduktReferenzPruefung {
 

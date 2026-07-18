@@ -3,6 +3,9 @@ package de.lucasstrubel.faktura.gui;
 import de.lucasstrubel.faktura.gemeinsam.LoeschAbgelehntException;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
@@ -19,6 +22,8 @@ import java.util.Map;
  * das Feld namentlich (Q-09).
  */
 public final class MeldungsAnzeige {
+
+    private static final Logger LOG = LoggerFactory.getLogger(MeldungsAnzeige.class);
 
     private static final Border FEHLER_RAND = BorderFactory.createLineBorder(Color.RED, 2);
 
@@ -68,10 +73,12 @@ public final class MeldungsAnzeige {
         } catch (LoeschAbgelehntException | IllegalStateException e) {
             zeige(parent, Meldung.fehler(null, e.getMessage()), felder);
         } catch (UncheckedIOException e) {
+            LOG.error("Persistenzfehler (IF-01)", e);
             zeige(parent, Meldung.fehler(null,
                     "Die Daten konnten nicht gespeichert werden: " + e.getMessage()), felder);
         } catch (RuntimeException e) {
             // Letztes Netz: kein stilles Scheitern auf dem Event-Dispatch-Thread
+            LOG.error("Unerwarteter Fehler auf dem Event-Dispatch-Thread", e);
             zeige(parent, Meldung.fehler(null, "Unerwarteter Fehler: " + e), felder);
         }
     }

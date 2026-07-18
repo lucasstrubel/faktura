@@ -3,7 +3,7 @@ title: "Pflichtenheft"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
 author:
   - Lucas Strubel
-version: "2.0"
+version: "2.1"
 lang: de-DE
 toc: true
 toc-depth: 3
@@ -43,6 +43,7 @@ header-includes: |
 |---------|------------|---------------------|
 | 1.x     | 06/2026    | Vier komponentenspezifische Pflichtenhefte (A: Dokumentenzyklus, B: Produkte, C: Kunden, D: Programmoberfläche) im Rahmen des Hochschulprojekts |
 | 2.0     | 18.07.2026 | Konsolidierung der vier Pflichtenhefte zu einem Gesamtdokument |
+| 2.1     | 18.07.2026 | Teil C: erweiterte Formatvalidierung F-16 bis F-18 ergänzt, E-Mail-Prüfung (F-04) verschärft |
 
 \newpage
 
@@ -918,6 +919,31 @@ Nummer, MUSS `null` zurückgegeben werden.
 **F-15 (Datenexport, Anteil an Q-08):** Das System MUSS es der Anwender:in ERMÖGLICHEN,
 alle Kundenstammdaten vollständig in ein offenes, dokumentiertes Format (CSV, UTF-8,
 Semikolon-getrennt, mit Kopfzeile) in das lokale Dateisystem zu exportieren.
+
+### 4.6 Erweiterte Formatvalidierung (Weiterentwicklung, ab v2.1)
+
+Die folgenden Anforderungen verschärfen die Eingabevalidierung über den Stand der
+Version 1.0 hinaus (Roadmap „Qualität"); die zentralen Formatregeln sind in der
+Klasse `Validierung` (Paket `gemeinsam`) implementiert und durch die Testfälle
+VAL-01 bis VAL-10 sowie TC-15 bis TC-17 abgedeckt.
+
+**F-16 (PLZ):** WENN ein Kunde gespeichert wird, DANN MUSS das System prüfen, dass die
+PLZ aus genau 5 Ziffern besteht (führende Nullen zulässig, z. B. `01067`); andernfalls
+MUSS das Speichern abgelehnt und das Feld „PLZ" benannt werden (Q-09).
+
+**F-17 (USt-IdNr.):** WENN eine USt-IdNr. angegeben wird, DANN MUSS das System prüfen,
+dass sie — nach Entfernen von Leerzeichen — dem Format `DE` gefolgt von 9 Ziffern
+entspricht; andernfalls MUSS das Speichern abgelehnt und das Feld „USt-IdNr." benannt
+werden.
+
+**F-18 (Telefon):** WENN eine Telefonnummer angegeben wird, DANN MUSS das System
+prüfen, dass sie ausschließlich Ziffern, Leerzeichen und die Zeichen `+ ( ) / -`
+enthält und mindestens 6 Ziffern umfasst; andernfalls MUSS das Speichern abgelehnt und
+das Feld „Telefon" benannt werden.
+
+> **Hinweis zu F-04:** Die E-Mail-Prüfung wurde gegenüber v1.0 verschärft: statt
+> „mindestens ein `@` mit Zeichen davor und dahinter" gilt nun das Format
+> Lokalteil`@`Domain mit mindestens einer Top-Level-Domain (z. B. `name@domain.de`).
 
 ## 5. Nicht-funktionale Anforderungen
 

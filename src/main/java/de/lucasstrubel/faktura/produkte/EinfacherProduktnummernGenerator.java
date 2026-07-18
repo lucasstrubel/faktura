@@ -6,6 +6,9 @@ import java.util.regex.Pattern;
 /**
  * Fortlaufende Produktnummern im Format {@code P-NNNNNN} (Präfix, führende
  * Nullen) auf Basis der höchsten bisher vergebenen Nummer (B, Kapitel 4).
+ *
+ * <p>Nicht threadsicher: alle Aufrufe erfolgen auf dem Event-Dispatch-Thread
+ * (Einzelplatzbetrieb, vgl. {@code EreignisBus}).
  */
 public class EinfacherProduktnummernGenerator implements ProduktnummernGenerator {
 
@@ -37,7 +40,7 @@ public class EinfacherProduktnummernGenerator implements ProduktnummernGenerator
     }
 
     @Override
-    public synchronized String naechsteNummer() {
+    public String naechsteNummer() {
         return String.format("P-%06d", zaehler++);
     }
 }

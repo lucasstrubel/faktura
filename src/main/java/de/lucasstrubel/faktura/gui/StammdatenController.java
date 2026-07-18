@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * Controller der Stammdaten-Ansichten (D-F-03): delegiert Suchanfragen an
- * die Dienste der Gruppen B und C; die GUI rechnet und filtert selbst nicht.
+ * die Dienste der Komponenten B und C; die GUI rechnet und filtert selbst nicht.
  * GUI-frei und damit im Modultest ohne Oberfläche prüfbar (TC-14, TC-15).
  */
 public class StammdatenController {

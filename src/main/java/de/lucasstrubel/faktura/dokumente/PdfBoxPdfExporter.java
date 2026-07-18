@@ -71,8 +71,9 @@ public class PdfBoxPdfExporter implements PdfExporter {
             schreibeSchlusstext(schreiber, dokument);
 
             schreiber.schliesse();
-            if (zielDatei.getParent() != null) {
-                Files.createDirectories(zielDatei.getParent());
+            Path zielVerzeichnis = zielDatei.getParent();
+            if (zielVerzeichnis != null) {
+                Files.createDirectories(zielVerzeichnis);
             }
             pdf.save(zielDatei.toFile());
         } catch (IOException e) {

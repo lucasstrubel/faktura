@@ -6,6 +6,9 @@ import java.util.regex.Pattern;
 /**
  * Fortlaufende Kundennummern im Format {@code K-NNNNNN} (Präfix, führende
  * Nullen) auf Basis der höchsten bisher vergebenen Nummer (C, Kapitel 4).
+ *
+ * <p>Nicht threadsicher: alle Aufrufe erfolgen auf dem Event-Dispatch-Thread
+ * (Einzelplatzbetrieb, vgl. {@code EreignisBus}).
  */
 public class EinfacherKundennummernGenerator implements KundennummernGenerator {
 
@@ -37,7 +40,7 @@ public class EinfacherKundennummernGenerator implements KundennummernGenerator {
     }
 
     @Override
-    public synchronized String naechsteNummer() {
+    public String naechsteNummer() {
         return String.format("K-%06d", zaehler++);
     }
 }

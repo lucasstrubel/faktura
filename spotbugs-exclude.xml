@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Ausschlussfilter für SpotBugs.
+
+    EI_EXPOSE_REP / EI_EXPOSE_REP2 melden jede Übergabe veränderlicher Objekte
+    (Listen, Datumswerte) über Konstruktoren und Getter. Die Fachobjekte dieser
+    Anwendung sind bewusst als einfache, veränderliche JavaBeans mit
+    Jackson-Field-Zugriff entworfen (Einzelplatz, ein Thread pro Vorgang);
+    defensive Kopien an jeder Schnittstelle stünden in keinem Verhältnis zum
+    Risiko. Wo Unveränderlichkeit fachlich gefordert ist (GR-02), wird sie in
+    der Fachlogik erzwungen (Dokument.pruefeAenderbar).
+-->
+<FindBugsFilter>
+    <Match>
+        <Or>
+            <Bug pattern="EI_EXPOSE_REP"/>
+            <Bug pattern="EI_EXPOSE_REP2"/>
+        </Or>
+    </Match>
+    <!--
+        CT_CONSTRUCTOR_THROW warnt vor "Finalizer-Angriffen", wenn ein
+        Konstruktor werfen kann. Die Json*Repositories laden den Bestand bewusst
+        im Konstruktor (Fail-Fast beim Programmstart, IF-01), Swing-Dialoge
+        validieren Parameter im Konstruktor. Finalizer sind seit Java 18
+        deprecated und die Anwendung verarbeitet keine nicht vertrauenswürdigen
+        Eingaben über diese Konstruktoren.
+    -->
+    <Match>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    </Match>
+</FindBugsFilter>

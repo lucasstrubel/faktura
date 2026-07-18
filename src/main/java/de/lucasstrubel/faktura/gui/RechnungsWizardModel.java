@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * UI-Zustandsmodell der geführten Rechnungserstellung (Gruppe D,
+ * UI-Zustandsmodell der geführten Rechnungserstellung (Komponente D,
  * Kapitel 6.1). Frei von GUI-Framework-Klassen und damit ohne
  * Oberfläche testbar.
  */
@@ -53,7 +53,7 @@ public class RechnungsWizardModel {
         this.rechnungsdatum = rechnungsdatum;
     }
 
-    /** {@code null} = Standard-Zahlungsziel der Gruppe A (GR-06: +14 Tage). */
+    /** {@code null} = Standard-Zahlungsziel der Komponente A (GR-06: +14 Tage). */
     public LocalDate getZahlungsziel() {
         return zahlungsziel;
     }

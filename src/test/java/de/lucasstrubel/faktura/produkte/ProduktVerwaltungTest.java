@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Modultestplan Gruppe B (Pflichtenheft B, Kapitel 10): TC-01 bis TC-14.
- * Die Schnittstelle {@code ProduktReferenzPruefung} (Gruppe A) wird durch
+ * Modultestplan Komponente B (Pflichtenheft B, Kapitel 10): TC-01 bis TC-14.
+ * Die Schnittstelle {@code ProduktReferenzPruefung} (Komponente A) wird durch
  * einen Stub ersetzt.
  */
 class ProduktVerwaltungTest {

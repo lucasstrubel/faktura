@@ -3,7 +3,7 @@ package de.lucasstrubel.faktura.kunden;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 
 /**
- * Kundenstammdaten (Pflichtenheft Gruppe C, Kapitel 6.1).
+ * Kundenstammdaten (Pflichtenheft Teil C, Kapitel 6.1).
  * Kundennummer und PLZ werden als {@code String} geführt (führende Nullen).
  * Die Kundennummer ist nach Vergabe unveränderlich (C-F-07).
  */
@@ -101,7 +101,7 @@ public class Kunde {
         this.ustIdNr = ustIdNr;
     }
 
-    /** Anschrift einzeilig, z. B. für die Beleg-Übernahme durch Gruppe A. */
+    /** Anschrift einzeilig, z. B. für die Beleg-Übernahme durch Komponente A. */
     public String anschrift() {
         return strasse + ", " + plz + " " + ort;
     }

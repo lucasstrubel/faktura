@@ -12,7 +12,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Abstrakte Oberklasse aller Belege (Gruppe A, Kapitel 6.1).
+ * Abstrakte Oberklasse aller Belege (Komponente A, Kapitel 6.1).
  *
  * <p>Neben der Kundenreferenz werden Name und Anschrift des Kunden als
  * Snapshot zum Erstellzeitpunkt abgelegt, damit bereits erstellte Belege

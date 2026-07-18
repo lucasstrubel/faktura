@@ -32,8 +32,9 @@ public final class Csv {
     /** Schreibt die Zeilen als UTF-8-Datei in das lokale Dateisystem (IF-04). */
     public static void schreibe(Path zielDatei, List<String> zeilen) {
         try {
-            if (zielDatei.getParent() != null) {
-                Files.createDirectories(zielDatei.getParent());
+            Path zielVerzeichnis = zielDatei.getParent();
+            if (zielVerzeichnis != null) {
+                Files.createDirectories(zielVerzeichnis);
             }
             Files.write(zielDatei, zeilen, StandardCharsets.UTF_8);
         } catch (IOException e) {

@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Dialogführung der geführten Rechnungserstellung (D-F-09 bis F-13):
  * Schrittfolge, Vollständigkeitsprüfung je Schritt, Zusammenfassung und
- * genau ein Speicheraufruf an den {@link DokumentService} (Gruppe A).
+ * genau ein Speicheraufruf an den {@link DokumentService} (Komponente A).
  * GUI-frei und damit im Modultest ohne Oberfläche prüfbar.
  */
 public class RechnungsWizardController {

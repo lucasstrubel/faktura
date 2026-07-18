@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import java.math.BigDecimal;
 
 /**
- * Produktstammdaten (Pflichtenheft Gruppe B, Kapitel 6.1).
+ * Produktstammdaten (Pflichtenheft Teil B, Kapitel 6.1).
  * Geldbeträge als {@code BigDecimal} (Scale 2), Steuersatz als Faktor
  * (zulässig: 0.00, 0.07, 0.19). Die Produktnummer ist nach Vergabe
  * unveränderlich (B-F-07).

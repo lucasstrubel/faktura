@@ -5,10 +5,10 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Zentrale Fachlogik des Dokumentenzyklus (Pflichtenheft Gruppe A,
+ * Zentrale Fachlogik des Dokumentenzyklus (Pflichtenheft Teil A,
  * Kapitel 7): Belegerzeugung, Summenberechnung, Nummernvergabe,
  * Verknüpfung, Statusführung, Stornierung und PDF-Export. Wird von der
- * Programmoberfläche (Gruppe D) über diese Schnittstelle genutzt.
+ * Programmoberfläche (Komponente D) über diese Schnittstelle genutzt.
  */
 public interface DokumentService {
 

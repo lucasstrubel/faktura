@@ -4,7 +4,7 @@ import de.lucasstrubel.faktura.kunden.KundenReferenzPruefung;
 import de.lucasstrubel.faktura.produkte.ProduktReferenzPruefung;
 
 /**
- * Von Gruppe A bereitgestellte Referenzprüfungen für die Löschsperren der
+ * Von Komponente A bereitgestellte Referenzprüfungen für die Löschsperren der
  * Stammdatenmodule: GR-04 (Kunden, C-F-10) und B-F-10 (Produkte).
  */
 public class DokumentReferenzPruefung implements KundenReferenzPruefung, ProduktReferenzPruefung {

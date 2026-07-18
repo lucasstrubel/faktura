@@ -50,7 +50,7 @@ public class ProduktPanel extends JPanel implements ModulPanel {
     private final JButton loeschenKnopf = new JButton("Löschen");
 
     /**
-     * @param service     Fachkomponente der Gruppe B für Anlegen/Ändern/Löschen
+     * @param service     Fachkomponente der Komponente B für Anlegen/Ändern/Löschen
      * @param controller  GUI-freier Controller für Suche und Listeninhalt (D-F-03)
      * @param csvExport   CSV-Export der Produktstammdaten (B-F-13)
      * @param ereignisBus Observer-Verteiler für Aktualisierungen nach Datenänderungen

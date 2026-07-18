@@ -31,9 +31,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Modultestplan Gruppe D (Pflichtenheft D, Kapitel 10): TC-01 bis TC-14.
+ * Modultestplan Komponente D (Pflichtenheft D, Kapitel 10): TC-01 bis TC-14.
  * Getestet wird die GUI-freie Controller- und Modell-Schicht; die
- * Service-Schnittstellen der Gruppen A-C werden durch Stubs ersetzt.
+ * Service-Schnittstellen der Komponenten A-C werden durch Stubs ersetzt.
  */
 class OberflaechenControllerTest {
 
@@ -272,7 +272,7 @@ class OberflaechenControllerTest {
         assertEquals(0, controller.kundenListe("unbekannt").size());
     }
 
-    /** Zähl-Stub des DokumentService (Gruppe A) für die Controller-Tests. */
+    /** Zähl-Stub des DokumentService (Komponente A) für die Controller-Tests. */
     private static final class DokumentServiceStub implements DokumentService {
 
         int erstelleRechnungAufrufe;

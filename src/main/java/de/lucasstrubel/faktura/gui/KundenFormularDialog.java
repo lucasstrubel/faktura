@@ -57,6 +57,8 @@ public class KundenFormularDialog extends JDialog {
         felder.put("PLZ", plzFeld);
         felder.put("Ort", ortFeld);
         felder.put("E-Mail", eMailFeld);
+        felder.put("Telefon", telefonFeld);
+        felder.put("USt-IdNr.", ustIdNrFeld);
         baueOberflaeche();
         if (vorhandener != null) {
             fuelleFelder(vorhandener);

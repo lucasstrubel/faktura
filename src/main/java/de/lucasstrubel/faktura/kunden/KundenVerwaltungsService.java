@@ -3,14 +3,15 @@ package de.lucasstrubel.faktura.kunden;
 import de.lucasstrubel.faktura.gemeinsam.DatenBereich;
 import de.lucasstrubel.faktura.gemeinsam.EreignisBus;
 import de.lucasstrubel.faktura.gemeinsam.LoeschAbgelehntException;
+import de.lucasstrubel.faktura.gemeinsam.Validierung;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 
 import java.util.List;
 
 /**
- * Fachlogik der Kundenverwaltung (Pflichtenheft Gruppe C):
+ * Fachlogik der Kundenverwaltung (Pflichtenheft Teil C):
  * Validierung (F-03, F-04), Nummernvergabe (F-02), Löschsperre GR-04
- * (F-08–F-10) sowie lesender Zugriff für Gruppe A (F-14).
+ * (F-08–F-10) sowie lesender Zugriff für Komponente A (F-14).
  */
 public class KundenVerwaltungsService implements KundenService {
 
@@ -84,23 +85,19 @@ public class KundenVerwaltungsService implements KundenService {
         return repository.findeNachNummer(kundennummer);
     }
 
-    /** Pflichtfeld- und Formatprüfung (F-03, F-04); benennt das betroffene Feld (Q-09). */
+    /**
+     * Pflichtfeld- und Formatprüfung (F-03, F-04 sowie F-16–F-18); benennt das
+     * betroffene Feld (Q-09). Die Formatregeln sind zentral in
+     * {@link Validierung} definiert.
+     */
     private void validiere(Kunde kunde) {
-        pruefePflichtfeld(kunde.getName(), "Name");
-        pruefePflichtfeld(kunde.getStrasse(), "Straße");
-        pruefePflichtfeld(kunde.getPlz(), "PLZ");
-        pruefePflichtfeld(kunde.getOrt(), "Ort");
-        String eMail = kunde.getEMail();
-        if (eMail != null && !eMail.isBlank() && !eMail.matches(".+@.+")) {
-            throw new ValidierungsException("E-Mail",
-                    "Das Feld 'E-Mail' hat ein ungültiges Format: " + eMail);
-        }
-    }
-
-    private void pruefePflichtfeld(String wert, String feldname) {
-        if (wert == null || wert.isBlank()) {
-            throw new ValidierungsException(feldname,
-                    "Das Pflichtfeld '" + feldname + "' fehlt.");
-        }
+        Validierung.pruefePflichtfeld(kunde.getName(), "Name");
+        Validierung.pruefePflichtfeld(kunde.getStrasse(), "Straße");
+        Validierung.pruefePflichtfeld(kunde.getPlz(), "PLZ");
+        Validierung.pruefePflichtfeld(kunde.getOrt(), "Ort");
+        Validierung.pruefePlz(kunde.getPlz());
+        Validierung.pruefeEMail(kunde.getEMail());
+        Validierung.pruefeTelefon(kunde.getTelefon());
+        Validierung.pruefeUstIdNr(kunde.getUstIdNr());
     }
 }

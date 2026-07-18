@@ -5,7 +5,7 @@ import java.util.List;
 
 /**
  * Testhelfer: erzeugt Belege in definierten Status für die Modultests
- * (auch der Gruppe D), da der Statuswechsel im Produktivcode bewusst nur
+ * (auch der Komponente D), da der Statuswechsel im Produktivcode bewusst nur
  * über die Fachlogik möglich ist.
  */
 public final class TestBelege {

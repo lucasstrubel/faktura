@@ -3,15 +3,16 @@ package de.lucasstrubel.faktura.produkte;
 import de.lucasstrubel.faktura.gemeinsam.DatenBereich;
 import de.lucasstrubel.faktura.gemeinsam.EreignisBus;
 import de.lucasstrubel.faktura.gemeinsam.LoeschAbgelehntException;
+import de.lucasstrubel.faktura.gemeinsam.Validierung;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Fachlogik der Produktverwaltung (Pflichtenheft Gruppe B):
+ * Fachlogik der Produktverwaltung (Pflichtenheft Teil B):
  * Validierung (F-03, F-04), Nummernvergabe (F-02), Löschsperre
- * (F-08–F-10) sowie lesender Zugriff für Gruppe A (F-14).
+ * (F-08–F-10) sowie lesender Zugriff für Komponente A (F-14).
  */
 public class ProduktVerwaltungsService implements ProduktService {
 
@@ -51,7 +52,7 @@ public class ProduktVerwaltungsService implements ProduktService {
 
     /**
      * Ändert ein bestehendes Produkt (F-05). Bereits erstellte Dokumente bleiben
-     * unverändert, da Gruppe A Preis und Steuersatz als Snapshot ablegt (F-06).
+     * unverändert, da Komponente A Preis und Steuersatz als Snapshot ablegt (F-06).
      */
     public Produkt aendere(Produkt produkt) {
         if (produkt.getProduktnummer() == null) {
@@ -93,10 +94,7 @@ public class ProduktVerwaltungsService implements ProduktService {
 
     /** Pflichtfeld- und Wertebereichsprüfung (F-03, F-04); benennt das betroffene Feld (Q-09). */
     private void validiere(Produkt produkt) {
-        if (produkt.getBezeichnung() == null || produkt.getBezeichnung().isBlank()) {
-            throw new ValidierungsException("Bezeichnung",
-                    "Das Pflichtfeld 'Bezeichnung' fehlt.");
-        }
+        Validierung.pruefePflichtfeld(produkt.getBezeichnung(), "Bezeichnung");
         BigDecimal preis = produkt.getEinzelpreisNetto();
         if (preis == null) {
             throw new ValidierungsException("Einzelpreis",
