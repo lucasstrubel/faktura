@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.Tooltip?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Modulansicht Dokumente (D-F-06 bis F-08, F-14, F-15). -->
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="de.lucasstrubel.faktura.gui.DokumentAnsichtController">
+    <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+    <top>
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <padding><Insets bottom="8"/></padding>
+            <Label text="Statusfilter:"/>
+            <ComboBox fx:id="statusFilter" prefWidth="140"/>
+            <Separator orientation="VERTICAL"/>
+            <Button text="Neue Rechnung (Assistent)…" onAction="#oeffneWizard" defaultButton="true">
+                <tooltip><Tooltip text="Geführte Rechnungserstellung in fünf Schritten"/></tooltip>
+            </Button>
+            <Button text="Neuer Beleg…" onAction="#oeffneBelegDialog">
+                <tooltip><Tooltip text="Angebot, Auftragsbestätigung oder Lieferschein erstellen"/></tooltip>
+            </Button>
+            <Button text="CSV exportieren…" onAction="#exportiereDaten">
+                <tooltip><Tooltip text="Alle Belegdaten als CSV-Datei exportieren"/></tooltip>
+            </Button>
+        </HBox>
+    </top>
+    <center>
+        <VBox spacing="4">
+            <TableView fx:id="tabelle" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="nummerSpalte" text="Belegnummer" prefWidth="140"/>
+                    <TableColumn fx:id="typSpalte" text="Typ" prefWidth="150"/>
+                    <TableColumn fx:id="datumSpalte" text="Datum" prefWidth="100"/>
+                    <TableColumn fx:id="kundeSpalte" text="Kunde" prefWidth="240"/>
+                    <TableColumn fx:id="bruttoSpalte" text="Bruttosumme" prefWidth="120"
+                                 style="-fx-alignment: CENTER-RIGHT;"/>
+                    <TableColumn fx:id="statusSpalte" text="Status" prefWidth="110"/>
+                </columns>
+            </TableView>
+            <Label fx:id="trefferAnzeige" styleClass="treffer-anzeige"/>
+        </VBox>
+    </center>
+    <bottom>
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <padding><Insets top="8"/></padding>
+            <Button fx:id="folgebelegKnopf" text="Folgebeleg erzeugen" onAction="#erzeugeFolgebeleg"/>
+            <Button fx:id="versendenKnopf" text="Versenden" onAction="#versende"/>
+            <Button fx:id="stornierenKnopf" text="Stornieren" onAction="#storniere"/>
+            <Button fx:id="pdfKnopf" text="PDF exportieren…" onAction="#exportierePdf"/>
+            <Button fx:id="druckenKnopf" text="Drucken" onAction="#drucke"/>
+            <Button fx:id="mailKnopf" text="Per E-Mail senden" onAction="#sendePerMail"/>
+        </HBox>
+    </bottom>
+</BorderPane>

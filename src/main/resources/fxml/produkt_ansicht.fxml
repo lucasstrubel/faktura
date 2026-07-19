@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.Tooltip?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Modulansicht Produktverwaltung (D-F-03 bis F-05). -->
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="de.lucasstrubel.faktura.gui.ProduktAnsichtController">
+    <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+    <top>
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <padding><Insets bottom="8"/></padding>
+            <Label text="Suche:"/>
+            <TextField fx:id="suchfeld" prefColumnCount="22"
+                       promptText="Bezeichnung oder Produktnummer…">
+                <tooltip><Tooltip text="Suche nach Bezeichnung oder Produktnummer"/></tooltip>
+            </TextField>
+        </HBox>
+    </top>
+    <center>
+        <VBox spacing="4">
+            <TableView fx:id="tabelle" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="nummerSpalte" text="Produktnummer" prefWidth="130"/>
+                    <TableColumn fx:id="bezeichnungSpalte" text="Bezeichnung" prefWidth="300"/>
+                    <TableColumn fx:id="preisSpalte" text="Einzelpreis (netto)" prefWidth="140"
+                                 style="-fx-alignment: CENTER-RIGHT;"/>
+                    <TableColumn fx:id="steuersatzSpalte" text="Steuersatz" prefWidth="90"
+                                 style="-fx-alignment: CENTER-RIGHT;"/>
+                    <TableColumn fx:id="einheitSpalte" text="Einheit" prefWidth="110"/>
+                </columns>
+            </TableView>
+            <Label fx:id="trefferAnzeige" styleClass="treffer-anzeige"/>
+        </VBox>
+    </center>
+    <bottom>
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <padding><Insets top="8"/></padding>
+            <Button text="Neues Produkt anlegen…" onAction="#legeNeuAn" defaultButton="true"/>
+            <Button fx:id="bearbeitenKnopf" text="Bearbeiten…" onAction="#bearbeite"/>
+            <Button fx:id="loeschenKnopf" text="Löschen" onAction="#loesche"/>
+            <Button text="CSV exportieren…" onAction="#exportiere"/>
+        </HBox>
+    </bottom>
+</BorderPane>

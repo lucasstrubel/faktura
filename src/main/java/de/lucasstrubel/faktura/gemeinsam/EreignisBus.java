@@ -5,17 +5,19 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 /**
  * Einfacher synchroner Ereignis-Verteiler (Observer-Muster): Die Services
- * melden nach jeder schreibenden Operation den geänderten {@link DatenBereich},
- * die Modulansichten abonnieren die für sie relevanten Bereiche und
- * aktualisieren sich selbst. Dadurch entfallen manuelle Refresh-Aufrufe
- * zwischen den Modulen.
+ * veröffentlichen nach jeder schreibenden Operation ein
+ * {@link DatenGeaendertEreignis} über den Spring-{@code ApplicationEventPublisher};
+ * dieser Bus empfängt es ({@link #empfange}) und benachrichtigt die
+ * abonnierten Modulansichten. Dadurch entfallen manuelle Refresh-Aufrufe
+ * zwischen den Modulen, und die Ansichten müssen keine Spring-Beans sein.
  *
- * <p>Alle Aufrufe laufen auf dem Event-Dispatch-Thread der Swing-Oberfläche;
- * eine Synchronisierung ist daher nicht erforderlich (Einzelplatzbetrieb).
+ * <p>Alle Aufrufe laufen auf dem JavaFX-Application-Thread; eine
+ * Synchronisierung ist daher nicht erforderlich (Einzelplatzbetrieb).
  */
 @Component
 public class EreignisBus {
@@ -32,5 +34,11 @@ public class EreignisBus {
         for (Runnable beobachter : abonnenten.getOrDefault(bereich, List.of())) {
             beobachter.run();
         }
+    }
+
+    /** Brücke vom Spring-Ereignissystem zu den abonnierten Ansichten. */
+    @EventListener
+    public void empfange(DatenGeaendertEreignis ereignis) {
+        melde(ereignis.bereich());
     }
 }

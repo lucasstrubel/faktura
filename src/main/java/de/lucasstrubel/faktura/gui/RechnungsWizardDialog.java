@@ -5,248 +5,238 @@ import de.lucasstrubel.faktura.kunden.KundenService;
 import de.lucasstrubel.faktura.produkte.Produkt;
 import de.lucasstrubel.faktura.produkte.ProduktService;
 
-import javax.swing.BorderFactory;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.DefaultListModel;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSpinner;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.ListSelectionModel;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.UIManager;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.Window;
+import javafx.geometry.Insets;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.util.StringConverter;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.Window;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.EnumMap;
+import java.util.Map;
 
 /**
  * Wizard-Dialog der geführten Rechnungserstellung mit genau fünf Schritten
  * (D-F-09 bis F-13); Dialogführung und Validierung liegen im GUI-freien
  * {@link RechnungsWizardController}.
  */
-public class RechnungsWizardDialog extends JDialog {
+public class RechnungsWizardDialog extends Stage {
 
     private static final DateTimeFormatter DATUM = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     private final RechnungsWizardController controller;
     private final KundenService kundenService;
-    private final ProduktService produktService;
 
-    private final CardLayout karten = new CardLayout();
-    private final JPanel kartenPanel = new JPanel(karten);
+    private final StackPane karten = new StackPane();
+    private final Map<WizardSchritt, Node> kartenJeSchritt = new EnumMap<>(WizardSchritt.class);
 
-    private final JTextField kundenSuche = new JTextField(18);
-    private final DefaultListModel<Kunde> kundenListenModel = new DefaultListModel<>();
-    private final JList<Kunde> kundenListe = new JList<>(kundenListenModel);
+    private final TextField kundenSuche = new TextField();
+    private final ListView<Kunde> kundenListe = new ListView<>();
 
-    private final JComboBox<Produkt> produktWahl = new JComboBox<>();
-    private final JSpinner mengeWahl = new JSpinner(new SpinnerNumberModel(1, 1, 99999, 1));
-    private final DefaultListModel<String> positionsListenModel = new DefaultListModel<>();
-    private final JList<String> positionsListe = new JList<>(positionsListenModel);
+    private final ComboBox<Produkt> produktWahl = new ComboBox<>();
+    private final Spinner<Integer> mengeWahl = new Spinner<>(1, 99999, 1);
+    private final ListView<String> positionsListe = new ListView<>();
 
-    private final JTextField rechnungsdatumFeld = new JTextField(10);
-    private final JTextField zahlungszielFeld = new JTextField(10);
+    private final TextField rechnungsdatumFeld = new TextField();
+    private final TextField zahlungszielFeld = new TextField();
 
-    private final JTextArea zusammenfassung = new JTextArea(14, 50);
+    private final TextArea zusammenfassung = new TextArea();
 
-    private final JButton zurueckKnopf = new JButton("< Zurück");
-    private final JButton weiterKnopf = new JButton("Weiter >");
-    private final JButton speichernKnopf = new JButton("Speichern");
-    private final JLabel schrittAnzeige = new JLabel();
-    private final JLabel[] schrittMarkierungen = new JLabel[WizardSchritt.values().length];
+    private final Button zurueckKnopf = new Button("< Zurück");
+    private final Button weiterKnopf = new Button("Weiter >");
+    private final Button speichernKnopf = new Button("Speichern");
+    private final Label schrittAnzeige = new Label();
+    private final Label[] schrittMarkierungen = new Label[WizardSchritt.values().length];
 
     public RechnungsWizardDialog(Window besitzer, RechnungsWizardController controller,
                                  KundenService kundenService, ProduktService produktService) {
-        super(besitzer, "Geführte Rechnungserstellung", ModalityType.APPLICATION_MODAL);
         this.controller = controller;
         this.kundenService = kundenService;
-        this.produktService = produktService;
-        baueOberflaeche();
+        initModality(Modality.APPLICATION_MODAL);
+        initOwner(besitzer);
+        setTitle("Geführte Rechnungserstellung");
+
+        produktWahl.getItems().addAll(produktService.suche(""));
+        produktWahl.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Produkt produkt) {
+                return produkt == null ? ""
+                        : produkt.getBezeichnung() + " (" + produkt.getProduktnummer() + ")";
+            }
+
+            @Override
+            public Produkt fromString(String text) {
+                return null;
+            }
+        });
+
+        Scene szene = new Scene(baueOberflaeche(), 720, 520);
+        szene.getStylesheets().addAll(besitzer.getScene().getStylesheets());
+        setScene(szene);
+
         ladeKunden("");
-        ladeProdukte();
         zeigeSchritt();
-        pack();
-        setLocationRelativeTo(besitzer);
+        setOnCloseRequest(ereignis -> {
+            if (!darfVerwerfen()) {
+                ereignis.consume();
+            }
+        });
     }
 
-    private void baueOberflaeche() {
-        setLayout(new BorderLayout(8, 8));
-        ((JComponent) getContentPane()).setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-        // Schrittindikator: alle fünf Schritte sichtbar, aktueller Schritt hervorgehoben (Q-05)
-        JPanel kopf = new JPanel(new BorderLayout(0, 2));
-        JPanel schritte = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+    private BorderPane baueOberflaeche() {
+        // Schrittindikator: alle fünf Schritte sichtbar, aktueller hervorgehoben (Q-05)
+        HBox schritte = new HBox(6);
         WizardSchritt[] alleSchritte = WizardSchritt.values();
         for (int i = 0; i < alleSchritte.length; i++) {
             if (i > 0) {
-                schritte.add(new JLabel("›"));
+                schritte.getChildren().add(new Label("›"));
             }
-            schrittMarkierungen[i] = new JLabel((i + 1) + ". " + schrittName(alleSchritte[i]));
-            schritte.add(schrittMarkierungen[i]);
+            schrittMarkierungen[i] = new Label((i + 1) + ". " + schrittName(alleSchritte[i]));
+            schritte.getChildren().add(schrittMarkierungen[i]);
         }
-        kopf.add(schritte, BorderLayout.NORTH);
-        kopf.add(schrittAnzeige, BorderLayout.SOUTH);
-        add(kopf, BorderLayout.NORTH);
+        VBox kopf = new VBox(4, schritte, schrittAnzeige);
+        kopf.setPadding(new Insets(0, 0, 8, 0));
 
-        kartenPanel.add(baueSchrittKunde(), WizardSchritt.KUNDE_WAEHLEN.name());
-        kartenPanel.add(baueSchrittPositionen(), WizardSchritt.POSITIONEN_ERFASSEN.name());
-        kartenPanel.add(baueSchrittDaten(), WizardSchritt.DATEN_BESTAETIGEN.name());
-        kartenPanel.add(baueSchrittZusammenfassung(), WizardSchritt.ZUSAMMENFASSUNG.name());
-        kartenPanel.add(baueSchrittSpeichern(), WizardSchritt.SPEICHERN.name());
-        add(kartenPanel, BorderLayout.CENTER);
+        kartenJeSchritt.put(WizardSchritt.KUNDE_WAEHLEN, baueSchrittKunde());
+        kartenJeSchritt.put(WizardSchritt.POSITIONEN_ERFASSEN, baueSchrittPositionen());
+        kartenJeSchritt.put(WizardSchritt.DATEN_BESTAETIGEN, baueSchrittDaten());
+        kartenJeSchritt.put(WizardSchritt.ZUSAMMENFASSUNG, baueSchrittZusammenfassung());
+        kartenJeSchritt.put(WizardSchritt.SPEICHERN, baueSchrittSpeichern());
+        karten.getChildren().addAll(kartenJeSchritt.values());
 
-        JPanel knoepfe = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton abbrechen = new JButton("Abbrechen");
-        abbrechen.setMnemonic('A');
-        abbrechen.addActionListener(e -> abbrechenMitNachfrage());
-        zurueckKnopf.setMnemonic('Z');
-        zurueckKnopf.addActionListener(e -> {
+        Button abbrechen = new Button("Abbrechen");
+        abbrechen.setCancelButton(true);
+        abbrechen.setOnAction(e -> {
+            if (darfVerwerfen()) {
+                close();
+            }
+        });
+        zurueckKnopf.setOnAction(e -> {
             controller.zurueck();
             zeigeSchritt();
         });
-        weiterKnopf.setMnemonic('W');
-        weiterKnopf.addActionListener(e -> weiter());
-        speichernKnopf.setMnemonic('S');
-        speichernKnopf.addActionListener(e -> speichere());
-        knoepfe.add(abbrechen);
-        knoepfe.add(zurueckKnopf);
-        knoepfe.add(weiterKnopf);
-        knoepfe.add(speichernKnopf);
-        add(knoepfe, BorderLayout.SOUTH);
+        weiterKnopf.setOnAction(e -> weiter());
+        speichernKnopf.setOnAction(e -> speichere());
+        ButtonBar knoepfe = new ButtonBar();
+        ButtonBar.setButtonData(abbrechen, ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonBar.setButtonData(zurueckKnopf, ButtonBar.ButtonData.BACK_PREVIOUS);
+        ButtonBar.setButtonData(weiterKnopf, ButtonBar.ButtonData.NEXT_FORWARD);
+        ButtonBar.setButtonData(speichernKnopf, ButtonBar.ButtonData.FINISH);
+        knoepfe.getButtons().addAll(abbrechen, zurueckKnopf, weiterKnopf, speichernKnopf);
+        knoepfe.setPadding(new Insets(10, 0, 0, 0));
 
-        UiHilfen.escSchliesst(this, this::abbrechenMitNachfrage);
-        UiHilfen.fensterSchliessenAbfangen(this, this::abbrechenMitNachfrage);
+        BorderPane wurzel = new BorderPane();
+        wurzel.setPadding(new Insets(12));
+        wurzel.setTop(kopf);
+        wurzel.setCenter(karten);
+        wurzel.setBottom(knoepfe);
+        return wurzel;
     }
 
-    /** Schutz vor Datenverlust: Nachfrage, wenn bereits Eingaben erfasst wurden. */
-    private void abbrechenMitNachfrage() {
-        boolean datenErfasst = positionsListenModel.getSize() > 0
-                || kundenListe.getSelectedValue() != null;
-        if (datenErfasst) {
-            int antwort = JOptionPane.showConfirmDialog(this,
-                    "Die erfassten Eingaben gehen verloren. Assistent wirklich schließen?",
-                    "Eingaben verwerfen", JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE);
-            if (antwort != JOptionPane.YES_OPTION) {
-                return;
-            }
-        }
-        dispose();
+    /** Schutz vor Datenverlust: Nachfrage, wenn bereits Eingaben erfasst wurden (D-F-02). */
+    private boolean darfVerwerfen() {
+        boolean datenErfasst = !controller.getModel().getPositionen().isEmpty()
+                || controller.getModel().getKundenNr() != null;
+        return !datenErfasst || FxMeldung.bestaetige("Eingaben verwerfen",
+                "Die erfassten Eingaben gehen verloren. Assistent wirklich schließen?");
     }
 
     /** Schritt 1: Kunde auswählen (F-09). */
-    private JPanel baueSchrittKunde() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        JPanel suche = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        suche.add(new JLabel("Suche:"));
-        suche.add(kundenSuche);
-        kundenSuche.getDocument().addDocumentListener(new DocumentListener() {
+    private Node baueSchrittKunde() {
+        kundenSuche.setPromptText("Name oder Kundennummer…");
+        kundenSuche.textProperty().addListener(
+                (beobachtbar, alt, neu) -> ladeKunden(neu.strip()));
+        kundenListe.setCellFactory(liste -> new ListCell<>() {
             @Override
-            public void insertUpdate(DocumentEvent e) {
-                ladeKunden(kundenSuche.getText().trim());
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                ladeKunden(kundenSuche.getText().trim());
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                ladeKunden(kundenSuche.getText().trim());
+            protected void updateItem(Kunde kunde, boolean leer) {
+                super.updateItem(kunde, leer);
+                setText(leer || kunde == null ? null
+                        : kunde.getName() + " (" + kunde.getKundennummer() + ")");
             }
         });
-        panel.add(suche, BorderLayout.NORTH);
-
-        kundenListe.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        kundenListe.addListSelectionListener(e -> {
-            Kunde kunde = kundenListe.getSelectedValue();
-            controller.getModel().setKundenNr(kunde == null ? null : kunde.getKundennummer());
-        });
-        panel.add(new JScrollPane(kundenListe), BorderLayout.CENTER);
+        kundenListe.getSelectionModel().selectedItemProperty()
+                .addListener((beobachtbar, alt, kunde) -> controller.getModel()
+                        .setKundenNr(kunde == null ? null : kunde.getKundennummer()));
+        HBox suche = new HBox(8, new Label("Suche:"), kundenSuche);
+        VBox panel = new VBox(6, suche, kundenListe);
+        VBox.setVgrow(kundenListe, Priority.ALWAYS);
         return panel;
     }
 
     /** Schritt 2: mindestens eine Produktposition mit Menge erfassen (F-09). */
-    private JPanel baueSchrittPositionen() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        JPanel eingabe = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        eingabe.add(new JLabel("Produkt:"));
-        eingabe.add(produktWahl);
-        eingabe.add(new JLabel("Menge:"));
-        eingabe.add(mengeWahl);
-        JButton hinzufuegen = new JButton("Hinzufügen");
-        hinzufuegen.setMnemonic('H');
-        hinzufuegen.addActionListener(e -> {
-            Produkt produkt = (Produkt) produktWahl.getSelectedItem();
+    private Node baueSchrittPositionen() {
+        Button hinzufuegen = new Button("Hinzufügen");
+        hinzufuegen.setOnAction(e -> {
+            Produkt produkt = produktWahl.getValue();
             if (produkt == null) {
                 return;
             }
-            int menge = (Integer) mengeWahl.getValue();
+            int menge = mengeWahl.getValue();
             controller.getModel().fuegePositionHinzu(
                     new PositionsEingabe(produkt.getProduktnummer(), menge));
-            positionsListenModel.addElement(menge + " x " + produkt.getBezeichnung()
+            positionsListe.getItems().add(menge + " x " + produkt.getBezeichnung()
                     + " (" + produkt.getProduktnummer() + ")");
         });
-        eingabe.add(hinzufuegen);
-        JButton entfernen = new JButton("Entfernen");
-        entfernen.setMnemonic('E');
-        entfernen.addActionListener(e -> {
-            int index = positionsListe.getSelectedIndex();
+        Button entfernen = new Button("Entfernen");
+        entfernen.setOnAction(e -> {
+            int index = positionsListe.getSelectionModel().getSelectedIndex();
             if (index >= 0) {
                 controller.getModel().entfernePosition(index);
-                positionsListenModel.remove(index);
+                positionsListe.getItems().remove(index);
             }
         });
-        eingabe.add(entfernen);
-        panel.add(eingabe, BorderLayout.NORTH);
-        panel.add(new JScrollPane(positionsListe), BorderLayout.CENTER);
+        HBox eingabe = new HBox(8, new Label("Produkt:"), produktWahl,
+                new Label("Menge:"), mengeWahl, hinzufuegen, entfernen);
+        VBox panel = new VBox(6, eingabe, positionsListe);
+        VBox.setVgrow(positionsListe, Priority.ALWAYS);
         return panel;
     }
 
     /** Schritt 3: Rechnungsdatum und Zahlungsziel bestätigen (F-09). */
-    private JPanel baueSchrittDaten() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        panel.add(new JLabel("Rechnungsdatum (TT.MM.JJJJ): *"));
+    private Node baueSchrittDaten() {
         rechnungsdatumFeld.setText(DATUM.format(LocalDate.now()));
-        rechnungsdatumFeld.setToolTipText("Pflichtfeld — Format: TT.MM.JJJJ");
-        panel.add(rechnungsdatumFeld);
-        panel.add(new JLabel("Zahlungsziel (leer = 14 Tage):"));
-        zahlungszielFeld.setToolTipText("Optional — Format: TT.MM.JJJJ, leer = 14 Tage nach Rechnungsdatum");
-        panel.add(zahlungszielFeld);
-        panel.add(UiHilfen.pflichtfeldLegende());
-        return panel;
+        rechnungsdatumFeld.setTooltip(new Tooltip("Pflichtfeld — Format: TT.MM.JJJJ"));
+        zahlungszielFeld.setTooltip(new Tooltip(
+                "Optional — Format: TT.MM.JJJJ, leer = 14 Tage nach Rechnungsdatum"));
+        Label legende = new Label("* Pflichtfeld");
+        legende.getStyleClass().add("pflichtfeld-legende");
+        HBox felder = new HBox(8,
+                new Label("Rechnungsdatum (TT.MM.JJJJ): *"), rechnungsdatumFeld,
+                new Label("Zahlungsziel (leer = 14 Tage):"), zahlungszielFeld);
+        return new VBox(8, felder, legende);
     }
 
     /** Schritt 4: Zusammenfassung prüfen (F-12). */
-    private JPanel baueSchrittZusammenfassung() {
-        JPanel panel = new JPanel(new BorderLayout());
+    private Node baueSchrittZusammenfassung() {
         zusammenfassung.setEditable(false);
-        panel.add(new JScrollPane(zusammenfassung), BorderLayout.CENTER);
-        return panel;
+        return zusammenfassung;
     }
 
     /** Schritt 5: speichern (F-13). */
-    private JPanel baueSchrittSpeichern() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        panel.add(new JLabel("Alle Angaben sind erfasst. Klicken Sie auf „Speichern“, "
-                + "um die Rechnung zu erstellen."));
-        return panel;
+    private Node baueSchrittSpeichern() {
+        Label hinweis = new Label("Alle Angaben sind erfasst. Klicken Sie auf „Speichern“, "
+                + "um die Rechnung zu erstellen.");
+        hinweis.setWrapText(true);
+        return new VBox(hinweis);
     }
 
     private void weiter() {
@@ -255,7 +245,7 @@ public class RechnungsWizardDialog extends JDialog {
             return;
         }
         if (!controller.weiter()) {
-            MeldungsAnzeige.zeige(this, controller.getLetzteMeldung(), null);
+            FxMeldung.zeige(controller.getLetzteMeldung(), null);
             return;
         }
         zeigeSchritt();
@@ -265,32 +255,32 @@ public class RechnungsWizardDialog extends JDialog {
     private boolean uebernehmeDaten() {
         try {
             controller.getModel().setRechnungsdatum(
-                    LocalDate.parse(rechnungsdatumFeld.getText().trim(), DATUM));
+                    LocalDate.parse(rechnungsdatumFeld.getText().strip(), DATUM));
         } catch (DateTimeParseException e) {
-            MeldungsAnzeige.zeige(this, Meldung.fehler("Rechnungsdatum",
+            FxMeldung.zeige(Meldung.fehler("Rechnungsdatum",
                     "Das 'Rechnungsdatum' ist ungültig. Format: TT.MM.JJJJ"), null);
             return false;
         }
-        String zahlungsziel = zahlungszielFeld.getText().trim();
+        String zahlungsziel = zahlungszielFeld.getText().strip();
         if (zahlungsziel.isEmpty()) {
             controller.getModel().setZahlungsziel(null);
-        } else {
-            try {
-                controller.getModel().setZahlungsziel(LocalDate.parse(zahlungsziel, DATUM));
-            } catch (DateTimeParseException e) {
-                MeldungsAnzeige.zeige(this, Meldung.fehler("Zahlungsziel",
-                        "Das 'Zahlungsziel' ist ungültig. Format: TT.MM.JJJJ"), null);
-                return false;
-            }
+            return true;
+        }
+        try {
+            controller.getModel().setZahlungsziel(LocalDate.parse(zahlungsziel, DATUM));
+        } catch (DateTimeParseException e) {
+            FxMeldung.zeige(Meldung.fehler("Zahlungsziel",
+                    "Das 'Zahlungsziel' ist ungültig. Format: TT.MM.JJJJ"), null);
+            return false;
         }
         return true;
     }
 
     private void speichere() {
         Meldung meldung = controller.speichern();
-        MeldungsAnzeige.zeige(this, meldung, null);
+        FxMeldung.zeige(meldung, null);
         if (meldung.typ() == MeldungsTyp.ERFOLG) {
-            dispose();
+            close();
         }
     }
 
@@ -299,21 +289,23 @@ public class RechnungsWizardDialog extends JDialog {
         if (schritt == WizardSchritt.ZUSAMMENFASSUNG) {
             zusammenfassung.setText(controller.erzeugeZusammenfassung());
         }
-        karten.show(kartenPanel, schritt.name());
-        schrittAnzeige.setText("Schritt " + (schritt.ordinal() + 1) + " von 5: " + schrittName(schritt));
+        kartenJeSchritt.forEach((s, karte) -> {
+            karte.setVisible(s == schritt);
+            karte.setManaged(s == schritt);
+        });
+        schrittAnzeige.setText("Schritt " + (schritt.ordinal() + 1) + " von 5: "
+                + schrittName(schritt));
         for (int i = 0; i < schrittMarkierungen.length; i++) {
             boolean aktuell = i == schritt.ordinal();
-            schrittMarkierungen[i].setFont(schrittMarkierungen[i].getFont()
-                    .deriveFont(aktuell ? Font.BOLD : Font.PLAIN));
-            schrittMarkierungen[i].setForeground(UIManager.getColor(
-                    aktuell ? "Label.foreground" : "Label.disabledForeground"));
+            schrittMarkierungen[i].getStyleClass().removeAll("schritt-aktuell", "schritt-inaktiv");
+            schrittMarkierungen[i].getStyleClass().add(aktuell ? "schritt-aktuell" : "schritt-inaktiv");
         }
-        zurueckKnopf.setEnabled(schritt.ordinal() > 0);
-        weiterKnopf.setEnabled(schritt != WizardSchritt.SPEICHERN);
-        speichernKnopf.setEnabled(schritt == WizardSchritt.SPEICHERN);
+        zurueckKnopf.setDisable(schritt.ordinal() == 0);
+        weiterKnopf.setDisable(schritt == WizardSchritt.SPEICHERN);
+        speichernKnopf.setDisable(schritt != WizardSchritt.SPEICHERN);
         // Enter führt immer die sinnvollste Aktion des Schritts aus
-        getRootPane().setDefaultButton(
-                schritt == WizardSchritt.SPEICHERN ? speichernKnopf : weiterKnopf);
+        weiterKnopf.setDefaultButton(schritt != WizardSchritt.SPEICHERN);
+        speichernKnopf.setDefaultButton(schritt == WizardSchritt.SPEICHERN);
     }
 
     private static String schrittName(WizardSchritt schritt) {
@@ -327,14 +319,6 @@ public class RechnungsWizardDialog extends JDialog {
     }
 
     private void ladeKunden(String suchbegriff) {
-        kundenListenModel.clear();
-        for (Kunde kunde : kundenService.suche(suchbegriff)) {
-            kundenListenModel.addElement(kunde);
-        }
-    }
-
-    private void ladeProdukte() {
-        produktWahl.setModel(new DefaultComboBoxModel<>(
-                produktService.suche("").toArray(new Produkt[0])));
+        kundenListe.getItems().setAll(kundenService.suche(suchbegriff));
     }
 }

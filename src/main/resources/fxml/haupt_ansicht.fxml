@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+
+<!-- Hauptfenster mit Navigation zu den drei Modulen (D-F-01). -->
+<TabPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+         fx:controller="de.lucasstrubel.faktura.gui.HauptAnsichtController"
+         tabClosingPolicy="UNAVAILABLE">
+    <Tab text="Kunden">
+        <fx:include source="kunden_ansicht.fxml"/>
+    </Tab>
+    <Tab text="Produkte">
+        <fx:include source="produkt_ansicht.fxml"/>
+    </Tab>
+    <Tab text="Dokumente">
+        <fx:include source="dokument_ansicht.fxml"/>
+    </Tab>
+</TabPane>

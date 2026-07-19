@@ -21,6 +21,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>
         <spring-boot.version>4.1.0</spring-boot.version>
+        <javafx.version>21.0.11</javafx.version>
         <jackson.version>2.17.2</jackson.version>
         <junit.version>5.10.2</junit.version>
         <pdfbox.version>3.0.3</pdfbox.version>
@@ -79,11 +80,21 @@
             <version>${pdfbox.version}</version>
         </dependency>
 
-        <!-- Modernes Swing-Look-and-Feel (Q-05: Bedienbarkeit) -->
+        <!-- JavaFX-Oberfläche (Q-05: Bedienbarkeit); AtlantaFX liefert das moderne Theme -->
         <dependency>
-            <groupId>com.formdev</groupId>
-            <artifactId>flatlaf</artifactId>
-            <version>3.6</version>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.mkpaz</groupId>
+            <artifactId>atlantafx-base</artifactId>
+            <version>2.1.0</version>
         </dependency>
 
         <!-- Modultests (JUnit 5; Modultestplan.md bzw. Kapitel 10 der Pflichtenheft-Teile B–D) -->

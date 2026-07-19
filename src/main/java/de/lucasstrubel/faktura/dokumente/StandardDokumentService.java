@@ -1,10 +1,11 @@
 package de.lucasstrubel.faktura.dokumente;
 
 import de.lucasstrubel.faktura.gemeinsam.DatenBereich;
-import de.lucasstrubel.faktura.gemeinsam.EreignisBus;
+import de.lucasstrubel.faktura.gemeinsam.DatenGeaendertEreignis;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import de.lucasstrubel.faktura.kunden.Kunde;
 import de.lucasstrubel.faktura.kunden.KundenService;
@@ -38,7 +39,7 @@ public class StandardDokumentService implements DokumentService {
     private final KundenService kundenService;
     private final ProduktService produktService;
     private final PdfExporter pdfExporter;
-    private final EreignisBus ereignisBus;
+    private final ApplicationEventPublisher ereignisse;
 
     public StandardDokumentService(DokumentRepository repository,
                                    BelegnummernGenerator nummernGenerator,
@@ -46,7 +47,7 @@ public class StandardDokumentService implements DokumentService {
                                    ProduktService produktService,
                                    PdfExporter pdfExporter) {
         this(repository, nummernGenerator, kundenService, produktService, pdfExporter,
-                new EreignisBus());
+                ereignis -> { });
     }
 
     @Autowired
@@ -55,13 +56,13 @@ public class StandardDokumentService implements DokumentService {
                                    KundenService kundenService,
                                    ProduktService produktService,
                                    PdfExporter pdfExporter,
-                                   EreignisBus ereignisBus) {
+                                   ApplicationEventPublisher ereignisse) {
         this.repository = repository;
         this.nummernGenerator = nummernGenerator;
         this.kundenService = kundenService;
         this.produktService = produktService;
         this.pdfExporter = pdfExporter;
-        this.ereignisBus = ereignisBus;
+        this.ereignisse = ereignisse;
     }
 
     @Override
@@ -77,7 +78,7 @@ public class StandardDokumentService implements DokumentService {
         angebot.setGueltigBis(gueltigBis != null ? gueltigBis : datum.plusDays(STANDARD_GUELTIGKEIT_TAGE));
         angebot.setzePositionen(dokumentpositionen);
         repository.speichere(angebot);
-        ereignisBus.melde(DatenBereich.DOKUMENTE);
+        ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.DOKUMENTE));
         return angebot;
     }
 
@@ -93,7 +94,7 @@ public class StandardDokumentService implements DokumentService {
         ab.setzeKunde(kunde.getKundennummer(), kunde.getName(), kunde.anschrift());
         ab.setzePositionen(dokumentpositionen);
         repository.speichere(ab);
-        ereignisBus.melde(DatenBereich.DOKUMENTE);
+        ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.DOKUMENTE));
         return ab;
     }
 
@@ -110,7 +111,7 @@ public class StandardDokumentService implements DokumentService {
         lieferschein.setLieferdatum(lieferdatum != null ? lieferdatum : datum);
         lieferschein.setzePositionen(dokumentpositionen);
         repository.speichere(lieferschein);
-        ereignisBus.melde(DatenBereich.DOKUMENTE);
+        ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.DOKUMENTE));
         return lieferschein;
     }
 
@@ -135,7 +136,7 @@ public class StandardDokumentService implements DokumentService {
         rechnung.setzePositionen(dokumentpositionen);
         rechnung.setzeStatus(DokumentStatus.OFFEN);
         repository.speichere(rechnung);
-        ereignisBus.melde(DatenBereich.DOKUMENTE);
+        ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.DOKUMENTE));
         return rechnung;
     }
 
@@ -173,7 +174,7 @@ public class StandardDokumentService implements DokumentService {
             rechnung.setzeStatus(DokumentStatus.OFFEN);
         }
         repository.speichere(folgebeleg);
-        ereignisBus.melde(DatenBereich.DOKUMENTE);
+        ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.DOKUMENTE));
         return folgebeleg;
     }
 
@@ -182,7 +183,7 @@ public class StandardDokumentService implements DokumentService {
         Dokument dokument = pruefeBeleg(belegnummer);
         dokument.versende();
         repository.speichere(dokument);
-        ereignisBus.melde(DatenBereich.DOKUMENTE);
+        ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.DOKUMENTE));
     }
 
     @Override
@@ -194,7 +195,7 @@ public class StandardDokumentService implements DokumentService {
         }
         rechnung.storniere(LocalDate.now(), SYSTEM_BENUTZER);
         repository.speichere(rechnung);
-        ereignisBus.melde(DatenBereich.DOKUMENTE);
+        ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.DOKUMENTE));
     }
 
     @Override

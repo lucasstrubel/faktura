@@ -1,12 +1,13 @@
 package de.lucasstrubel.faktura.kunden;
 
 import de.lucasstrubel.faktura.gemeinsam.DatenBereich;
-import de.lucasstrubel.faktura.gemeinsam.EreignisBus;
+import de.lucasstrubel.faktura.gemeinsam.DatenGeaendertEreignis;
 import de.lucasstrubel.faktura.gemeinsam.LoeschAbgelehntException;
 import de.lucasstrubel.faktura.gemeinsam.Validierung;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,23 +23,23 @@ public class KundenVerwaltungsService implements KundenService {
     private final KundenRepository repository;
     private final KundennummernGenerator nummernGenerator;
     private final KundenReferenzPruefung referenzPruefung;
-    private final EreignisBus ereignisBus;
+    private final ApplicationEventPublisher ereignisse;
 
     public KundenVerwaltungsService(KundenRepository repository,
                                     KundennummernGenerator nummernGenerator,
                                     KundenReferenzPruefung referenzPruefung) {
-        this(repository, nummernGenerator, referenzPruefung, new EreignisBus());
+        this(repository, nummernGenerator, referenzPruefung, ereignis -> { });
     }
 
     @Autowired
     public KundenVerwaltungsService(KundenRepository repository,
                                     KundennummernGenerator nummernGenerator,
                                     KundenReferenzPruefung referenzPruefung,
-                                    EreignisBus ereignisBus) {
+                                    ApplicationEventPublisher ereignisse) {
         this.repository = repository;
         this.nummernGenerator = nummernGenerator;
         this.referenzPruefung = referenzPruefung;
-        this.ereignisBus = ereignisBus;
+        this.ereignisse = ereignisse;
     }
 
     /** Legt einen neuen Kunden an und vergibt die Kundennummer (F-01, F-02). */
@@ -46,7 +47,7 @@ public class KundenVerwaltungsService implements KundenService {
         validiere(kunde);
         kunde.setKundennummer(nummernGenerator.naechsteNummer());
         Kunde gespeichert = repository.speichere(kunde);
-        ereignisBus.melde(DatenBereich.KUNDEN);
+        ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.KUNDEN));
         return gespeichert;
     }
 
@@ -57,7 +58,7 @@ public class KundenVerwaltungsService implements KundenService {
         }
         validiere(kunde);
         Kunde gespeichert = repository.speichere(kunde);
-        ereignisBus.melde(DatenBereich.KUNDEN);
+        ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.KUNDEN));
         return gespeichert;
     }
 
@@ -73,7 +74,7 @@ public class KundenVerwaltungsService implements KundenService {
                             + anzahl + " verknüpfte Dokumente vorhanden (GR-04).");
         }
         repository.loesche(kundennummer);
-        ereignisBus.melde(DatenBereich.KUNDEN);
+        ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.KUNDEN));
     }
 
     public List<Kunde> alleSortiertNachName() {

@@ -3,7 +3,7 @@ title: "Pflichtenheft"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
 author:
   - Lucas Strubel
-version: "2.1"
+version: "2.2"
 lang: de-DE
 toc: true
 toc-depth: 3
@@ -44,6 +44,7 @@ header-includes: |
 | 1.x     | 06/2026    | Vier komponentenspezifische Pflichtenhefte (A: Dokumentenzyklus, B: Produkte, C: Kunden, D: Programmoberfläche) im Rahmen des Hochschulprojekts |
 | 2.0     | 18.07.2026 | Konsolidierung der vier Pflichtenhefte zu einem Gesamtdokument |
 | 2.1     | 18.07.2026 | Teil C: erweiterte Formatvalidierung F-16 bis F-18 ergänzt, E-Mail-Prüfung (F-04) verschärft |
+| 2.2     | 19.07.2026 | Teil D: Systemarchitektur auf JavaFX-Oberfläche (FXML, Spring-Controller-Factory, Spring Application Events) aktualisiert |
 
 \newpage
 
@@ -1407,25 +1408,30 @@ public interface ProduktService {
 
 ## 7. Systemarchitektur (logisch, grob)
 
-Die Komponente folgt dem Muster *Model–View–Controller*: Die Views (das Hauptfenster
-`HauptFenster`, die Modulansichten `KundenPanel`/`ProduktPanel`/`DokumentListenPanel`, der
-Wizard-Dialog) enthalten die Darstellung; die Controller (`StammdatenController`,
+Die Komponente folgt dem Muster *Model–View–Controller*: Die Views (JavaFX-Ansichten als
+FXML-Dateien mit Ansicht-Controllern `KundenAnsichtController`/`ProduktAnsichtController`/
+`DokumentAnsichtController`, die modalen Dialoge und der Wizard-Dialog) enthalten die
+Darstellung; die GUI-freien Controller (`StammdatenController`,
 `RechnungsWizardController`, `DokumentListenController`) kapseln Dialogführung und
-Vollständigkeitsprüfungen und rufen die Service-Schnittstellen der Komponenten A–C auf. Das
-`HauptFenster` (ein `JFrame`) hält die Navigationsleiste und schaltet die Modulansichten
-über ein `CardLayout` um; die Verdrahtung von Panels, Controllern und Services erfolgt beim
-Programmstart (`Main`). Die Modulansichten abonnieren den gemeinsamen `EreignisBus`
-(Observer-Muster, Paket `gemeinsam`) und aktualisieren sich nach Datenänderungen der
-Komponenten A–C automatisch. Das UI-Zustandsmodell (`RechnungsWizardModel`, `Meldung`) ist frei
-von GUI-Framework-Klassen und damit im Modultest ohne Oberfläche prüfbar.
+Vollständigkeitsprüfungen und rufen die Service-Schnittstellen der Komponenten A–C auf.
+Das Hauptfenster (`haupt_ansicht.fxml`, `TabPane`) hält die Navigation zu den drei
+Modulansichten; die Verdrahtung erfolgt über den Spring-IoC-Container — die
+Ansicht-Controller werden beim FXML-Laden von einer Spring-Controller-Factory erzeugt
+und per Konstruktor injiziert (`FxmlLader`). Nach jeder schreibenden Operation
+veröffentlichen die Services ein `DatenGeaendertEreignis` (Spring Application Events);
+der `EreignisBus` (Paket `gemeinsam`) empfängt es und benachrichtigt die abonnierten
+Modulansichten (Observer-Muster). Das UI-Zustandsmodell (`RechnungsWizardModel`,
+`Meldung`) ist frei von GUI-Framework-Klassen und damit im Modultest ohne Oberfläche
+prüfbar.
 
 ### 7.1 Klassendiagramm
 
 ![UML-Klassendiagramm Programmoberfläche (Komponente D)](../diagramme/klassendiagramm_programmoberflaeche.png)
 
 **Beschreibung zu Abbildung 1:** Das Klassendiagramm zeigt die View- und Controller-Schicht
-der Oberfläche. Das `HauptFenster` (ein `JFrame`) enthält jeweils genau eine Kunden-,
-Produkt- und Dokumentansicht und schaltet diese über ein `CardLayout` um (F-01, F-02).
+der Oberfläche (Stand v1.0 mit Swing-Bezeichnern; die Struktur — Hauptfenster mit genau
+einer Kunden-, Produkt- und Dokumentansicht und umschaltbarer Navigation (F-01, F-02) —
+gilt in der JavaFX-Fassung unverändert).
 Der `StammdatenController` bedient die Ansichten für Kunden und Produkte und nutzt die
 Schnittstellen `KundenService` und `ProduktService`. Der `RechnungsWizardController` führt
 die Schrittfolge des Enums `WizardSchritt` über das `RechnungsWizardModel` und delegiert

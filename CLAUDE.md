@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Projekt
 
-**Faktura** — Desktop-Fakturierungsanwendung (Einzelplatz) von Lucas Strubel; entstanden als Hochschulprojekt (SE1, TH Mannheim), wird als Portfolio-Einzelprojekt zu Produktqualität weiterentwickelt (Roadmap: `dokumentation/projekt/Projektuebersicht.md`). Java 21, Swing-GUI mit FlatLaf, Maven-Build. Alle Bezeichner, Kommentare und Spezifikationen sind auf **Deutsch** — neue Klassen, Methoden und Texte ebenfalls auf Deutsch benennen (README ist Englisch). Javadoc-Kommentare referenzieren Anforderungs-IDs aus dem Pflichtenheft (z. B. `F-12`, `GR-02`, `C-F-06`); dieses Muster beibehalten. IDs gelten je Komponente A–D; komponentenübergreifende Verweise tragen den Präfix (`A-F-12`, `C-F-06`).
+**Faktura** — Desktop-Fakturierungsanwendung (Einzelplatz) von Lucas Strubel; entstanden als Hochschulprojekt (SE1, TH Mannheim), wird als Portfolio-Einzelprojekt zu Produktqualität weiterentwickelt (Roadmap: `dokumentation/projekt/Projektuebersicht.md`). Java 21, JavaFX-GUI (FXML + AtlantaFX), Spring Boot, SQLite, Maven-Build. Alle Bezeichner, Kommentare und Spezifikationen sind auf **Deutsch** — neue Klassen, Methoden und Texte ebenfalls auf Deutsch benennen (README ist Englisch). Javadoc-Kommentare referenzieren Anforderungs-IDs aus dem Pflichtenheft (z. B. `F-12`, `GR-02`, `C-F-06`); dieses Muster beibehalten. IDs gelten je Komponente A–D; komponentenübergreifende Verweise tragen den Präfix (`A-F-12`, `C-F-06`).
 
 ## Build & Run
 
@@ -27,15 +27,15 @@ Vier fachliche Komponenten unter `src/main/java/de/lucasstrubel/faktura/`, plus 
 | `dokumente` | A | Dokumentenzyklus Angebot → Auftragsbestätigung → Lieferschein → Rechnung, Belegnummern, PDF-Export (PDFBox) |
 | `produkte` | B | Produktverwaltung (CRUD, Nummernvergabe, Löschsperre) |
 | `kunden` | C | Kundenverwaltung (CRUD, Nummernvergabe, Löschsperre) |
-| `gui` | D | Swing-Oberfläche (HauptFenster, Panels, Dialoge, RechnungsWizard) |
+| `gui` | D | JavaFX-Oberfläche (FXML-Ansichten unter `src/main/resources/fxml/`, Ansicht-Controller, modale Dialoge, RechnungsWizard) |
 | `gemeinsam` | — | Querschnitt: EreignisBus, JsonPersistenz, Csv, Exceptions |
 
-Das Wiring erfolgt über den Spring-IoC-Container: `FakturaApplication` (@SpringBootApplication, Einstiegspunkt; baut die Swing-GUI auf dem EDT aus den Beans auf), `PersistenzKonfiguration` (@Bean-Definitionen für Repositories und Nummerngeneratoren), `FakturaEigenschaften` (@ConfigurationProperties, Präfix `faktura`, Datenverzeichnis aus `application.yml`). Services tragen `@Service` (bei mehreren Konstruktoren: `@Autowired` am vollständigen), Querschnittsklassen `@Component`. Die GUI-Panels sind (noch) keine Beans.
+Das Wiring erfolgt über den Spring-IoC-Container: `FakturaApplication` (@SpringBootApplication) startet die JavaFX-Laufzeit `FxAnwendung` (Application; `init()` fährt den Container hoch, `start()` lädt die Oberfläche). FXML-Ansichten lädt der `FxmlLader` mit Spring-Controller-Factory (`createBean` — Ansicht-Controller sind KEINE registrierten Beans, bekommen aber Konstruktor-Injektion). `PersistenzKonfiguration` definiert Repositories/Generatoren als Beans, `FakturaEigenschaften` (@ConfigurationProperties `faktura`) das Datenverzeichnis. Services tragen `@Service` (bei mehreren Konstruktoren: `@Autowired` am vollständigen), Querschnittsklassen `@Component`.
 
 ### Wichtige Muster
 
-- **EreignisBus** (Observer, synchron, nur EDT): Services melden nach jeder schreibenden Operation `ereignisBus.melde(DatenBereich.KUNDEN/PRODUKTE/DOKUMENTE)`; GUI-Panels abonnieren und aktualisieren sich selbst. Kein manueller Refresh zwischen Modulen.
-- **Repository-Interfaces** (`KundenRepository`, `ProduktRepository`, `DokumentRepository`) mit `Json*Repository`-Implementierungen. Schreiben erfolgt atomar über `JsonPersistenz.schreibeAtomar()` (Temp-Datei + Move).
+- **Ereignisse** (Observer, synchron, FX-Thread): Services publizieren nach jeder schreibenden Operation `DatenGeaendertEreignis(DatenBereich.…)` über den `ApplicationEventPublisher`; der `EreignisBus` (@EventListener-Brücke) benachrichtigt die abonnierten Ansichten. Kein manueller Refresh zwischen Modulen.
+- **Repository-Interfaces** (`KundenRepository`, `ProduktRepository`, `DokumentRepository`) mit `Jdbc*Repository`-Implementierungen (SQLite, primär) und `Json*Repository` (Import/Backup; schreibt atomar über `JsonPersistenz.schreibeAtomar()`).
 - **NummernGeneratoren**: `Einfacher*NummernGenerator.ausRepository(...)` leitet den nächsten Zähler beim Start aus dem Bestand ab. Belegnummern haben das Format `<PRÄFIX>-<JAHR>-NNNNNN` (AN/AB/LS/R), je Typ und Jahr fortlaufend.
 - **ReferenzPrüfung** (Löschsperre GR-04): `DokumentReferenzPruefung` (Komponente A) implementiert `KundenReferenzPruefung` und `ProduktReferenzPruefung`; Kunden/Produkte, die in Belegen referenziert sind, dürfen nicht gelöscht werden (`LoeschAbgelehntException`).
 

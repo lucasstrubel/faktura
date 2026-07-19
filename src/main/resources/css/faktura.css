@@ -1,0 +1,34 @@
+/* Ergänzungen zum AtlantaFX-Theme (Q-05, Q-09). */
+
+/* Ungültige Eingabefelder werden rot markiert und benannt (Q-09, D-F-16). */
+.fehler-feld {
+    -fx-border-color: -color-danger-emphasis;
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 4px;
+}
+
+.feld-meldung {
+    -fx-text-fill: -color-danger-fg;
+    -fx-font-size: 0.9em;
+}
+
+.treffer-anzeige {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 0.9em;
+    -fx-padding: 2px 0 0 2px;
+}
+
+.pflichtfeld-legende {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 0.9em;
+}
+
+/* Statusspalte der Dokumentliste (D-F-06). */
+.status-ENTWURF   { -fx-text-fill: -color-fg-muted; }
+.status-OFFEN     { -fx-text-fill: -color-success-fg; -fx-font-weight: bold; }
+.status-VERSENDET { -fx-text-fill: -color-accent-fg; }
+.status-STORNIERT { -fx-text-fill: -color-danger-fg; }
+
+/* Schrittindikator des Rechnungs-Assistenten (D-F-09). */
+.schritt-aktuell  { -fx-font-weight: bold; }
+.schritt-inaktiv  { -fx-text-fill: -color-fg-muted; }

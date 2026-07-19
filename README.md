@@ -34,7 +34,7 @@ numbering (GoBD), and immutability of sent documents.
 
 ## Tech stack
 
-Java 21 · Spring Boot · SQLite + Spring JDBC + Flyway · Swing + FlatLaf · Maven ·
+Java 21 · Spring Boot · JavaFX + AtlantaFX · SQLite + Spring JDBC + Flyway · Maven ·
 Jackson · Apache PDFBox · SLF4J/Logback · JUnit 5 (180+ test executions) · JaCoCo ·
 SpotBugs · GitHub Actions
 
@@ -59,7 +59,7 @@ via `application.yml`):
 | `dokumente` | A | Document cycle, document numbers, PDF export |
 | `produkte`  | B | Product management (CRUD, numbering, delete protection) |
 | `kunden`    | C | Customer management (CRUD, numbering, delete protection) |
-| `gui`       | D | Swing UI (main window, panels, dialogs, invoice wizard) |
+| `gui`       | D | JavaFX UI (FXML views, Spring-managed controllers, dialogs, invoice wizard) |
 | `gemeinsam` | — | Event bus (observer), validation, CSV helper, exceptions |
 
 Key patterns: repository interfaces with Spring JDBC/SQLite implementations (the
@@ -77,11 +77,11 @@ Turning the course project into a customer-ready product, step by step:
 - [x] **Quality baseline** — stricter input validation (postal code, VAT ID, email),
       logging (SLF4J/Logback), CI with GitHub Actions, coverage & static analysis
 - [x] **Spring Boot** — IoC container replacing manual wiring, configuration via
-      `application.yml` (Spring application events follow with the JavaFX rewrite)
+      `application.yml`, Spring application events for UI refresh
 - [x] **SQLite persistence** — Spring JDBC + Flyway migrations behind the existing
       repository interfaces (JSON kept as import/export format)
-- [ ] **JavaFX UI** — complete rewrite (FXML, AtlantaFX theme, FxWeaver) with live
-      inline form validation
+- [x] **JavaFX UI** — complete rewrite (FXML, AtlantaFX theme, Spring-injected
+      controllers) with live inline form validation
 - [ ] **Company profile & settings** — configurable letterhead, bank details, logo
 - [ ] **E-invoicing** — ZUGFeRD / XRechnung (EN 16931) export, mandatory for German
       B2B invoicing since 2025

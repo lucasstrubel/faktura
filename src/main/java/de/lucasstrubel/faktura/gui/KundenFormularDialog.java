@@ -1,57 +1,61 @@
 package de.lucasstrubel.faktura.gui;
 
+import de.lucasstrubel.faktura.gemeinsam.Validierung;
+import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 import de.lucasstrubel.faktura.kunden.Kunde;
 import de.lucasstrubel.faktura.kunden.KundenVerwaltungsService;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import java.awt.BorderLayout;
-import java.awt.FlowLayout;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.Window;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.Control;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.Window;
+
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
  * Modale Formular-Maske zum Anlegen und Bearbeiten eines Kunden (D-F-04,
- * F-05): alle Pflicht- und optionalen Felder mit Kennzeichnung, Validierungs-
- * rückmeldung mit Feldmarkierung und Schutz vor unbeabsichtigtem Verwerfen.
+ * F-05): alle Pflicht- und optionalen Felder mit Kennzeichnung,
+ * <b>Live-Validierung während der Eingabe</b> (rote Feldmarkierung und
+ * Meldung unter dem Formular, Q-09) und Schutz vor unbeabsichtigtem
+ * Verwerfen (D-F-02).
  */
-public class KundenFormularDialog extends JDialog {
+public class KundenFormularDialog extends Stage {
 
     private final KundenVerwaltungsService service;
     /** Kundennummer des bearbeiteten Kunden; {@code null} = Neuanlage. */
     private final String vorhandeneNummer;
 
-    private final JTextField nameFeld = new JTextField(20);
-    private final JTextField strasseFeld = new JTextField(20);
-    private final JTextField plzFeld = new JTextField(8);
-    private final JTextField ortFeld = new JTextField(20);
-    private final JTextField eMailFeld = new JTextField(20);
-    private final JTextField telefonFeld = new JTextField(20);
-    private final JTextField ustIdNrFeld = new JTextField(20);
-    private final Map<String, JComponent> felder = new LinkedHashMap<>();
+    private final TextField nameFeld = new TextField();
+    private final TextField strasseFeld = new TextField();
+    private final TextField plzFeld = new TextField();
+    private final TextField ortFeld = new TextField();
+    private final TextField eMailFeld = new TextField();
+    private final TextField telefonFeld = new TextField();
+    private final TextField ustIdNrFeld = new TextField();
+    private final Label liveMeldung = new Label();
+    private final Map<String, Control> felder = new LinkedHashMap<>();
 
     private boolean ungespeichert;
 
     public KundenFormularDialog(Window besitzer, KundenVerwaltungsService service,
                                 Kunde vorhandener) {
-        super(besitzer, vorhandener == null ? "Neuen Kunden anlegen"
-                        : "Kunde " + vorhandener.getKundennummer() + " bearbeiten",
-                ModalityType.APPLICATION_MODAL);
         this.service = service;
         this.vorhandeneNummer = vorhandener == null ? null : vorhandener.getKundennummer();
+        initModality(Modality.APPLICATION_MODAL);
+        initOwner(besitzer);
+        setTitle(vorhandener == null ? "Neuen Kunden anlegen"
+                : "Kunde " + vorhandener.getKundennummer() + " bearbeiten");
+
         felder.put("Name", nameFeld);
         felder.put("Straße", strasseFeld);
         felder.put("PLZ", plzFeld);
@@ -59,69 +63,73 @@ public class KundenFormularDialog extends JDialog {
         felder.put("E-Mail", eMailFeld);
         felder.put("Telefon", telefonFeld);
         felder.put("USt-IdNr.", ustIdNrFeld);
-        baueOberflaeche();
+
+        Scene szene = new Scene(baueOberflaeche());
+        szene.getStylesheets().addAll(besitzer.getScene().getStylesheets());
+        setScene(szene);
+
         if (vorhandener != null) {
             fuelleFelder(vorhandener);
         }
         beobachteAenderungen();
-        pack();
-        setLocationRelativeTo(besitzer);
+        setOnCloseRequest(ereignis -> {
+            if (!darfVerwerfen()) {
+                ereignis.consume();
+            }
+        });
     }
 
-    private void baueOberflaeche() {
-        setLayout(new BorderLayout(8, 8));
-        ((JComponent) getContentPane()).setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-        JPanel formular = new JPanel(new GridBagLayout());
-        GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(4, 4, 4, 4);
-        c.anchor = GridBagConstraints.WEST;
-        c.fill = GridBagConstraints.HORIZONTAL;
-
-        plzFeld.setToolTipText("Pflichtfeld — Postleitzahl, z. B. 68163");
-        eMailFeld.setToolTipText("Optional — Format: name@domain.de");
+    private BorderPane baueOberflaeche() {
+        GridPane formular = new GridPane();
+        formular.setHgap(8);
+        formular.setVgap(6);
+        plzFeld.setTooltip(new Tooltip("Pflichtfeld — Postleitzahl, z. B. 68163"));
+        eMailFeld.setTooltip(new Tooltip("Optional — Format: name@domain.de"));
 
         int zeile = 0;
-        zeile = formularZeile(formular, c, zeile, "Name: *", nameFeld);
-        zeile = formularZeile(formular, c, zeile, "Straße: *", strasseFeld);
-        zeile = formularZeile(formular, c, zeile, "PLZ: *", plzFeld);
-        zeile = formularZeile(formular, c, zeile, "Ort: *", ortFeld);
-        zeile = formularZeile(formular, c, zeile, "E-Mail:", eMailFeld);
-        zeile = formularZeile(formular, c, zeile, "Telefon:", telefonFeld);
-        zeile = formularZeile(formular, c, zeile, "USt-IdNr.:", ustIdNrFeld);
+        zeile = formularZeile(formular, zeile, "Name: *", nameFeld);
+        zeile = formularZeile(formular, zeile, "Straße: *", strasseFeld);
+        zeile = formularZeile(formular, zeile, "PLZ: *", plzFeld);
+        zeile = formularZeile(formular, zeile, "Ort: *", ortFeld);
+        zeile = formularZeile(formular, zeile, "E-Mail:", eMailFeld);
+        zeile = formularZeile(formular, zeile, "Telefon:", telefonFeld);
+        zeile = formularZeile(formular, zeile, "USt-IdNr.:", ustIdNrFeld);
+        Label legende = new Label("* Pflichtfeld");
+        legende.getStyleClass().add("pflichtfeld-legende");
+        formular.add(legende, 0, zeile, 2, 1);
 
-        c.gridx = 0;
-        c.gridy = zeile;
-        c.gridwidth = 2;
-        formular.add(UiHilfen.pflichtfeldLegende(), c);
-        add(formular, BorderLayout.CENTER);
+        liveMeldung.getStyleClass().add("feld-meldung");
+        liveMeldung.setWrapText(true);
 
-        JPanel knoepfe = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton abbrechen = new JButton("Abbrechen");
-        abbrechen.setMnemonic('A');
-        abbrechen.addActionListener(e -> abbrechenMitNachfrage());
-        JButton speichern = new JButton("Speichern");
-        speichern.setMnemonic('S');
-        speichern.addActionListener(e -> speichere());
-        knoepfe.add(abbrechen);
-        knoepfe.add(speichern);
-        add(knoepfe, BorderLayout.SOUTH);
+        Button abbrechen = new Button("Abbrechen");
+        abbrechen.setCancelButton(true);
+        abbrechen.setOnAction(e -> {
+            if (darfVerwerfen()) {
+                close();
+            }
+        });
+        Button speichern = new Button("Speichern");
+        speichern.setDefaultButton(true);
+        speichern.setOnAction(e -> speichere());
+        ButtonBar knoepfe = new ButtonBar();
+        ButtonBar.setButtonData(abbrechen, ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonBar.setButtonData(speichern, ButtonBar.ButtonData.OK_DONE);
+        knoepfe.getButtons().addAll(abbrechen, speichern);
 
-        getRootPane().setDefaultButton(speichern);
-        UiHilfen.escSchliesst(this, this::abbrechenMitNachfrage);
-        UiHilfen.fensterSchliessenAbfangen(this, this::abbrechenMitNachfrage);
+        BorderPane wurzel = new BorderPane();
+        wurzel.setPadding(new Insets(12));
+        wurzel.setCenter(formular);
+        BorderPane fuss = new BorderPane();
+        fuss.setPadding(new Insets(10, 0, 0, 0));
+        fuss.setLeft(liveMeldung);
+        fuss.setRight(knoepfe);
+        wurzel.setBottom(fuss);
+        return wurzel;
     }
 
-    private int formularZeile(JPanel formular, GridBagConstraints c, int zeile,
-                              String beschriftung, JComponent feld) {
-        c.gridx = 0;
-        c.gridy = zeile;
-        c.gridwidth = 1;
-        c.weightx = 0;
-        formular.add(new JLabel(beschriftung), c);
-        c.gridx = 1;
-        c.weightx = 1;
-        formular.add(feld, c);
+    private int formularZeile(GridPane formular, int zeile, String beschriftung, Control feld) {
+        formular.add(new Label(beschriftung), 0, zeile);
+        formular.add(feld, 1, zeile);
         return zeile + 1;
     }
 
@@ -137,37 +145,50 @@ public class KundenFormularDialog extends JDialog {
 
     /** Erst nach dem Vorbefüllen anmelden, damit nur Nutzereingaben zählen. */
     private void beobachteAenderungen() {
-        DocumentListener listener = new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
+        for (TextField feld : new TextField[]{nameFeld, strasseFeld, plzFeld, ortFeld,
+                eMailFeld, telefonFeld, ustIdNrFeld}) {
+            feld.textProperty().addListener((beobachtbar, alt, neu) -> {
                 ungespeichert = true;
-            }
+                pruefeLive();
+            });
+        }
+    }
 
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                ungespeichert = true;
+    /**
+     * Live-Validierung während der Eingabe (Q-09, C-F-16 bis F-18): prüft die
+     * Formatregeln der zentralen {@link Validierung}, markiert das erste
+     * ungültige Feld rot und benennt es unter dem Formular; Pflichtfelder
+     * werden erst beim Speichern erzwungen, damit leere Felder beim Ausfüllen
+     * nicht sofort rot aufleuchten.
+     */
+    private void pruefeLive() {
+        felder.values().forEach(feld -> feld.getStyleClass().remove(FxMeldung.FEHLER_STIL));
+        liveMeldung.setText("");
+        try {
+            if (!plzFeld.getText().isBlank()) {
+                Validierung.pruefePlz(plzFeld.getText());
             }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                ungespeichert = true;
+            Validierung.pruefeEMail(eMailFeld.getText());
+            Validierung.pruefeTelefon(telefonFeld.getText());
+            Validierung.pruefeUstIdNr(ustIdNrFeld.getText());
+        } catch (ValidierungsException e) {
+            Control feld = felder.get(e.getFeldname());
+            if (feld != null) {
+                feld.getStyleClass().add(FxMeldung.FEHLER_STIL);
             }
-        };
-        for (JTextField feld : List.of(nameFeld, strasseFeld, plzFeld, ortFeld,
-                eMailFeld, telefonFeld, ustIdNrFeld)) {
-            feld.getDocument().addDocumentListener(listener);
+            liveMeldung.setText(e.getMessage());
         }
     }
 
     private void speichere() {
-        MeldungsAnzeige.mitFehlerbehandlung(this, felder, () -> {
+        boolean erfolgreich = FxMeldung.mitFehlerbehandlung(felder, () -> {
             Kunde kunde = vorhandeneNummer == null
                     ? new Kunde()
                     : service.findeKunde(vorhandeneNummer);
-            kunde.setName(nameFeld.getText().trim());
-            kunde.setStrasse(strasseFeld.getText().trim());
-            kunde.setPlz(plzFeld.getText().trim());
-            kunde.setOrt(ortFeld.getText().trim());
+            kunde.setName(nameFeld.getText().strip());
+            kunde.setStrasse(strasseFeld.getText().strip());
+            kunde.setPlz(plzFeld.getText().strip());
+            kunde.setOrt(ortFeld.getText().strip());
             kunde.setEMail(leerZuNull(eMailFeld.getText()));
             kunde.setTelefon(leerZuNull(telefonFeld.getText()));
             kunde.setUstIdNr(leerZuNull(ustIdNrFeld.getText()));
@@ -176,28 +197,22 @@ public class KundenFormularDialog extends JDialog {
                     ? service.legeAn(kunde)
                     : service.aendere(kunde);
             ungespeichert = false;
-            MeldungsAnzeige.zeige(this, Meldung.erfolg("Der Kunde wurde gespeichert. Kundennummer: "
+            FxMeldung.zeige(Meldung.erfolg("Der Kunde wurde gespeichert. Kundennummer: "
                     + gespeichert.getKundennummer()), felder);
-            dispose();
         });
+        if (erfolgreich) {
+            close();
+        }
     }
 
-    /** Schutz vor Datenverlust: Nachfrage, wenn bereits Eingaben geändert wurden. */
-    private void abbrechenMitNachfrage() {
-        if (ungespeichert) {
-            int antwort = JOptionPane.showConfirmDialog(this,
-                    "Die Eingaben gehen verloren. Maske wirklich schließen?",
-                    "Eingaben verwerfen", JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE);
-            if (antwort != JOptionPane.YES_OPTION) {
-                return;
-            }
-        }
-        dispose();
+    /** Schutz vor Datenverlust: Nachfrage, wenn bereits Eingaben geändert wurden (D-F-02). */
+    private boolean darfVerwerfen() {
+        return !ungespeichert || FxMeldung.bestaetige("Eingaben verwerfen",
+                "Die Eingaben gehen verloren. Maske wirklich schließen?");
     }
 
     private static String leerZuNull(String text) {
-        String wert = text.trim();
+        String wert = text.strip();
         return wert.isEmpty() ? null : wert;
     }
 }

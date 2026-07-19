@@ -1,12 +1,13 @@
 package de.lucasstrubel.faktura.produkte;
 
 import de.lucasstrubel.faktura.gemeinsam.DatenBereich;
-import de.lucasstrubel.faktura.gemeinsam.EreignisBus;
+import de.lucasstrubel.faktura.gemeinsam.DatenGeaendertEreignis;
 import de.lucasstrubel.faktura.gemeinsam.LoeschAbgelehntException;
 import de.lucasstrubel.faktura.gemeinsam.Validierung;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -27,23 +28,23 @@ public class ProduktVerwaltungsService implements ProduktService {
     private final ProduktRepository repository;
     private final ProduktnummernGenerator nummernGenerator;
     private final ProduktReferenzPruefung referenzPruefung;
-    private final EreignisBus ereignisBus;
+    private final ApplicationEventPublisher ereignisse;
 
     public ProduktVerwaltungsService(ProduktRepository repository,
                                      ProduktnummernGenerator nummernGenerator,
                                      ProduktReferenzPruefung referenzPruefung) {
-        this(repository, nummernGenerator, referenzPruefung, new EreignisBus());
+        this(repository, nummernGenerator, referenzPruefung, ereignis -> { });
     }
 
     @Autowired
     public ProduktVerwaltungsService(ProduktRepository repository,
                                      ProduktnummernGenerator nummernGenerator,
                                      ProduktReferenzPruefung referenzPruefung,
-                                     EreignisBus ereignisBus) {
+                                     ApplicationEventPublisher ereignisse) {
         this.repository = repository;
         this.nummernGenerator = nummernGenerator;
         this.referenzPruefung = referenzPruefung;
-        this.ereignisBus = ereignisBus;
+        this.ereignisse = ereignisse;
     }
 
     /** Legt ein neues Produkt an und vergibt die Produktnummer (F-01, F-02). */
@@ -51,7 +52,7 @@ public class ProduktVerwaltungsService implements ProduktService {
         validiere(produkt);
         produkt.setProduktnummer(nummernGenerator.naechsteNummer());
         Produkt gespeichert = repository.speichere(produkt);
-        ereignisBus.melde(DatenBereich.PRODUKTE);
+        ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.PRODUKTE));
         return gespeichert;
     }
 
@@ -65,7 +66,7 @@ public class ProduktVerwaltungsService implements ProduktService {
         }
         validiere(produkt);
         Produkt gespeichert = repository.speichere(produkt);
-        ereignisBus.melde(DatenBereich.PRODUKTE);
+        ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.PRODUKTE));
         return gespeichert;
     }
 
@@ -80,7 +81,7 @@ public class ProduktVerwaltungsService implements ProduktService {
                             + "es wird in Dokumenten verwendet.");
         }
         repository.loesche(produktnummer);
-        ereignisBus.melde(DatenBereich.PRODUKTE);
+        ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.PRODUKTE));
     }
 
     public List<Produkt> alleSortiertNachBezeichnung() {
