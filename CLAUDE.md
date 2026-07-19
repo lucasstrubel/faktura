@@ -49,7 +49,7 @@ Das Wiring erfolgt über den Spring-IoC-Container: `FakturaApplication` (@Spring
 
 ### Persistenz
 
-JSON-Dateien im Verzeichnis `daten/` (kunden.json, produkte.json, dokumente.json), nicht versioniert. `Dokument` nutzt Jackson-Polymorphie (`@JsonTypeInfo` mit Property `typ`) und Field-Visibility statt Gettern/Settern.
+SQLite-Datenbank `daten/faktura.db` (nicht versioniert) über Spring JDBC (`Jdbc*Repository`); das Schema verwaltet Flyway (`src/main/resources/db/migration`, Migration läuft programmatisch im `dataSource`-Bean — Boot-4-Auto-Config greift hier nicht). Belege liegen als Single-Table-Vererbung mit Diskriminatorspalte `typ`; Beträge als TEXT (BigDecimal-verlustfrei). Beim Laden versendeter/stornierter Belege wird der Status **zuletzt** gesetzt (GR-02-Prüfung). Die `Json*Repository`-Klassen bleiben für die einmalige Übernahme (`JsonDatenUebernahme`, nur bei leerer DB) und als Backup-Format erhalten; `Dokument` nutzt dafür Jackson-Polymorphie (`@JsonTypeInfo` mit Property `typ`). Die Nummerngeneratoren werden als Beans **nach** der Übernahme initialisiert (Bean-Abhängigkeit in `PersistenzKonfiguration`).
 
 ## Dokumentation
 

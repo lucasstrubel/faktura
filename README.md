@@ -29,22 +29,24 @@ numbering (GoBD), and immutability of sent documents.
   modification (GoBD), § 14 UStG mandatory invoice fields, all money handled as
   `BigDecimal` scale 2
 - **PDF export** (Apache PDFBox) and **CSV export** (UTF-8, open format)
-- **Local-only persistence** — JSON files with atomic writes; no network access (DSGVO)
+- **Local-only persistence** — SQLite database with Flyway-managed schema; a legacy
+  JSON stock is imported automatically on first start; no network access (DSGVO)
 
 ## Tech stack
 
-Java 21 · Spring Boot · Swing + FlatLaf · Maven · Jackson (JSON) · Apache PDFBox ·
-SLF4J/Logback · JUnit 5 (170+ test executions) · JaCoCo · SpotBugs · GitHub Actions
+Java 21 · Spring Boot · SQLite + Spring JDBC + Flyway · Swing + FlatLaf · Maven ·
+Jackson · Apache PDFBox · SLF4J/Logback · JUnit 5 (180+ test executions) · JaCoCo ·
+SpotBugs · GitHub Actions
 
 ## Build & run
 
 ```bash
 ./mvnw test                       # run all tests (JUnit 5)
-./mvnw package                    # build fat JAR (maven-shade-plugin)
+./mvnw package                    # build fat JAR (Spring Boot repackage)
 java -jar target/faktura-1.0.0.jar
 ```
 
-Application data is stored locally as JSON under `daten/` (git-ignored).
+Application data is stored locally in a SQLite database under `daten/` (git-ignored).
 
 ## Architecture
 
@@ -58,9 +60,10 @@ via `application.yml`):
 | `produkte`  | B | Product management (CRUD, numbering, delete protection) |
 | `kunden`    | C | Customer management (CRUD, numbering, delete protection) |
 | `gui`       | D | Swing UI (main window, panels, dialogs, invoice wizard) |
-| `gemeinsam` | — | Event bus (observer), JSON persistence, CSV helper, exceptions |
+| `gemeinsam` | — | Event bus (observer), validation, CSV helper, exceptions |
 
-Key patterns: repository interfaces with JSON implementations and atomic file writes,
+Key patterns: repository interfaces with Spring JDBC/SQLite implementations (the
+JSON implementations remain for one-time import and backup),
 number generators derived from the persisted stock, an event bus decoupling services
 from UI refresh, and cross-component delete protection via reference-check interfaces.
 
@@ -75,7 +78,7 @@ Turning the course project into a customer-ready product, step by step:
       logging (SLF4J/Logback), CI with GitHub Actions, coverage & static analysis
 - [x] **Spring Boot** — IoC container replacing manual wiring, configuration via
       `application.yml` (Spring application events follow with the JavaFX rewrite)
-- [ ] **SQLite persistence** — Spring JDBC + Flyway migrations behind the existing
+- [x] **SQLite persistence** — Spring JDBC + Flyway migrations behind the existing
       repository interfaces (JSON kept as import/export format)
 - [ ] **JavaFX UI** — complete rewrite (FXML, AtlantaFX theme, FxWeaver) with live
       inline form validation
