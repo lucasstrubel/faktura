@@ -38,13 +38,23 @@ Java 21 · Spring Boot · JavaFX + AtlantaFX · SQLite + Spring JDBC + Flyway ·
 Jackson · Apache PDFBox · SLF4J/Logback · JUnit 5 (180+ test executions) · JaCoCo ·
 SpotBugs · GitHub Actions
 
-## Build & run
+## Download & run
+
+**Windows installer (MSI):** grab the latest release from the
+[Releases page](https://github.com/lucasstrubel/faktura/releases) — installs
+per-user with a start-menu entry; application data lives under
+`<home>/Faktura/daten`.
+
+**From source:**
 
 ```bash
 ./mvnw test                       # run all tests (JUnit 5)
 ./mvnw package                    # build fat JAR (Spring Boot repackage)
-java -jar target/faktura-1.0.0.jar
+java -jar target/faktura-2.0.0.jar
 ```
+
+Releases are cut by pushing a version tag (`git tag v2.0.0 && git push github v2.0.0`);
+a GitHub Actions workflow then builds the MSI with jpackage and publishes it.
 
 Application data is stored locally in a SQLite database under `daten/` (git-ignored).
 
@@ -87,8 +97,8 @@ Turning the course project into a customer-ready product, step by step:
       (shown on invoices), plus one-click ZIP backup of the local data
 - [x] **E-invoicing** — structured EN 16931 XML export (ZUGFeRD CII profile) for
       invoices, the format mandated for German B2B invoicing since 2025
-- [ ] **Native installer** — Windows installer via jpackage, published as GitHub
-      Releases
+- [x] **Native installer** — Windows installer (MSI) via jpackage, built and
+      published as GitHub Releases by a tag-triggered workflow
 
 ## Documentation
 

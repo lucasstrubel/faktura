@@ -6,7 +6,7 @@
 
     <groupId>de.lucasstrubel</groupId>
     <artifactId>faktura</artifactId>
-    <version>1.0.0</version>
+    <version>2.0.0</version>
     <packaging>jar</packaging>
 
     <name>Faktura — Desktop-Fakturierungsanwendung</name>
@@ -157,7 +157,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Ausführbares Fat-JAR: java -jar target/faktura-1.0.0.jar -->
+            <!-- Ausführbares Fat-JAR: java -jar target/faktura-2.0.0.jar -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

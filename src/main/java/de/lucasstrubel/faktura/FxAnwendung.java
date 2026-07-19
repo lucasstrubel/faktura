@@ -5,6 +5,7 @@ import de.lucasstrubel.faktura.gui.FxmlLader;
 import atlantafx.base.theme.PrimerLight;
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 import org.slf4j.Logger;
@@ -38,6 +39,9 @@ public class FxAnwendung extends Application {
         Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
         Scene szene = new Scene(kontext.getBean(FxmlLader.class).lade("haupt_ansicht"), 1080, 680);
         szene.getStylesheets().add(getClass().getResource("/css/faktura.css").toExternalForm());
+        buehne.getIcons().addAll(
+                new Image(getClass().getResourceAsStream("/icon/faktura.png")),
+                new Image(getClass().getResourceAsStream("/icon/faktura-256.png")));
         buehne.setTitle("Faktura");
         buehne.setScene(szene);
         buehne.show();

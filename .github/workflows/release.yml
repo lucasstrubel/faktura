@@ -1,0 +1,54 @@
+name: Release
+
+# Baut bei einem Versions-Tag (v*) den Windows-Installer (MSI via jpackage,
+# WiX ist auf windows-latest vorinstalliert) und veröffentlicht ihn zusammen
+# mit dem Fat-JAR als GitHub-Release.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build, test & package
+        run: ./mvnw --batch-mode --no-transfer-progress verify
+
+      - name: Build MSI with jpackage
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          New-Item -ItemType Directory build/paket | Out-Null
+          Copy-Item target/faktura-*.jar -Exclude *.original build/paket/
+          $jar = (Get-ChildItem build/paket/*.jar).Name
+          jpackage --type msi --name Faktura --app-version $version `
+            --vendor "Lucas Strubel" `
+            --description "Faktura - Desktop-Fakturierungsanwendung" `
+            --input build/paket --main-jar $jar `
+            --icon installer/faktura.ico `
+            --win-menu --win-shortcut --win-per-user-install `
+            --win-upgrade-uuid 6ff17f18-0f83-4f66-9b3b-2f5c1a4de0aa `
+            --dest build/installer
+          Get-ChildItem build/installer
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $msi = (Get-ChildItem build/installer/*.msi).FullName
+          $jar = (Get-ChildItem build/paket/*.jar).FullName
+          gh release create "${{ github.ref_name }}" $msi $jar `
+            --title "Faktura ${{ github.ref_name }}" --generate-notes

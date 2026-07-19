@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ./mvnw test -Dtest=KundenVerwaltungTest#testMethode   # Einzelne Testmethode
 ./mvnw verify                                         # Tests + JaCoCo + SpotBugs (wie CI)
 ./mvnw package                                        # Fat-JAR (spring-boot-maven-plugin repackage)
-java -jar target/faktura-1.0.0.jar                    # Anwendung starten
+java -jar target/faktura-2.0.0.jar                    # Anwendung starten
 ```
 
 ## Architektur
