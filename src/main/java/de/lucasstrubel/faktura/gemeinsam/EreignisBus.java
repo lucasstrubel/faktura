@@ -5,6 +5,8 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.stereotype.Component;
+
 /**
  * Einfacher synchroner Ereignis-Verteiler (Observer-Muster): Die Services
  * melden nach jeder schreibenden Operation den geänderten {@link DatenBereich},
@@ -15,6 +17,7 @@ import java.util.Map;
  * <p>Alle Aufrufe laufen auf dem Event-Dispatch-Thread der Swing-Oberfläche;
  * eine Synchronisierung ist daher nicht erforderlich (Einzelplatzbetrieb).
  */
+@Component
 public class EreignisBus {
 
     private final Map<DatenBereich, List<Runnable>> abonnenten = new EnumMap<>(DatenBereich.class);

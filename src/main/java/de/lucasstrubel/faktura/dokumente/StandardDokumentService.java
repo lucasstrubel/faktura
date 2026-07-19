@@ -3,6 +3,9 @@ package de.lucasstrubel.faktura.dokumente;
 import de.lucasstrubel.faktura.gemeinsam.DatenBereich;
 import de.lucasstrubel.faktura.gemeinsam.EreignisBus;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import de.lucasstrubel.faktura.kunden.Kunde;
 import de.lucasstrubel.faktura.kunden.KundenService;
 import de.lucasstrubel.faktura.produkte.Produkt;
@@ -18,6 +21,7 @@ import java.util.List;
  * orchestriert {@link BelegnummernGenerator}, {@link KundenService},
  * {@link ProduktService}, {@link DokumentRepository} und {@link PdfExporter}.
  */
+@Service
 public class StandardDokumentService implements DokumentService {
 
     /** Standard-Zahlungsziel in Kalendertagen ab Rechnungsdatum (GR-06, F-14). */
@@ -45,6 +49,7 @@ public class StandardDokumentService implements DokumentService {
                 new EreignisBus());
     }
 
+    @Autowired
     public StandardDokumentService(DokumentRepository repository,
                                    BelegnummernGenerator nummernGenerator,
                                    KundenService kundenService,

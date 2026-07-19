@@ -6,6 +6,9 @@ import de.lucasstrubel.faktura.gemeinsam.LoeschAbgelehntException;
 import de.lucasstrubel.faktura.gemeinsam.Validierung;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import java.util.List;
 
 /**
@@ -13,6 +16,7 @@ import java.util.List;
  * Validierung (F-03, F-04), Nummernvergabe (F-02), Löschsperre GR-04
  * (F-08–F-10) sowie lesender Zugriff für Komponente A (F-14).
  */
+@Service
 public class KundenVerwaltungsService implements KundenService {
 
     private final KundenRepository repository;
@@ -26,6 +30,7 @@ public class KundenVerwaltungsService implements KundenService {
         this(repository, nummernGenerator, referenzPruefung, new EreignisBus());
     }
 
+    @Autowired
     public KundenVerwaltungsService(KundenRepository repository,
                                     KundennummernGenerator nummernGenerator,
                                     KundenReferenzPruefung referenzPruefung,

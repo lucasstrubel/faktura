@@ -1,0 +1,7 @@
+# Anwendungskonfiguration — alle Daten liegen ausschließlich lokal (Q-06, IF-01)
+spring:
+  main:
+    banner-mode: off
+
+faktura:
+  daten-verzeichnis: daten

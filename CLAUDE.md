@@ -13,8 +13,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ./mvnw test                                           # Alle Tests (JUnit 5)
 ./mvnw test -Dtest=KundenVerwaltungTest               # Einzelne Testklasse
 ./mvnw test -Dtest=KundenVerwaltungTest#testMethode   # Einzelne Testmethode
-./mvnw package                                        # Fat-JAR (maven-shade-plugin)
-java -jar target/faktura-1.0.0.jar               # Anwendung starten
+./mvnw verify                                         # Tests + JaCoCo + SpotBugs (wie CI)
+./mvnw package                                        # Fat-JAR (spring-boot-maven-plugin repackage)
+java -jar target/faktura-1.0.0.jar                    # Anwendung starten
 ```
 
 ## Architektur
@@ -29,7 +30,7 @@ Vier fachliche Komponenten unter `src/main/java/de/lucasstrubel/faktura/`, plus 
 | `gui` | D | Swing-Oberfläche (HauptFenster, Panels, Dialoge, RechnungsWizard) |
 | `gemeinsam` | — | Querschnitt: EreignisBus, JsonPersistenz, Csv, Exceptions |
 
-Das Wiring erfolgt komplett in `Main.java` per manueller Dependency Injection — kein Framework. Neue Abhängigkeiten dort verdrahten.
+Das Wiring erfolgt über den Spring-IoC-Container: `FakturaApplication` (@SpringBootApplication, Einstiegspunkt; baut die Swing-GUI auf dem EDT aus den Beans auf), `PersistenzKonfiguration` (@Bean-Definitionen für Repositories und Nummerngeneratoren), `FakturaEigenschaften` (@ConfigurationProperties, Präfix `faktura`, Datenverzeichnis aus `application.yml`). Services tragen `@Service` (bei mehreren Konstruktoren: `@Autowired` am vollständigen), Querschnittsklassen `@Component`. Die GUI-Panels sind (noch) keine Beans.
 
 ### Wichtige Muster
 

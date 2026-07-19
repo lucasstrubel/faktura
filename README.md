@@ -33,8 +33,8 @@ numbering (GoBD), and immutability of sent documents.
 
 ## Tech stack
 
-Java 21 · Swing + FlatLaf · Maven · Jackson (JSON) · Apache PDFBox · SLF4J/Logback ·
-JUnit 5 (170+ test executions) · JaCoCo · SpotBugs · GitHub Actions
+Java 21 · Spring Boot · Swing + FlatLaf · Maven · Jackson (JSON) · Apache PDFBox ·
+SLF4J/Logback · JUnit 5 (170+ test executions) · JaCoCo · SpotBugs · GitHub Actions
 
 ## Build & run
 
@@ -48,8 +48,9 @@ Application data is stored locally as JSON under `daten/` (git-ignored).
 
 ## Architecture
 
-Four domain components plus a shared cross-cutting package, wired via a composition
-root in `Main.java`:
+Four domain components plus a shared cross-cutting package, wired by the Spring IoC
+container (`FakturaApplication`, `PersistenzKonfiguration`; data directory configurable
+via `application.yml`):
 
 | Package | Component | Responsibility |
 |---------|-----------|----------------|
@@ -72,8 +73,8 @@ Turning the course project into a customer-ready product, step by step:
 
 - [x] **Quality baseline** — stricter input validation (postal code, VAT ID, email),
       logging (SLF4J/Logback), CI with GitHub Actions, coverage & static analysis
-- [ ] **Spring Boot** — IoC container replacing manual wiring, configuration via
-      `application.yml`, Spring application events
+- [x] **Spring Boot** — IoC container replacing manual wiring, configuration via
+      `application.yml` (Spring application events follow with the JavaFX rewrite)
 - [ ] **SQLite persistence** — Spring JDBC + Flyway migrations behind the existing
       repository interfaces (JSON kept as import/export format)
 - [ ] **JavaFX UI** — complete rewrite (FXML, AtlantaFX theme, FxWeaver) with live

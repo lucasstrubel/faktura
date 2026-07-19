@@ -18,6 +18,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
+import org.springframework.stereotype.Component;
+
 /**
  * Standardisierter PDF-Export der Belege mit Apache PDFBox
  * (A-F-04, F-07, F-10, F-15), angelehnt an den deutschen Geschäftsbrief:
@@ -30,6 +32,7 @@ import java.util.Locale;
  * Leistungsdatum, Positionen mit Mengen und Einzelbeträgen, Steuersatz und
  * Steuerbetrag sowie Netto-/Bruttosummen.
  */
+@Component
 public class PdfBoxPdfExporter implements PdfExporter {
 
     /** Aussteller-Stammdaten (§ 14 UStG); bei Produktivbetrieb anzupassen. */

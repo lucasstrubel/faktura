@@ -9,10 +9,13 @@ import java.util.List;
 import static de.lucasstrubel.faktura.gemeinsam.Csv.TRENNZEICHEN;
 import static de.lucasstrubel.faktura.gemeinsam.Csv.feld;
 
+import org.springframework.stereotype.Component;
+
 /**
  * Export aller Produktstammdaten als CSV (B-F-15, Q-08):
  * UTF-8, Semikolon-getrennt, mit Kopfzeile, alle Attribute.
  */
+@Component
 public class ProduktCsvExport {
 
     private final ProduktRepository repository;

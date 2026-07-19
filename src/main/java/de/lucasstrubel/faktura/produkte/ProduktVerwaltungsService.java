@@ -6,6 +6,9 @@ import de.lucasstrubel.faktura.gemeinsam.LoeschAbgelehntException;
 import de.lucasstrubel.faktura.gemeinsam.Validierung;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -14,6 +17,7 @@ import java.util.List;
  * Validierung (F-03, F-04), Nummernvergabe (F-02), Löschsperre
  * (F-08–F-10) sowie lesender Zugriff für Komponente A (F-14).
  */
+@Service
 public class ProduktVerwaltungsService implements ProduktService {
 
     /** Zulässige Steuersätze als Faktor (B-F-03). */
@@ -31,6 +35,7 @@ public class ProduktVerwaltungsService implements ProduktService {
         this(repository, nummernGenerator, referenzPruefung, new EreignisBus());
     }
 
+    @Autowired
     public ProduktVerwaltungsService(ProduktRepository repository,
                                      ProduktnummernGenerator nummernGenerator,
                                      ProduktReferenzPruefung referenzPruefung,

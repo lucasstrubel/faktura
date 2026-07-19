@@ -7,11 +7,14 @@ import de.lucasstrubel.faktura.produkte.ProduktService;
 
 import java.util.List;
 
+import org.springframework.stereotype.Component;
+
 /**
  * Controller der Stammdaten-Ansichten (D-F-03): delegiert Suchanfragen an
  * die Dienste der Komponenten B und C; die GUI rechnet und filtert selbst nicht.
  * GUI-frei und damit im Modultest ohne Oberfläche prüfbar (TC-14, TC-15).
  */
+@Component
 public class StammdatenController {
 
     private final KundenService kundenService;

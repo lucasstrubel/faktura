@@ -11,6 +11,8 @@ import java.util.List;
 import static de.lucasstrubel.faktura.gemeinsam.Csv.TRENNZEICHEN;
 import static de.lucasstrubel.faktura.gemeinsam.Csv.feld;
 
+import org.springframework.stereotype.Component;
+
 /**
  * Export aller Belege (Bewegungsdaten) als CSV (Q-08, IF-04): UTF-8,
  * Semikolon-getrennt, mit Kopfzeile. Es wird eine Zeile je Dokumentposition
@@ -18,6 +20,7 @@ import static de.lucasstrubel.faktura.gemeinsam.Csv.feld;
  * Kopf- und Positionsdaten enthalten ist. Belege ohne Positionen erscheinen mit
  * leeren Positionsfeldern, damit kein Beleg verloren geht.
  */
+@Component
 public class DokumentCsvExport {
 
     private final DokumentRepository repository;
