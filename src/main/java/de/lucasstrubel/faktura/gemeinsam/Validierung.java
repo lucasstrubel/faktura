@@ -25,6 +25,9 @@ public final class Validierung {
     /** Erlaubte Telefonzeichen; die Mindestlänge wird über die Ziffernzahl geprüft (C-F-18). */
     private static final Pattern TELEFON_ZEICHEN = Pattern.compile("[0-9+ ()/\\-]+");
 
+    /** IBAN: Ländercode, zwei Prüfziffern, 10–30 alphanumerische Stellen. */
+    private static final Pattern IBAN = Pattern.compile("[A-Z]{2}\\d{2}[A-Z0-9]{10,30}");
+
     private static final int TELEFON_MIN_ZIFFERN = 6;
 
     private Validierung() {
@@ -62,6 +65,19 @@ public final class Validierung {
             throw new ValidierungsException("USt-IdNr.",
                     "Das Feld 'USt-IdNr.' muss dem Format DE + 9 Ziffern entsprechen"
                             + " (z. B. DE123456789): " + ustIdNr);
+        }
+    }
+
+    /** IBAN-Plausibilität: Ländercode, 2 Prüfziffern, 10–30 Stellen; Leerzeichen erlaubt. */
+    public static void pruefeIban(String iban) {
+        if (iban == null || iban.isBlank()) {
+            return;
+        }
+        String normalisiert = iban.replace(" ", "").toUpperCase(java.util.Locale.ROOT);
+        if (!IBAN.matcher(normalisiert).matches()) {
+            throw new ValidierungsException("IBAN",
+                    "Das Feld 'IBAN' hat kein gültiges Format (z. B. DE02 1203 0000 0000 2020 51): "
+                            + iban);
         }
     }
 

@@ -24,11 +24,12 @@ Vier fachliche Komponenten unter `src/main/java/de/lucasstrubel/faktura/`, plus 
 
 | Paket | Komponente | Verantwortung |
 |-------|------------|---------------|
-| `dokumente` | A | Dokumentenzyklus Angebot → Auftragsbestätigung → Lieferschein → Rechnung, Belegnummern, PDF-Export (PDFBox) |
+| `dokumente` | A | Dokumentenzyklus Angebot → Auftragsbestätigung → Lieferschein → Rechnung, Belegnummern, PDF-Export (PDFBox), E-Rechnung EN 16931 (`ERechnungExport`, Mustang) |
 | `produkte` | B | Produktverwaltung (CRUD, Nummernvergabe, Löschsperre) |
 | `kunden` | C | Kundenverwaltung (CRUD, Nummernvergabe, Löschsperre) |
 | `gui` | D | JavaFX-Oberfläche (FXML-Ansichten unter `src/main/resources/fxml/`, Ansicht-Controller, modale Dialoge, RechnungsWizard) |
-| `gemeinsam` | — | Querschnitt: EreignisBus, JsonPersistenz, Csv, Exceptions |
+| `gemeinsam` | — | Querschnitt: EreignisBus, JsonPersistenz, Csv, Validierung, Datensicherung, Exceptions |
+| `firma` | — | Firmenprofil des Ausstellers (Einstellungen-Tab; Briefkopf, Zahlungshinweis, E-Rechnung) |
 
 Das Wiring erfolgt über den Spring-IoC-Container: `FakturaApplication` (@SpringBootApplication) startet die JavaFX-Laufzeit `FxAnwendung` (Application; `init()` fährt den Container hoch, `start()` lädt die Oberfläche). FXML-Ansichten lädt der `FxmlLader` mit Spring-Controller-Factory (`createBean` — Ansicht-Controller sind KEINE registrierten Beans, bekommen aber Konstruktor-Injektion). `PersistenzKonfiguration` definiert Repositories/Generatoren als Beans, `FakturaEigenschaften` (@ConfigurationProperties `faktura`) das Datenverzeichnis. Services tragen `@Service` (bei mehreren Konstruktoren: `@Autowired` am vollständigen), Querschnittsklassen `@Component`.
 

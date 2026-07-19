@@ -16,4 +16,7 @@
     <Tab text="Dokumente">
         <fx:include source="dokument_ansicht.fxml"/>
     </Tab>
+    <Tab text="Einstellungen">
+        <fx:include source="einstellungen_ansicht.fxml"/>
+    </Tab>
 </TabPane>

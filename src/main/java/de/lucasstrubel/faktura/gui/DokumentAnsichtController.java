@@ -5,6 +5,8 @@ import de.lucasstrubel.faktura.dokumente.Dokument;
 import de.lucasstrubel.faktura.dokumente.DokumentCsvExport;
 import de.lucasstrubel.faktura.dokumente.DokumentService;
 import de.lucasstrubel.faktura.dokumente.DokumentStatus;
+import de.lucasstrubel.faktura.dokumente.ERechnungExport;
+import de.lucasstrubel.faktura.dokumente.Rechnung;
 import de.lucasstrubel.faktura.gemeinsam.DatenBereich;
 import de.lucasstrubel.faktura.gemeinsam.EreignisBus;
 import de.lucasstrubel.faktura.kunden.KundenService;
@@ -45,6 +47,7 @@ public class DokumentAnsichtController {
     private final KundenService kundenService;
     private final ProduktService produktService;
     private final DokumentCsvExport datenExport;
+    private final ERechnungExport eRechnungExport;
     private final EreignisBus ereignisBus;
     private final DokumentListenController controller;
 
@@ -61,6 +64,7 @@ public class DokumentAnsichtController {
     @FXML private Button versendenKnopf;
     @FXML private Button stornierenKnopf;
     @FXML private Button pdfKnopf;
+    @FXML private Button eRechnungKnopf;
     @FXML private Button druckenKnopf;
     @FXML private Button mailKnopf;
 
@@ -68,11 +72,13 @@ public class DokumentAnsichtController {
                                      KundenService kundenService,
                                      ProduktService produktService,
                                      DokumentCsvExport datenExport,
+                                     ERechnungExport eRechnungExport,
                                      EreignisBus ereignisBus) {
         this.dokumentService = dokumentService;
         this.kundenService = kundenService;
         this.produktService = produktService;
         this.datenExport = datenExport;
+        this.eRechnungExport = eRechnungExport;
         this.ereignisBus = ereignisBus;
         this.controller = new DokumentListenController(dokumentService);
     }
@@ -145,7 +151,7 @@ public class DokumentAnsichtController {
         Dokument dokument = auswahl();
         if (dokument == null) {
             for (Button knopf : List.of(folgebelegKnopf, versendenKnopf, stornierenKnopf,
-                    pdfKnopf, druckenKnopf, mailKnopf)) {
+                    pdfKnopf, eRechnungKnopf, druckenKnopf, mailKnopf)) {
                 knopf.setDisable(true);
             }
             return;
@@ -155,6 +161,10 @@ public class DokumentAnsichtController {
         versendenKnopf.setDisable(!verfuegbar.aenderbar());
         stornierenKnopf.setDisable(!verfuegbar.stornierbar());
         pdfKnopf.setDisable(!verfuegbar.pdfExport());
+        // E-Rechnung nur für offene oder versendete Rechnungen (EN 16931)
+        eRechnungKnopf.setDisable(!(dokument instanceof Rechnung
+                && (dokument.getStatus() == DokumentStatus.OFFEN
+                        || dokument.getStatus() == DokumentStatus.VERSENDET)));
         druckenKnopf.setDisable(!verfuegbar.pdfExport());
         mailKnopf.setDisable(!verfuegbar.pdfExport());
     }
@@ -229,6 +239,25 @@ public class DokumentAnsichtController {
             FxMeldung.mitFehlerbehandlung(null, () -> {
                 dokumentService.exportierePdf(dokument.getBelegnummer(), ziel.toPath());
                 FxMeldung.zeige(Meldung.erfolg("Das PDF wurde exportiert nach " + ziel), null);
+            });
+        }
+    }
+
+    /** Strukturierte E-Rechnung nach EN 16931 als CII-XML (Roadmap E-Rechnungspflicht). */
+    @FXML
+    private void exportiereERechnung() {
+        Dokument dokument = auswahl();
+        if (!(dokument instanceof Rechnung rechnung)) {
+            return;
+        }
+        FileChooser auswahlDialog = new FileChooser();
+        auswahlDialog.setInitialFileName(rechnung.getBelegnummer() + "-erechnung.xml");
+        File ziel = auswahlDialog.showSaveDialog(tabelle.getScene().getWindow());
+        if (ziel != null) {
+            FxMeldung.mitFehlerbehandlung(null, () -> {
+                eRechnungExport.exportiereXml(rechnung, ziel.toPath());
+                FxMeldung.zeige(Meldung.erfolg(
+                        "Die E-Rechnung (EN 16931) wurde exportiert nach " + ziel), null);
             });
         }
     }

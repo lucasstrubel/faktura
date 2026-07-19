@@ -1,5 +1,8 @@
 package de.lucasstrubel.faktura.dokumente;
 
+import de.lucasstrubel.faktura.firma.Firmenprofil;
+import de.lucasstrubel.faktura.firma.FirmenprofilService;
+
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -35,11 +38,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class PdfBoxPdfExporter implements PdfExporter {
 
-    /** Aussteller-Stammdaten (§ 14 UStG); bei Produktivbetrieb anzupassen. */
-    private static final String AUSSTELLER_NAME = "Faktura Software";
-    private static final String AUSSTELLER_STRASSE = "Musterstraße 1";
-    private static final String AUSSTELLER_ORT = "68163 Mannheim";
-    private static final String AUSSTELLER_UST_ID = "USt-IdNr. DE000000000";
+    /** Aussteller-Stammdaten (§ 14 UStG) aus dem konfigurierbaren Firmenprofil. */
+    private final FirmenprofilService firmenprofilService;
 
     private static final DateTimeFormatter DATUM = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
@@ -62,16 +62,31 @@ public class PdfBoxPdfExporter implements PdfExporter {
     private final PDFont normal = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
     private final PDFont fett = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
 
+    /** Ohne Service (Tests): Voreinstellung {@link Firmenprofil#standard()}. */
+    public PdfBoxPdfExporter() {
+        this(null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public PdfBoxPdfExporter(FirmenprofilService firmenprofilService) {
+        this.firmenprofilService = firmenprofilService;
+    }
+
+    private Firmenprofil firma() {
+        return firmenprofilService == null ? Firmenprofil.standard() : firmenprofilService.lade();
+    }
+
     @Override
     public void exportiere(Dokument dokument, Path zielDatei) {
         try (PDDocument pdf = new PDDocument()) {
             Schreiber schreiber = new Schreiber(pdf);
 
-            schreibeBriefkopf(schreiber, dokument);
+            Firmenprofil firma = firma();
+            schreibeBriefkopf(schreiber, dokument, firma);
             schreibeBelegkopf(schreiber, dokument);
             schreibePositionstabelle(schreiber, dokument);
             schreibeSummenblock(schreiber, dokument);
-            schreibeSchlusstext(schreiber, dokument);
+            schreibeSchlusstext(schreiber, dokument, firma);
 
             schreiber.schliesse();
             Path zielVerzeichnis = zielDatei.getParent();
@@ -85,15 +100,18 @@ public class PdfBoxPdfExporter implements PdfExporter {
     }
 
     /** Absenderblock rechts oben, Rücksendezeile und Empfängerblock links. */
-    private void schreibeBriefkopf(Schreiber schreiber, Dokument dokument) throws IOException {
-        schreiber.rechtsbuendig(fett, 11, AUSSTELLER_NAME, RECHTS);
-        schreiber.rechtsbuendig(normal, 9, AUSSTELLER_STRASSE, RECHTS);
-        schreiber.rechtsbuendig(normal, 9, AUSSTELLER_ORT, RECHTS);
-        schreiber.rechtsbuendig(normal, 9, AUSSTELLER_UST_ID, RECHTS);
+    private void schreibeBriefkopf(Schreiber schreiber, Dokument dokument, Firmenprofil firma)
+            throws IOException {
+        schreiber.rechtsbuendig(fett, 11, firma.name(), RECHTS);
+        schreiber.rechtsbuendig(normal, 9, firma.strasse(), RECHTS);
+        schreiber.rechtsbuendig(normal, 9, firma.plzOrt(), RECHTS);
+        if (firma.ustIdNr() != null && !firma.ustIdNr().isBlank()) {
+            schreiber.rechtsbuendig(normal, 9, "USt-IdNr. " + firma.ustIdNr(), RECHTS);
+        }
         schreiber.leer();
 
-        schreiber.zeile(normal, 7, AUSSTELLER_NAME + " · " + AUSSTELLER_STRASSE
-                + " · " + AUSSTELLER_ORT);
+        schreiber.zeile(normal, 7, firma.name() + " · " + firma.strasse()
+                + " · " + firma.plzOrt());
         schreiber.linie();
         schreiber.zeile(normal, 10, dokument.getKundeName()
                 + "  (Kundennr. " + dokument.getKundenReferenz() + ")");
@@ -187,11 +205,20 @@ public class PdfBoxPdfExporter implements PdfExporter {
     }
 
     /** Belegtyp-spezifischer Hinweistext am Ende des Dokuments. */
-    private void schreibeSchlusstext(Schreiber schreiber, Dokument dokument) throws IOException {
+    private void schreibeSchlusstext(Schreiber schreiber, Dokument dokument, Firmenprofil firma)
+            throws IOException {
         if (dokument instanceof Rechnung rechnung && rechnung.getZahlungsziel() != null
                 && dokument.getStatus() != DokumentStatus.STORNIERT) {
             schreiber.zeile(normal, 10, "Bitte überweisen Sie den Rechnungsbetrag bis zum "
                     + format(rechnung.getZahlungsziel()) + ".");
+            if (firma.iban() != null && !firma.iban().isBlank()) {
+                String bank = firma.bank() == null || firma.bank().isBlank()
+                        ? "" : firma.bank() + " · ";
+                String bic = firma.bic() == null || firma.bic().isBlank()
+                        ? "" : " · BIC " + firma.bic();
+                schreiber.zeile(normal, 10, "Bankverbindung: " + bank
+                        + "IBAN " + firma.iban() + bic);
+            }
         }
         if (dokument instanceof Angebot angebot && angebot.getGueltigBis() != null) {
             schreiber.zeile(normal, 10, "Dieses Angebot ist gültig bis zum "

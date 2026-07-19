@@ -56,6 +56,9 @@
             <Button fx:id="versendenKnopf" text="Versenden" onAction="#versende"/>
             <Button fx:id="stornierenKnopf" text="Stornieren" onAction="#storniere"/>
             <Button fx:id="pdfKnopf" text="PDF exportieren…" onAction="#exportierePdf"/>
+            <Button fx:id="eRechnungKnopf" text="E-Rechnung (XML)…" onAction="#exportiereERechnung">
+                <tooltip><Tooltip text="Strukturierte E-Rechnung nach EN 16931 (ZUGFeRD-CII-XML)"/></tooltip>
+            </Button>
             <Button fx:id="druckenKnopf" text="Drucken" onAction="#drucke"/>
             <Button fx:id="mailKnopf" text="Per E-Mail senden" onAction="#sendePerMail"/>
         </HBox>

@@ -56,11 +56,12 @@ via `application.yml`):
 
 | Package | Component | Responsibility |
 |---------|-----------|----------------|
-| `dokumente` | A | Document cycle, document numbers, PDF export |
+| `dokumente` | A | Document cycle, document numbers, PDF export, EN 16931 e-invoice |
 | `produkte`  | B | Product management (CRUD, numbering, delete protection) |
 | `kunden`    | C | Customer management (CRUD, numbering, delete protection) |
 | `gui`       | D | JavaFX UI (FXML views, Spring-managed controllers, dialogs, invoice wizard) |
-| `gemeinsam` | — | Event bus (observer), validation, CSV helper, exceptions |
+| `gemeinsam` | — | Event bus (observer), validation, CSV helper, backup, exceptions |
+| `firma`     | — | Company profile (letterhead, bank details) for documents and e-invoices |
 
 Key patterns: repository interfaces with Spring JDBC/SQLite implementations (the
 JSON implementations remain for one-time import and backup),
@@ -82,9 +83,10 @@ Turning the course project into a customer-ready product, step by step:
       repository interfaces (JSON kept as import/export format)
 - [x] **JavaFX UI** — complete rewrite (FXML, AtlantaFX theme, Spring-injected
       controllers) with live inline form validation
-- [ ] **Company profile & settings** — configurable letterhead, bank details, logo
-- [ ] **E-invoicing** — ZUGFeRD / XRechnung (EN 16931) export, mandatory for German
-      B2B invoicing since 2025
+- [x] **Company profile & settings** — configurable letterhead and bank details
+      (shown on invoices), plus one-click ZIP backup of the local data
+- [x] **E-invoicing** — structured EN 16931 XML export (ZUGFeRD CII profile) for
+      invoices, the format mandated for German B2B invoicing since 2025
 - [ ] **Native installer** — Windows installer via jpackage, published as GitHub
       Releases
 
