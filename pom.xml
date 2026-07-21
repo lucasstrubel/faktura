@@ -6,7 +6,7 @@
 
     <groupId>de.lucasstrubel</groupId>
     <artifactId>faktura</artifactId>
-    <version>2.0.0</version>
+    <version>3.0.0</version>
     <packaging>jar</packaging>
 
     <name>Faktura — Desktop-Fakturierungsanwendung</name>
@@ -150,6 +150,53 @@
                             <goal>report</goal>
                         </goals>
                     </execution>
+                    <!--
+                        Mindestabdeckung: Die Schwelle liegt bewusst knapp
+                        unter dem erreichten Stand. Sie soll Rückschritte
+                        verhindern, nicht ein Wunschziel behaupten - wer die
+                        Abdeckung hebt, zieht die Schwelle nach.
+                        Die Oberflaechenklassen (fxml-gebundene Controller,
+                        Dialoge) sind ausgenommen: Sie sind ohne laufende
+                        JavaFX-Umgebung nicht sinnvoll pruefbar; ihre
+                        Dialogfuehrung liegt in den GUI-freien *Controller-
+                        Klassen, die mitgezaehlt werden.
+                    -->
+                    <execution>
+                        <id>schwelle</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>de/lucasstrubel/faktura/gui/*Ansicht*</exclude>
+                                <exclude>de/lucasstrubel/faktura/gui/*Dialog*</exclude>
+                                <exclude>de/lucasstrubel/faktura/gui/Bausteine*</exclude>
+                                <exclude>de/lucasstrubel/faktura/gui/Benachrichtigung*</exclude>
+                                <exclude>de/lucasstrubel/faktura/gui/Erscheinungsbild*</exclude>
+                                <exclude>de/lucasstrubel/faktura/gui/FxMeldung*</exclude>
+                                <exclude>de/lucasstrubel/faktura/gui/HintergrundAufgaben*</exclude>
+                                <exclude>de/lucasstrubel/faktura/FxAnwendung*</exclude>
+                            </excludes>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.70</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.60</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <!-- Statische Analyse: bricht den Build bei Befunden ab (Phase "verify") -->
@@ -169,7 +216,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Ausführbares Fat-JAR: java -jar target/faktura-2.0.0.jar -->
+            <!-- Ausführbares Fat-JAR: java -jar target/faktura-3.0.0.jar -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

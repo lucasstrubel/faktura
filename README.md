@@ -28,15 +28,32 @@ numbering (GoBD), and immutability of sent documents.
   documents are never deleted (only cancelled), sent documents reject every
   modification (GoBD), § 14 UStG mandatory invoice fields, all money handled as
   `BigDecimal` scale 2
-- **PDF export** (Apache PDFBox) and **CSV export** (UTF-8, open format)
+- **PDF export** (Apache PDFBox), **e-invoicing** per EN 16931 (ZUGFeRD/XRechnung CII
+  via Mustang), and **CSV export** (UTF-8, open format)
 - **Local-only persistence** — SQLite database with Flyway-managed schema; a legacy
   JSON stock is imported automatically on first start; no network access (DSGVO)
 
+## What's new in 3.0
+
+- **Gapless numbering is now enforced by the database, not by a counter in memory.**
+  Number allocation runs inside the same transaction as the insert, so a failed save
+  rolls it back instead of burning an invoice number — the property GoBD actually
+  requires. Covered by a test that forces a mid-write failure and asserts no gap.
+- **Nothing blocks the UI.** PDF/e-invoice/CSV export, backup, printing and mail run
+  on a background executor with a progress indicator.
+- **Customer data no longer leaks to the temp directory.** Interim PDFs live in a
+  session directory that is wiped on shutdown.
+- **Consistent backups** — the database is snapshotted with `VACUUM INTO` rather than
+  copied while connections are open.
+- **Redesigned interface** — sidebar navigation, an overview dashboard (outstanding
+  amount, overdue invoices, revenue YTD), master-detail document view, status badges,
+  non-blocking notifications, dark mode, keyboard shortcuts and empty states.
+
 ## Tech stack
 
-Java 21 · Spring Boot · JavaFX + AtlantaFX · SQLite + Spring JDBC + Flyway · Maven ·
-Jackson · Apache PDFBox · SLF4J/Logback · JUnit 5 (180+ test executions) · JaCoCo ·
-SpotBugs · GitHub Actions
+Java 21 · Spring Boot · JavaFX + AtlantaFX + Ikonli · SQLite + Spring JDBC + Flyway ·
+Maven · Jackson · Apache PDFBox · Mustang · SLF4J/Logback · JUnit 5 · JaCoCo (build
+fails below a coverage floor) · SpotBugs · GitHub Actions
 
 ## Download & run
 
@@ -50,10 +67,10 @@ per-user with a start-menu entry; application data lives under
 ```bash
 ./mvnw test                       # run all tests (JUnit 5)
 ./mvnw package                    # build fat JAR (Spring Boot repackage)
-java -jar target/faktura-2.0.0.jar
+java -jar target/faktura-3.0.0.jar
 ```
 
-Releases are cut by pushing a version tag (`git tag v2.0.0 && git push github v2.0.0`);
+Releases are cut by pushing a version tag (`git tag v3.0.0 && git push github v3.0.0`);
 a GitHub Actions workflow then builds the MSI with jpackage and publishes it.
 
 Application data is stored locally in a SQLite database under `daten/` (git-ignored).

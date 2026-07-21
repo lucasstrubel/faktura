@@ -20,7 +20,7 @@
     <!--
         CT_CONSTRUCTOR_THROW warnt vor "Finalizer-Angriffen", wenn ein
         Konstruktor werfen kann. Die Json*Repositories laden den Bestand bewusst
-        im Konstruktor (Fail-Fast beim Programmstart, IF-01), Swing-Dialoge
+        im Konstruktor (Fail-Fast beim Programmstart, IF-01), die JavaFX-Dialoge
         validieren Parameter im Konstruktor. Finalizer sind seit Java 18
         deprecated und die Anwendung verarbeitet keine nicht vertrauenswürdigen
         Eingaben über diese Konstruktoren.

@@ -127,7 +127,7 @@ bestanden (siehe *Modultestbericht.md*), Anwendung abgenommen und präsentiert.
 
 # Roadmap der Weiterentwicklung
 
-Die Weiterentwicklung zum produktreifen Einzelprojekt umfasst insbesondere:
+## Abgeschlossen: Version 2.0 (Phasen 1–7)
 
 1. **Qualität:** härtere Eingabevalidierung (PLZ, USt-IdNr., E-Mail), Logging,
    Continuous Integration mit automatisierten Tests und statischer Analyse
@@ -138,6 +138,34 @@ Die Weiterentwicklung zum produktreifen Einzelprojekt umfasst insbesondere:
 4. **Fachlichkeit:** konfigurierbares Firmenprofil (Briefkopf, Bankverbindung),
    E-Rechnung nach EN 16931 (ZUGFeRD / XRechnung), Datensicherung
 5. **Auslieferung:** nativer Windows-Installer (jpackage), Releases über GitHub
+
+## Abgeschlossen: Version 3.0 (Phasen 8–11)
+
+Version 2.0 war funktional vollständig, aber an drei Stellen noch nicht produktreif:
+Die Nummernvergabe konnte Lücken hinterlassen, jede Ausgabe blockierte die Oberfläche,
+und die Bedienung bestand aus vier Reitern mit ungruppierten Knopfreihen.
+
+6. **Datenintegrität (Phase 8):** Die Vergabe fortlaufender Nummern liegt in der
+   Tabelle `nummernkreis` und läuft in derselben Transaktion wie das Speichern —
+   ein fehlgeschlagener Speichervorgang verbraucht keine Rechnungsnummer mehr
+   (GR-01). Ereignisse werden erst nach dem Commit zugestellt. Ergänzend:
+   WAL-Journalmodus, konsistente Datensicherung über `VACUUM INTO`, globale
+   Fehlerbehandlung.
+7. **Nebenläufigkeit und Datenschutz (Phase 8):** PDF-, E-Rechnungs- und
+   CSV-Ausgabe, Datensicherung, Druck und Mailversand laufen im Hintergrund; die
+   Oberfläche bleibt bedienbar. Zwischen-PDFs liegen in einem Sitzungsverzeichnis,
+   das beim Beenden restlos gelöscht wird (zuvor blieben Belege mit Kundendaten im
+   Temp-Verzeichnis des Systems liegen).
+8. **Entwurf (Phase 9):** Ausgabe an Drucker und Mailprogramm als eigene Komponente
+   (`BelegAusgabe`), Zusammenführung der vier nahezu gleichen Belegerstellungen,
+   Kennzahlen-Auswertung als GUI-freier Dienst.
+9. **Oberfläche (Phase 10):** Seitennavigation statt Reiter, neue Übersichtsansicht
+   mit Kennzahlen, Master-Detail-Ansicht der Belege, gruppierte Werkzeugleisten,
+   Statusabzeichen, nicht blockierende Erfolgsmeldungen, Dunkelmodus,
+   Tastenkürzel, Leerzustände, gespeicherte Fenstergröße.
+10. **Prüfbarkeit (Phase 11):** Mindestabdeckung als Abbruchkriterium im Build,
+    Integritätstests des Nummernkreises, Tests für Kennzahlen, Datensicherung,
+    Firmenprofil und Belegfilterung.
 
 # Risikomanagement
 
