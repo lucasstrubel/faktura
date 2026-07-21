@@ -33,6 +33,21 @@ numbering (GoBD), and immutability of sent documents.
 - **Local-only persistence** — SQLite database with Flyway-managed schema; a legacy
   JSON stock is imported automatically on first start; no network access (DSGVO)
 
+## Screenshots
+
+The overview answers the three questions a freelancer opens the app for — what is
+outstanding, what is overdue, what has been invoiced this year:
+
+![Overview](dokumentation/bilder/uebersicht-hell.png)
+
+Documents in master-detail, dark theme. Actions are enabled per status: this invoice is
+`VERSENDET`, so every content-changing action is disabled (GoBD immutability) while export
+stays available:
+
+![Documents, dark theme](dokumentation/bilder/belege-dunkel.png)
+
+*The data shown is fictional demo data.*
+
 ## What's new in 3.0
 
 - **Gapless numbering is now enforced by the database, not by a counter in memory.**
@@ -136,4 +151,4 @@ are rendered with [PlantUML](https://plantuml.com/download) (`java -jar plantuml
 
 ## License & author
 
-Developed by **Lucas Strubel**. License: to be added before publication.
+Developed by **Lucas Strubel**. Released under the [MIT License](LICENSE).
