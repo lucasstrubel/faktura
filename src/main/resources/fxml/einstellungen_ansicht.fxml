@@ -1,62 +1,97 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.VBox?>
 
-<!-- Einstellungen: Firmenprofil des Ausstellers (§ 14 UStG) und Datensicherung. -->
+<!--
+    Einstellungen: Firmenprofil des Ausstellers (§ 14 UStG) und Datensicherung,
+    gegliedert in Abschnittskarten statt eines einzigen langen Rasters.
+-->
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
             fx:controller="de.lucasstrubel.faktura.gui.EinstellungenAnsichtController">
-    <padding><Insets top="14" right="14" bottom="14" left="14"/></padding>
+
+    <top>
+        <VBox styleClass="ansicht-kopf">
+            <Label text="Einstellungen" styleClass="ansicht-titel"/>
+            <Label text="Firmenprofil für Briefkopf und Zahlungshinweis sowie Sicherung Ihrer Daten"
+                   styleClass="ansicht-untertitel"/>
+        </VBox>
+    </top>
+
     <center>
-        <GridPane hgap="8" vgap="6" BorderPane.alignment="TOP_LEFT">
-            <columnConstraints>
-                <ColumnConstraints minWidth="160"/>
-                <ColumnConstraints prefWidth="340"/>
-            </columnConstraints>
-            <Label text="Firmenprofil (erscheint auf allen Belegen)" style="-fx-font-weight: bold;"
-                   GridPane.rowIndex="0" GridPane.columnIndex="0" GridPane.columnSpan="2"/>
-            <Label text="Name: *" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-            <TextField fx:id="nameFeld" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-            <Label text="Straße: *" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-            <TextField fx:id="strasseFeld" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
-            <Label text="PLZ: *" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-            <TextField fx:id="plzFeld" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
-            <Label text="Ort: *" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-            <TextField fx:id="ortFeld" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
-            <Label text="USt-IdNr.:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-            <TextField fx:id="ustIdNrFeld" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
-            <Label text="Telefon:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
-            <TextField fx:id="telefonFeld" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
-            <Label text="E-Mail:" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
-            <TextField fx:id="eMailFeld" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
-            <Label text="IBAN:" GridPane.rowIndex="8" GridPane.columnIndex="0"/>
-            <TextField fx:id="ibanFeld" GridPane.rowIndex="8" GridPane.columnIndex="1"/>
-            <Label text="BIC:" GridPane.rowIndex="9" GridPane.columnIndex="0"/>
-            <TextField fx:id="bicFeld" GridPane.rowIndex="9" GridPane.columnIndex="1"/>
-            <Label text="Bank:" GridPane.rowIndex="10" GridPane.columnIndex="0"/>
-            <TextField fx:id="bankFeld" GridPane.rowIndex="10" GridPane.columnIndex="1"/>
-            <Label text="* Pflichtfeld" styleClass="pflichtfeld-legende"
-                   GridPane.rowIndex="11" GridPane.columnIndex="0"/>
-            <HBox spacing="8" GridPane.rowIndex="12" GridPane.columnIndex="1"
-                  alignment="CENTER_RIGHT">
-                <Button text="Speichern" onAction="#speichere" defaultButton="true"/>
-            </HBox>
-            <Separator GridPane.rowIndex="13" GridPane.columnIndex="0" GridPane.columnSpan="2"/>
-            <Label text="Datensicherung" style="-fx-font-weight: bold;"
-                   GridPane.rowIndex="14" GridPane.columnIndex="0" GridPane.columnSpan="2"/>
-            <Label text="Sichert die Datenbank und die JSON-Bestände als ZIP-Datei."
-                   GridPane.rowIndex="15" GridPane.columnIndex="0" GridPane.columnSpan="2"/>
-            <HBox spacing="8" GridPane.rowIndex="16" GridPane.columnIndex="1"
-                  alignment="CENTER_RIGHT">
-                <Button text="Datensicherung erstellen…" onAction="#sichere"/>
-            </HBox>
-        </GridPane>
+        <ScrollPane fitToWidth="true" styleClass="inhalt">
+            <VBox spacing="16" maxWidth="640">
+
+                <VBox spacing="10" styleClass="abschnitt-karte">
+                    <Label text="Firma" styleClass="abschnitt-titel"/>
+                    <Label text="Diese Angaben erscheinen als Briefkopf auf allen Belegen."
+                           styleClass="abschnitt-hinweis" wrapText="true"/>
+                    <GridPane hgap="10" vgap="8">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="140"/>
+                            <ColumnConstraints prefWidth="360" hgrow="ALWAYS"/>
+                        </columnConstraints>
+                        <Label text="Name *" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                        <TextField fx:id="nameFeld" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                        <Label text="Straße *" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <TextField fx:id="strasseFeld" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                        <Label text="PLZ *" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                        <TextField fx:id="plzFeld" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                        <Label text="Ort *" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                        <TextField fx:id="ortFeld" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                        <Label text="USt-IdNr." GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                        <TextField fx:id="ustIdNrFeld" GridPane.rowIndex="4" GridPane.columnIndex="1"
+                                   promptText="DE123456789"/>
+                        <Label text="Telefon" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+                        <TextField fx:id="telefonFeld" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+                        <Label text="E-Mail" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+                        <TextField fx:id="eMailFeld" GridPane.rowIndex="6" GridPane.columnIndex="1"
+                                   promptText="name@domain.de"/>
+                    </GridPane>
+                </VBox>
+
+                <VBox spacing="10" styleClass="abschnitt-karte">
+                    <Label text="Bankverbindung" styleClass="abschnitt-titel"/>
+                    <Label text="Erscheint als Zahlungshinweis auf Rechnungen."
+                           styleClass="abschnitt-hinweis" wrapText="true"/>
+                    <GridPane hgap="10" vgap="8">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="140"/>
+                            <ColumnConstraints prefWidth="360" hgrow="ALWAYS"/>
+                        </columnConstraints>
+                        <Label text="IBAN" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                        <TextField fx:id="ibanFeld" GridPane.rowIndex="0" GridPane.columnIndex="1"
+                                   promptText="DE02 1203 0000 0000 2020 51"/>
+                        <Label text="BIC" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <TextField fx:id="bicFeld" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                        <Label text="Bank" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                        <TextField fx:id="bankFeld" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                    </GridPane>
+                    <HBox spacing="8" alignment="CENTER_RIGHT">
+                        <Label text="* Pflichtfeld" styleClass="pflichtfeld-legende"/>
+                        <Button text="Firmenprofil speichern" onAction="#speichere"
+                                defaultButton="true"/>
+                    </HBox>
+                </VBox>
+
+                <VBox spacing="10" styleClass="abschnitt-karte">
+                    <Label text="Datensicherung" styleClass="abschnitt-titel"/>
+                    <Label text="Packt die Datenbank und vorhandene JSON-Bestände in eine ZIP-Datei. Die Datenbank wird dabei als in sich geschlossener Abzug geschrieben, damit die Sicherung auch bei laufender Anwendung konsistent ist."
+                           styleClass="abschnitt-hinweis" wrapText="true"/>
+                    <HBox spacing="8" alignment="CENTER_RIGHT">
+                        <Button fx:id="sicherungsKnopf" text="Datensicherung erstellen…"
+                                onAction="#sichere"/>
+                    </HBox>
+                </VBox>
+
+            </VBox>
+        </ScrollPane>
     </center>
 </BorderPane>

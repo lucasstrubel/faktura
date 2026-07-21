@@ -6,6 +6,7 @@ import de.lucasstrubel.faktura.firma.FirmenprofilService;
 import de.lucasstrubel.faktura.gemeinsam.Datensicherung;
 
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Control;
 import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
@@ -23,6 +24,8 @@ public class EinstellungenAnsichtController {
 
     private final FirmenprofilService service;
     private final FakturaEigenschaften eigenschaften;
+    private final Datensicherung datensicherung;
+    private final HintergrundAufgaben hintergrund;
 
     @FXML private TextField nameFeld;
     @FXML private TextField strasseFeld;
@@ -34,13 +37,18 @@ public class EinstellungenAnsichtController {
     @FXML private TextField ibanFeld;
     @FXML private TextField bicFeld;
     @FXML private TextField bankFeld;
+    @FXML private Button sicherungsKnopf;
 
     private final Map<String, Control> felder = new LinkedHashMap<>();
 
     public EinstellungenAnsichtController(FirmenprofilService service,
-                                          FakturaEigenschaften eigenschaften) {
+                                          FakturaEigenschaften eigenschaften,
+                                          Datensicherung datensicherung,
+                                          HintergrundAufgaben hintergrund) {
         this.service = service;
         this.eigenschaften = eigenschaften;
+        this.datensicherung = datensicherung;
+        this.hintergrund = hintergrund;
     }
 
     @FXML
@@ -83,18 +91,19 @@ public class EinstellungenAnsichtController {
         });
     }
 
+    /** Datensicherung im Hintergrund: Das ZIP kann je nach Bestand dauern (Q-05). */
     @FXML
     private void sichere() {
         FileChooser auswahl = new FileChooser();
         auswahl.setInitialFileName("faktura-sicherung-" + LocalDate.now() + ".zip");
         File ziel = auswahl.showSaveDialog(nameFeld.getScene().getWindow());
-        if (ziel != null) {
-            FxMeldung.mitFehlerbehandlung(null, () -> {
-                Datensicherung.erstelle(eigenschaften.datenVerzeichnis(), ziel.toPath());
-                FxMeldung.zeige(Meldung.erfolg(
-                        "Die Datensicherung wurde erstellt: " + ziel), null);
-            });
+        if (ziel == null) {
+            return;
         }
+        hintergrund.starte("Datensicherung wird erstellt…", sicherungsKnopf,
+                () -> datensicherung.erstelle(eigenschaften.datenVerzeichnis(), ziel.toPath()),
+                () -> FxMeldung.zeige(Meldung.erfolg(
+                        "Die Datensicherung wurde erstellt: " + ziel), null));
     }
 
     private static String leerFuerNull(String wert) {

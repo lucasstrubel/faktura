@@ -1,5 +1,6 @@
 package de.lucasstrubel.faktura.gui;
 
+import de.lucasstrubel.faktura.gemeinsam.AusgabeException;
 import de.lucasstrubel.faktura.gemeinsam.LoeschAbgelehntException;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 
@@ -48,11 +49,16 @@ public final class FxMeldung {
             return;
         }
         if (meldung.typ() == MeldungsTyp.FEHLER) {
+            // Fehler bleiben modal: Sie verlangen eine Kenntnisnahme
             Alert alert = new Alert(Alert.AlertType.ERROR, meldung.text());
             alert.setHeaderText(meldung.feldname() != null
                     ? "Eingabe unvollständig: " + meldung.feldname() : "Fehler");
             alert.showAndWait();
+        } else if (Benachrichtigung.istBereit()) {
+            // Erfolge stören den Arbeitsfluss nicht und blenden von selbst aus
+            Benachrichtigung.zeige(meldung.text());
         } else {
+            // Ohne aufgebaute Oberfläche (z. B. in Dialogen vor dem Anzeigen)
             Alert alert = new Alert(Alert.AlertType.INFORMATION, meldung.text());
             alert.setHeaderText("Erfolg");
             alert.showAndWait();
@@ -71,20 +77,58 @@ public final class FxMeldung {
         try {
             aktion.run();
             return true;
-        } catch (ValidierungsException e) {
-            zeige(Meldung.fehler(e.getFeldname(), e.getMessage()), felder);
-        } catch (LoeschAbgelehntException | IllegalStateException e) {
-            zeige(Meldung.fehler(null, e.getMessage()), felder);
-        } catch (UncheckedIOException e) {
-            LOG.error("Persistenzfehler (IF-01)", e);
-            zeige(Meldung.fehler(null,
-                    "Die Daten konnten nicht gespeichert werden: " + e.getMessage()), felder);
         } catch (RuntimeException e) {
-            // Letztes Netz: kein stilles Scheitern auf dem FX-Application-Thread
-            LOG.error("Unerwarteter Fehler auf dem FX-Application-Thread", e);
-            zeige(Meldung.fehler(null, "Unerwarteter Fehler: " + e), felder);
+            zeige(zuMeldung(e), felder);
+            return false;
         }
-        return false;
+    }
+
+    /**
+     * Übersetzt eine Ausnahme in eine Meldung für den Anwender: fachliche
+     * Fehler mit Feldmarkierung (Q-09), abgelehnte Löschvorgänge (GR-04),
+     * unzulässige Statuswechsel (GR-02) und Persistenzfehler (IF-01).
+     *
+     * <p>Unerwartete Ausnahmen werden protokolliert, aber nicht im Wortlaut
+     * angezeigt: Ein Stacktrace-Fragment hilft dem Anwender nicht und wirkt
+     * unfertig. Die Meldung verweist stattdessen auf die Logdatei.
+     *
+     * <p>Öffentlich, damit die Hintergrundausführung
+     * ({@link HintergrundAufgaben}) dieselbe Zuordnung verwendet, statt sie zu
+     * wiederholen.
+     */
+    public static Meldung zuMeldung(Throwable fehler) {
+        // Aus einer Hintergrundaufgabe kommt die Ursache verpackt an
+        Throwable ursache = fehler instanceof java.util.concurrent.ExecutionException
+                && fehler.getCause() != null ? fehler.getCause() : fehler;
+        if (ursache instanceof ValidierungsException e) {
+            return Meldung.fehler(e.getFeldname(), e.getMessage());
+        }
+        if (ursache instanceof LoeschAbgelehntException
+                || ursache instanceof AusgabeException
+                || ursache instanceof IllegalStateException) {
+            return Meldung.fehler(null, ursache.getMessage());
+        }
+        if (ursache instanceof UncheckedIOException e) {
+            LOG.error("Persistenzfehler (IF-01)", e);
+            return Meldung.fehler(null,
+                    "Die Daten konnten nicht gespeichert werden: " + e.getMessage());
+        }
+        // Letztes Netz: kein stilles Scheitern
+        LOG.error("Unerwarteter Fehler", ursache);
+        return Meldung.fehler(null, "Es ist ein unerwarteter Fehler aufgetreten. "
+                + "Einzelheiten stehen in der Logdatei faktura.log.");
+    }
+
+    /**
+     * Zeigt die Meldung auf dem FX-Application-Thread — auch wenn der Aufruf
+     * aus einem anderen Faden kommt (globale Fehlerbehandlung).
+     */
+    public static void zeigeAufFxThread(Meldung meldung) {
+        if (javafx.application.Platform.isFxApplicationThread()) {
+            zeige(meldung, null);
+        } else {
+            javafx.application.Platform.runLater(() -> zeige(meldung, null));
+        }
     }
 
     /** Ja/Nein-Bestätigungsdialog; {@code true} nur bei ausdrücklicher Zustimmung. */
