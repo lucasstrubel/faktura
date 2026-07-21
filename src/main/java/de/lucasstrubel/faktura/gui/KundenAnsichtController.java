@@ -13,8 +13,13 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.input.MouseButton;
 import javafx.stage.FileChooser;
+
+import org.kordamp.ikonli.feather.Feather;
 
 import java.io.File;
 import java.util.List;
@@ -29,6 +34,7 @@ public class KundenAnsichtController {
     private final KundenVerwaltungsService service;
     private final StammdatenController controller;
     private final KundenCsvExport csvExport;
+    private final HintergrundAufgaben hintergrund;
     private final EreignisBus ereignisBus;
 
     @FXML private TextField suchfeld;
@@ -45,10 +51,12 @@ public class KundenAnsichtController {
     public KundenAnsichtController(KundenVerwaltungsService service,
                                    StammdatenController controller,
                                    KundenCsvExport csvExport,
+                                   HintergrundAufgaben hintergrund,
                                    EreignisBus ereignisBus) {
         this.service = service;
         this.controller = controller;
         this.csvExport = csvExport;
+        this.hintergrund = hintergrund;
         this.ereignisBus = ereignisBus;
     }
 
@@ -60,6 +68,12 @@ public class KundenAnsichtController {
         plzSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(z.getValue().getPlz()));
         ortSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(z.getValue().getOrt()));
 
+        Bausteine.alsNummernspalte(nummerSpalte);
+        Bausteine.passeSpaltenAn(tabelle);
+        tabelle.setPlaceholder(Bausteine.leerzustand(Feather.USERS,
+                "Noch keine Kunden",
+                "Legen Sie mit „Neuer Kunde“ Ihren ersten Kunden an."));
+
         bearbeitenKnopf.disableProperty().bind(
                 tabelle.getSelectionModel().selectedItemProperty().isNull());
         loeschenKnopf.disableProperty().bind(
@@ -69,10 +83,29 @@ public class KundenAnsichtController {
                 bearbeite();
             }
         });
+        // Entf löscht den markierten Kunden; die Rückfrage bleibt bestehen
+        tabelle.setOnKeyPressed(e -> {
+            if (e.getCode() == KeyCode.DELETE) {
+                loesche();
+            }
+        });
         suchfeld.textProperty().addListener((beobachtbar, alt, neu) -> aktualisiere());
 
         aktualisiere();
         ereignisBus.abonniere(DatenBereich.KUNDEN, this::aktualisiere);
+
+        tabelle.sceneProperty().addListener((beobachtbar, alt, szene) -> {
+            if (szene != null) {
+                szene.getAccelerators().put(
+                        new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN),
+                        this::legeNeuAn);
+                szene.getAccelerators().put(
+                        new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN),
+                        () -> suchfeld.requestFocus());
+                szene.getAccelerators().put(
+                        new KeyCodeCombination(KeyCode.F5), this::aktualisiere);
+            }
+        });
     }
 
     private void aktualisiere() {
@@ -117,11 +150,10 @@ public class KundenAnsichtController {
         auswahl.setInitialFileName("kunden.csv");
         File ziel = auswahl.showSaveDialog(tabelle.getScene().getWindow());
         if (ziel != null) {
-            FxMeldung.mitFehlerbehandlung(null, () -> {
-                csvExport.exportiereCsv(ziel.toPath());
-                FxMeldung.zeige(Meldung.erfolg(
-                        "Die Kundenstammdaten wurden exportiert nach " + ziel), null);
-            });
+            hintergrund.starte("Kundendaten werden exportiert…", null,
+                    () -> csvExport.exportiereCsv(ziel.toPath()),
+                    () -> FxMeldung.zeige(Meldung.erfolg(
+                            "Die Kundenstammdaten wurden exportiert nach " + ziel), null));
         }
     }
 }

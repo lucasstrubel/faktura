@@ -1,66 +1,103 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.SeparatorMenuItem?>
+<?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<!-- Modulansicht Dokumente (D-F-06 bis F-08, F-14, F-15). -->
+<!--
+    Belegansicht (D-F-06 bis F-08, F-14, F-15) als Master-Detail: links die
+    Liste, rechts die Einzelheiten des gewählten Belegs. Die Aktionen sind
+    gruppiert - Statuswechsel direkt in der Werkzeugleiste, die vier
+    Ausgabewege in einem Menü, statt sieben gleichrangiger Knöpfe in einer Reihe.
+-->
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
             fx:controller="de.lucasstrubel.faktura.gui.DokumentAnsichtController">
-    <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+
     <top>
-        <HBox spacing="8" alignment="CENTER_LEFT">
-            <padding><Insets bottom="8"/></padding>
-            <Label text="Statusfilter:"/>
-            <ComboBox fx:id="statusFilter" prefWidth="140"/>
-            <Separator orientation="VERTICAL"/>
-            <Button text="Neue Rechnung (Assistent)…" onAction="#oeffneWizard" defaultButton="true">
-                <tooltip><Tooltip text="Geführte Rechnungserstellung in fünf Schritten"/></tooltip>
-            </Button>
-            <Button text="Neuer Beleg…" onAction="#oeffneBelegDialog">
-                <tooltip><Tooltip text="Angebot, Auftragsbestätigung oder Lieferschein erstellen"/></tooltip>
-            </Button>
-            <Button text="CSV exportieren…" onAction="#exportiereDaten">
-                <tooltip><Tooltip text="Alle Belegdaten als CSV-Datei exportieren"/></tooltip>
-            </Button>
-        </HBox>
-    </top>
-    <center>
-        <VBox spacing="4">
-            <TableView fx:id="tabelle" VBox.vgrow="ALWAYS">
-                <columns>
-                    <TableColumn fx:id="nummerSpalte" text="Belegnummer" prefWidth="140"/>
-                    <TableColumn fx:id="typSpalte" text="Typ" prefWidth="150"/>
-                    <TableColumn fx:id="datumSpalte" text="Datum" prefWidth="100"/>
-                    <TableColumn fx:id="kundeSpalte" text="Kunde" prefWidth="240"/>
-                    <TableColumn fx:id="bruttoSpalte" text="Bruttosumme" prefWidth="120"
-                                 style="-fx-alignment: CENTER-RIGHT;"/>
-                    <TableColumn fx:id="statusSpalte" text="Status" prefWidth="110"/>
-                </columns>
-            </TableView>
-            <Label fx:id="trefferAnzeige" styleClass="treffer-anzeige"/>
+        <VBox>
+            <VBox styleClass="ansicht-kopf">
+                <Label text="Belege" styleClass="ansicht-titel"/>
+                <Label text="Angebot → Auftragsbestätigung → Lieferschein → Rechnung"
+                       styleClass="ansicht-untertitel"/>
+            </VBox>
+            <!-- Erste Reihe: Aktionen. Zweite Reihe: Filter. Beides in eine
+                 Reihe zu packen ließ bei üblicher Fensterbreite jede
+                 Beschriftung abschneiden. -->
+            <HBox styleClass="werkzeugleiste" alignment="CENTER_LEFT">
+                <Button text="Neue Rechnung" onAction="#oeffneWizard" defaultButton="true">
+                    <tooltip><Tooltip text="Geführte Rechnungserstellung in fünf Schritten (Strg+N)"/></tooltip>
+                </Button>
+                <Button text="Neuer Beleg" onAction="#oeffneBelegDialog">
+                    <tooltip><Tooltip text="Angebot, Auftragsbestätigung oder Lieferschein erstellen"/></tooltip>
+                </Button>
+                <Separator orientation="VERTICAL"/>
+                <Button fx:id="folgebelegKnopf" text="Folgebeleg" onAction="#erzeugeFolgebeleg">
+                    <tooltip><Tooltip text="Nächsten Beleg im Dokumentenzyklus erzeugen"/></tooltip>
+                </Button>
+                <Button fx:id="versendenKnopf" text="Versenden" onAction="#versende">
+                    <tooltip><Tooltip text="Als versendet markieren; danach unveränderlich (GR-02)"/></tooltip>
+                </Button>
+                <Button fx:id="stornierenKnopf" text="Stornieren" onAction="#storniere">
+                    <tooltip><Tooltip text="Rechnung stornieren; Belege werden nie gelöscht (GR-01)"/></tooltip>
+                </Button>
+                <Separator orientation="VERTICAL"/>
+                <MenuButton fx:id="ausgabeMenue" text="Exportieren">
+                    <items>
+                        <MenuItem fx:id="pdfEintrag" text="Als PDF speichern…" onAction="#exportierePdf"/>
+                        <MenuItem fx:id="eRechnungEintrag" text="Als E-Rechnung speichern (EN 16931)…"
+                                  onAction="#exportiereERechnung"/>
+                        <MenuItem fx:id="druckenEintrag" text="Drucken…" onAction="#drucke"/>
+                        <MenuItem fx:id="mailEintrag" text="Per E-Mail senden…" onAction="#sendePerMail"/>
+                        <SeparatorMenuItem/>
+                        <MenuItem text="Alle Belege als CSV…" onAction="#exportiereDaten"/>
+                    </items>
+                </MenuButton>
+            </HBox>
+            <HBox styleClass="werkzeugleiste" alignment="CENTER_LEFT">
+                <Label text="Status:"/>
+                <ComboBox fx:id="statusFilter" prefWidth="140"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <TextField fx:id="suchfeld" prefColumnCount="24"
+                           promptText="Belegnummer oder Kunde…">
+                    <tooltip><Tooltip text="Suche nach Belegnummer oder Kundenname (Strg+F)"/></tooltip>
+                </TextField>
+            </HBox>
         </VBox>
+    </top>
+
+    <center>
+        <SplitPane fx:id="aufteilung" styleClass="inhalt" dividerPositions="0.74">
+            <VBox spacing="4">
+                <TableView fx:id="tabelle" VBox.vgrow="ALWAYS">
+                    <!-- Ohne eigene Typ-Spalte: Der Präfix der Belegnummer
+                         (AN/AB/LS/R) nennt den Typ bereits, und der
+                         Detailbereich schreibt ihn aus. -->
+                    <columns>
+                        <TableColumn fx:id="nummerSpalte" text="Belegnummer" prefWidth="155"/>
+                        <TableColumn fx:id="datumSpalte" text="Datum" prefWidth="120"/>
+                        <TableColumn fx:id="kundeSpalte" text="Kunde" prefWidth="225"/>
+                        <TableColumn fx:id="bruttoSpalte" text="Brutto" prefWidth="125"/>
+                        <TableColumn fx:id="statusSpalte" text="Status" prefWidth="120"/>
+                    </columns>
+                </TableView>
+                <Label fx:id="trefferAnzeige" styleClass="treffer-anzeige"/>
+            </VBox>
+
+            <VBox fx:id="detailBereich" spacing="10" styleClass="detail-bereich"/>
+        </SplitPane>
     </center>
-    <bottom>
-        <HBox spacing="8" alignment="CENTER_LEFT">
-            <padding><Insets top="8"/></padding>
-            <Button fx:id="folgebelegKnopf" text="Folgebeleg erzeugen" onAction="#erzeugeFolgebeleg"/>
-            <Button fx:id="versendenKnopf" text="Versenden" onAction="#versende"/>
-            <Button fx:id="stornierenKnopf" text="Stornieren" onAction="#storniere"/>
-            <Button fx:id="pdfKnopf" text="PDF exportieren…" onAction="#exportierePdf"/>
-            <Button fx:id="eRechnungKnopf" text="E-Rechnung (XML)…" onAction="#exportiereERechnung">
-                <tooltip><Tooltip text="Strukturierte E-Rechnung nach EN 16931 (ZUGFeRD-CII-XML)"/></tooltip>
-            </Button>
-            <Button fx:id="druckenKnopf" text="Drucken" onAction="#drucke"/>
-            <Button fx:id="mailKnopf" text="Per E-Mail senden" onAction="#sendePerMail"/>
-        </HBox>
-    </bottom>
 </BorderPane>

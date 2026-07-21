@@ -7,6 +7,7 @@ import de.lucasstrubel.faktura.dokumente.Rechnung;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Dialogführung der Dokumentliste (D-F-06 bis F-08, F-14, F-15):
@@ -14,6 +15,9 @@ import java.util.List;
  * Bestätigung. GUI-frei und damit ohne Oberfläche testbar.
  */
 public class DokumentListenController {
+
+    /** Feste Locale: Die Suche soll unabhängig von der Systemeinstellung gleich wirken. */
+    private static final Locale LOKAL = Locale.ROOT;
 
     private final DokumentService dokumentService;
 
@@ -23,9 +27,30 @@ public class DokumentListenController {
 
     /** Dokumentliste, optional nach Status gefiltert (F-06); {@code null} = alle. */
     public List<Dokument> gefiltert(DokumentStatus statusFilter) {
+        return gefiltert(statusFilter, null);
+    }
+
+    /**
+     * Dokumentliste nach Status <em>und</em> Suchbegriff (F-06). Gesucht wird
+     * ohne Rücksicht auf Groß-/Kleinschreibung in Belegnummer und Kundenname;
+     * ein leerer Begriff filtert nicht.
+     */
+    public List<Dokument> gefiltert(DokumentStatus statusFilter, String suchbegriff) {
+        String begriff = suchbegriff == null ? "" : suchbegriff.strip().toLowerCase(LOKAL);
         return dokumentService.alleDokumente().stream()
                 .filter(d -> statusFilter == null || d.getStatus() == statusFilter)
+                .filter(d -> begriff.isEmpty() || passt(d, begriff))
                 .toList();
+    }
+
+    private static boolean passt(Dokument dokument, String begriff) {
+        return enthaelt(dokument.getBelegnummer(), begriff)
+                || enthaelt(dokument.getKundeName(), begriff)
+                || enthaelt(dokument.getKundenReferenz(), begriff);
+    }
+
+    private static boolean enthaelt(String wert, String begriff) {
+        return wert != null && wert.toLowerCase(LOKAL).contains(begriff);
     }
 
     /**

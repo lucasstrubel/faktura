@@ -13,8 +13,13 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.input.MouseButton;
 import javafx.stage.FileChooser;
+
+import org.kordamp.ikonli.feather.Feather;
 
 import java.io.File;
 import java.math.BigDecimal;
@@ -30,6 +35,7 @@ public class ProduktAnsichtController {
     private final ProduktVerwaltungsService service;
     private final StammdatenController controller;
     private final ProduktCsvExport csvExport;
+    private final HintergrundAufgaben hintergrund;
     private final EreignisBus ereignisBus;
 
     @FXML private TextField suchfeld;
@@ -46,10 +52,12 @@ public class ProduktAnsichtController {
     public ProduktAnsichtController(ProduktVerwaltungsService service,
                                     StammdatenController controller,
                                     ProduktCsvExport csvExport,
+                                    HintergrundAufgaben hintergrund,
                                     EreignisBus ereignisBus) {
         this.service = service;
         this.controller = controller;
         this.csvExport = csvExport;
+        this.hintergrund = hintergrund;
         this.ereignisBus = ereignisBus;
     }
 
@@ -64,10 +72,36 @@ public class ProduktAnsichtController {
         einheitSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(
                 z.getValue().getEinheit() == null ? "" : z.getValue().getEinheit()));
 
+        Bausteine.alsNummernspalte(nummerSpalte);
+        Bausteine.alsBetragsspalte(preisSpalte);
+        Bausteine.alsBetragsspalte(steuersatzSpalte);
+        Bausteine.passeSpaltenAn(tabelle);
+        tabelle.setPlaceholder(Bausteine.leerzustand(Feather.PACKAGE,
+                "Noch keine Produkte",
+                "Legen Sie mit „Neues Produkt“ Ihre erste Leistung an."));
+
         bearbeitenKnopf.disableProperty().bind(
                 tabelle.getSelectionModel().selectedItemProperty().isNull());
         loeschenKnopf.disableProperty().bind(
                 tabelle.getSelectionModel().selectedItemProperty().isNull());
+        // Entf löscht das markierte Produkt; die Rückfrage bleibt bestehen
+        tabelle.setOnKeyPressed(e -> {
+            if (e.getCode() == KeyCode.DELETE) {
+                loesche();
+            }
+        });
+        tabelle.sceneProperty().addListener((beobachtbar, alt, szene) -> {
+            if (szene != null) {
+                szene.getAccelerators().put(
+                        new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN),
+                        this::legeNeuAn);
+                szene.getAccelerators().put(
+                        new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN),
+                        () -> suchfeld.requestFocus());
+                szene.getAccelerators().put(
+                        new KeyCodeCombination(KeyCode.F5), this::aktualisiere);
+            }
+        });
         tabelle.setOnMouseClicked(e -> {
             if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) {
                 bearbeite();
@@ -121,11 +155,10 @@ public class ProduktAnsichtController {
         auswahl.setInitialFileName("produkte.csv");
         File ziel = auswahl.showSaveDialog(tabelle.getScene().getWindow());
         if (ziel != null) {
-            FxMeldung.mitFehlerbehandlung(null, () -> {
-                csvExport.exportiereCsv(ziel.toPath());
-                FxMeldung.zeige(Meldung.erfolg(
-                        "Die Produktstammdaten wurden exportiert nach " + ziel), null);
-            });
+            hintergrund.starte("Produktdaten werden exportiert…", null,
+                    () -> csvExport.exportiereCsv(ziel.toPath()),
+                    () -> FxMeldung.zeige(Meldung.erfolg(
+                            "Die Produktstammdaten wurden exportiert nach " + ziel), null));
         }
     }
 

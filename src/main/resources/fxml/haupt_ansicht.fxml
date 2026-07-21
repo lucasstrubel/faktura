@@ -1,22 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.Tab?>
-<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
 
-<!-- Hauptfenster mit Navigation zu den drei Modulen (D-F-01). -->
-<TabPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-         fx:controller="de.lucasstrubel.faktura.gui.HauptAnsichtController"
-         tabClosingPolicy="UNAVAILABLE">
-    <Tab text="Kunden">
-        <fx:include source="kunden_ansicht.fxml"/>
-    </Tab>
-    <Tab text="Produkte">
-        <fx:include source="produkt_ansicht.fxml"/>
-    </Tab>
-    <Tab text="Dokumente">
-        <fx:include source="dokument_ansicht.fxml"/>
-    </Tab>
-    <Tab text="Einstellungen">
-        <fx:include source="einstellungen_ansicht.fxml"/>
-    </Tab>
-</TabPane>
+<!--
+    Hauptfenster (D-F-01): Seitennavigation links, gewählte Ansicht rechts,
+    Statuszeile unten. Die Ansichten werden vom Controller bedarfsweise
+    geladen und zwischengespeichert - deshalb steht hier kein fx:include.
+-->
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="de.lucasstrubel.faktura.gui.HauptAnsichtController">
+
+    <left>
+        <VBox styleClass="seitenleiste">
+            <VBox styleClass="marke">
+                <Label text="Faktura" styleClass="marken-name"/>
+                <Label text="Fakturierung für Kleinstunternehmen" styleClass="marken-zusatz"
+                       wrapText="true"/>
+            </VBox>
+            <ListView fx:id="navigation" styleClass="navigation" VBox.vgrow="ALWAYS"/>
+            <HBox styleClass="statusleiste" alignment="CENTER_LEFT">
+                <Button fx:id="themaKnopf" onAction="#wechsleThema"/>
+            </HBox>
+        </VBox>
+    </left>
+
+    <center>
+        <!-- Ebene für nicht blockierende Erfolgsmeldungen über dem Inhalt -->
+        <StackPane fx:id="benachrichtigungsEbene" styleClass="benachrichtigungs-ebene">
+            <StackPane fx:id="inhaltsbereich"/>
+        </StackPane>
+    </center>
+
+    <bottom>
+        <HBox styleClass="statusleiste" alignment="CENTER_LEFT">
+            <Label fx:id="statusText" styleClass="status-text"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <ProgressIndicator fx:id="fortschritt" prefWidth="14" prefHeight="14" visible="false"/>
+        </HBox>
+    </bottom>
+</BorderPane>

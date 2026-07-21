@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<!--
+    Übersicht (D-F-18): Kennzahlen, Schnellaktionen und die jüngsten Belege.
+    Die Karten baut der Controller, damit Symbol, Warnfarbe und Formatierung
+    an einer Stelle liegen.
+-->
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="de.lucasstrubel.faktura.gui.UebersichtAnsichtController">
+
+    <top>
+        <VBox>
+            <VBox styleClass="ansicht-kopf">
+                <Label text="Übersicht" styleClass="ansicht-titel"/>
+                <Label fx:id="untertitel" styleClass="ansicht-untertitel"/>
+            </VBox>
+            <HBox styleClass="werkzeugleiste" alignment="CENTER_LEFT">
+                <Button fx:id="neueRechnungKnopf" text="Neue Rechnung" onAction="#neueRechnung"
+                        defaultButton="true"/>
+                <Button fx:id="neuerBelegKnopf" text="Neuer Beleg" onAction="#neuerBeleg"/>
+                <Button fx:id="neuerKundeKnopf" text="Neuer Kunde" onAction="#neuerKunde"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="16" styleClass="inhalt">
+            <FlowPane fx:id="kennzahlen" hgap="12" vgap="12"/>
+            <Label text="Zuletzt erstellte Belege" styleClass="abschnitt-titel"/>
+            <TableView fx:id="letzteBelege" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="nummerSpalte" text="Belegnummer" prefWidth="150"/>
+                    <TableColumn fx:id="typSpalte" text="Typ" prefWidth="160"/>
+                    <TableColumn fx:id="datumSpalte" text="Datum" prefWidth="110"/>
+                    <TableColumn fx:id="kundeSpalte" text="Kunde" prefWidth="260"/>
+                    <TableColumn fx:id="bruttoSpalte" text="Brutto" prefWidth="130"/>
+                    <TableColumn fx:id="statusSpalte" text="Status" prefWidth="120"/>
+                </columns>
+            </TableView>
+        </VBox>
+    </center>
+</BorderPane>
