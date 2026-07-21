@@ -76,7 +76,7 @@ class DokumentzyklusTest {
 
         PdfExporter pdfStub = (dokument, ziel) -> { };
         service = new StandardDokumentService(repository, nummernGenerator,
-                kundenStub, produktStub, pdfStub);
+                kundenStub, produktStub, pdfStub, ereignis -> { });
     }
 
     private static Produkt produkt(String nummer, String bezeichnung, String preis, String steuersatz) {

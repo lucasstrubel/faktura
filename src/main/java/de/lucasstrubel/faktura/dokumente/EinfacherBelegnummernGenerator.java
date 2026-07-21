@@ -2,8 +2,6 @@ package de.lucasstrubel.faktura.dokumente;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Belegnummern im Format {@code <PRÄFIX>-<JAHR>-NNNNNN}. Je Belegtyp und
@@ -11,12 +9,16 @@ import java.util.regex.Pattern;
  * vergebenen Nummer geführt; Rechnungsnummern sind damit lückenlos, da
  * Belege nie gelöscht werden (GR-01, F-12).
  *
- * <p>Nicht threadsicher: alle Aufrufe erfolgen auf dem Event-Dispatch-Thread
+ * <p>Der Zähler liegt ausschließlich im Speicher und wird erhöht, bevor der
+ * Beleg gespeichert ist — ein fehlgeschlagenes Speichern verbraucht also eine
+ * Nummer. Im Datenbankbetrieb übernimmt deshalb der
+ * {@link JdbcBelegnummernGenerator}; diese Variante bleibt für Modultests und
+ * den JSON-Betrieb erhalten, wo es keine Transaktion gibt.
+ *
+ * <p>Nicht threadsicher: alle Aufrufe erfolgen auf dem FX-Application-Thread
  * (Einzelplatzbetrieb, vgl. {@code EreignisBus}).
  */
 public class EinfacherBelegnummernGenerator implements BelegnummernGenerator {
-
-    private static final Pattern FORMAT = Pattern.compile("(AN|AB|LS|R)-(\\d{4})-(\\d{6})");
 
     private final Map<String, Integer> zaehler = new HashMap<>();
 
@@ -27,12 +29,8 @@ public class EinfacherBelegnummernGenerator implements BelegnummernGenerator {
     public static EinfacherBelegnummernGenerator ausRepository(DokumentRepository repository) {
         EinfacherBelegnummernGenerator generator = new EinfacherBelegnummernGenerator();
         for (Dokument dokument : repository.alle()) {
-            Matcher matcher = FORMAT.matcher(dokument.getBelegnummer());
-            if (matcher.matches()) {
-                String schluessel = matcher.group(1) + "-" + matcher.group(2);
-                int wert = Integer.parseInt(matcher.group(3)) + 1;
-                generator.zaehler.merge(schluessel, wert, Math::max);
-            }
+            Belegnummernformat.zerlege(dokument.getBelegnummer()).ifPresent(teile ->
+                    generator.zaehler.merge(teile.kreis(), teile.laufendeNummer() + 1, Math::max));
         }
         return generator;
     }
@@ -47,6 +45,6 @@ public class EinfacherBelegnummernGenerator implements BelegnummernGenerator {
         String schluessel = typ.praefix() + "-" + jahr;
         int naechste = zaehler.getOrDefault(schluessel, 1);
         zaehler.put(schluessel, naechste + 1);
-        return String.format("%s-%04d-%06d", typ.praefix(), jahr, naechste);
+        return Belegnummernformat.formatiere(typ, jahr, naechste);
     }
 }

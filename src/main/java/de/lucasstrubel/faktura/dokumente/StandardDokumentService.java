@@ -4,9 +4,9 @@ import de.lucasstrubel.faktura.gemeinsam.DatenBereich;
 import de.lucasstrubel.faktura.gemeinsam.DatenGeaendertEreignis;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import de.lucasstrubel.faktura.kunden.Kunde;
 import de.lucasstrubel.faktura.kunden.KundenService;
 import de.lucasstrubel.faktura.produkte.Produkt;
@@ -45,16 +45,6 @@ public class StandardDokumentService implements DokumentService {
                                    BelegnummernGenerator nummernGenerator,
                                    KundenService kundenService,
                                    ProduktService produktService,
-                                   PdfExporter pdfExporter) {
-        this(repository, nummernGenerator, kundenService, produktService, pdfExporter,
-                ereignis -> { });
-    }
-
-    @Autowired
-    public StandardDokumentService(DokumentRepository repository,
-                                   BelegnummernGenerator nummernGenerator,
-                                   KundenService kundenService,
-                                   ProduktService produktService,
                                    PdfExporter pdfExporter,
                                    ApplicationEventPublisher ereignisse) {
         this.repository = repository;
@@ -66,81 +56,80 @@ public class StandardDokumentService implements DokumentService {
     }
 
     @Override
+    @Transactional
     public Angebot erstelleAngebot(String kundenNr, List<Positionsangabe> positionen, LocalDate gueltigBis) {
-        Kunde kunde = pruefeKunde(kundenNr);
-        List<Dokumentposition> dokumentpositionen = bauePositionen(positionen);
         LocalDate datum = LocalDate.now();
-
         Angebot angebot = new Angebot();
-        angebot.setBelegnummer(nummernGenerator.naechsteNummer(Belegtyp.ANGEBOT, datum.getYear()));
-        angebot.setDatum(datum);
-        angebot.setzeKunde(kunde.getKundennummer(), kunde.getName(), kunde.anschrift());
-        angebot.setGueltigBis(gueltigBis != null ? gueltigBis : datum.plusDays(STANDARD_GUELTIGKEIT_TAGE));
-        angebot.setzePositionen(dokumentpositionen);
-        repository.speichere(angebot);
-        ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.DOKUMENTE));
-        return angebot;
+        return erstelleBeleg(angebot, kundenNr, positionen, datum, () ->
+                angebot.setGueltigBis(gueltigBis != null
+                        ? gueltigBis
+                        : datum.plusDays(STANDARD_GUELTIGKEIT_TAGE)));
     }
 
     @Override
+    @Transactional
     public Auftragsbestaetigung erstelleAuftragsbestaetigung(String kundenNr, List<Positionsangabe> positionen) {
-        Kunde kunde = pruefeKunde(kundenNr);
-        List<Dokumentposition> dokumentpositionen = bauePositionen(positionen);
-        LocalDate datum = LocalDate.now();
-
-        Auftragsbestaetigung ab = new Auftragsbestaetigung();
-        ab.setBelegnummer(nummernGenerator.naechsteNummer(Belegtyp.AUFTRAGSBESTAETIGUNG, datum.getYear()));
-        ab.setDatum(datum);
-        ab.setzeKunde(kunde.getKundennummer(), kunde.getName(), kunde.anschrift());
-        ab.setzePositionen(dokumentpositionen);
-        repository.speichere(ab);
-        ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.DOKUMENTE));
-        return ab;
+        return erstelleBeleg(new Auftragsbestaetigung(), kundenNr, positionen,
+                LocalDate.now(), () -> { });
     }
 
     @Override
+    @Transactional
     public Lieferschein erstelleLieferschein(String kundenNr, List<Positionsangabe> positionen, LocalDate lieferdatum) {
-        Kunde kunde = pruefeKunde(kundenNr);
-        List<Dokumentposition> dokumentpositionen = bauePositionen(positionen);
         LocalDate datum = LocalDate.now();
-
         Lieferschein lieferschein = new Lieferschein();
-        lieferschein.setBelegnummer(nummernGenerator.naechsteNummer(Belegtyp.LIEFERSCHEIN, datum.getYear()));
-        lieferschein.setDatum(datum);
-        lieferschein.setzeKunde(kunde.getKundennummer(), kunde.getName(), kunde.anschrift());
-        lieferschein.setLieferdatum(lieferdatum != null ? lieferdatum : datum);
-        lieferschein.setzePositionen(dokumentpositionen);
-        repository.speichere(lieferschein);
-        ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.DOKUMENTE));
-        return lieferschein;
+        return erstelleBeleg(lieferschein, kundenNr, positionen, datum, () ->
+                lieferschein.setLieferdatum(lieferdatum != null ? lieferdatum : datum));
     }
 
     @Override
+    @Transactional
     public Rechnung erstelleRechnung(String kundenNr, List<Positionsangabe> positionen,
                                      LocalDate rechnungsdatum, LocalDate zahlungsziel) {
-        Kunde kunde = pruefeKunde(kundenNr);
-        List<Dokumentposition> dokumentpositionen = bauePositionen(positionen);
         if (rechnungsdatum == null) {
             throw new ValidierungsException("Rechnungsdatum",
                     "Das Pflichtfeld 'Rechnungsdatum' fehlt (F-18).");
         }
-
         Rechnung rechnung = new Rechnung();
-        rechnung.setBelegnummer(nummernGenerator.naechsteNummer(Belegtyp.RECHNUNG, rechnungsdatum.getYear()));
-        rechnung.setDatum(rechnungsdatum);
-        rechnung.setLeistungsdatum(rechnungsdatum);
-        rechnung.setzeKunde(kunde.getKundennummer(), kunde.getName(), kunde.anschrift());
-        rechnung.setZahlungsziel(zahlungsziel != null
-                ? zahlungsziel
-                : rechnungsdatum.plusDays(STANDARD_ZAHLUNGSZIEL_TAGE));
-        rechnung.setzePositionen(dokumentpositionen);
-        rechnung.setzeStatus(DokumentStatus.OFFEN);
-        repository.speichere(rechnung);
+        return erstelleBeleg(rechnung, kundenNr, positionen, rechnungsdatum, () -> {
+            rechnung.setLeistungsdatum(rechnungsdatum);
+            rechnung.setZahlungsziel(zahlungsziel != null
+                    ? zahlungsziel
+                    : rechnungsdatum.plusDays(STANDARD_ZAHLUNGSZIEL_TAGE));
+            rechnung.setzeStatus(DokumentStatus.OFFEN);
+        });
+    }
+
+    /**
+     * Gemeinsamer Ablauf aller vier Belegarten: erst fachlich prüfen, dann die
+     * Belegnummer ziehen, Kopfdaten und Positionen setzen, speichern und die
+     * Ansichten benachrichtigen. Die belegtypeigenen Felder (Gültigkeit,
+     * Lieferdatum, Zahlungsziel, Status) trägt der Aufrufer über
+     * {@code spezifisch} nach.
+     *
+     * <p>Die Reihenfolge ist bewusst: Kunde und Positionen werden geprüft,
+     * <em>bevor</em> die Nummer gezogen wird — ein Eingabefehler soll den
+     * Nummernkreis gar nicht erst berühren. Scheitert danach das Speichern,
+     * rollt die Transaktion die Nummernvergabe zurück (GR-01).
+     */
+    private <T extends Dokument> T erstelleBeleg(T beleg, String kundenNr,
+                                                 List<Positionsangabe> positionen,
+                                                 LocalDate datum, Runnable spezifisch) {
+        Kunde kunde = pruefeKunde(kundenNr);
+        List<Dokumentposition> dokumentpositionen = bauePositionen(positionen);
+
+        beleg.setBelegnummer(nummernGenerator.naechsteNummer(beleg.belegtyp(), datum.getYear()));
+        beleg.setDatum(datum);
+        beleg.setzeKunde(kunde.getKundennummer(), kunde.getName(), kunde.anschrift());
+        beleg.setzePositionen(dokumentpositionen);
+        spezifisch.run();
+        repository.speichere(beleg);
         ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.DOKUMENTE));
-        return rechnung;
+        return beleg;
     }
 
     @Override
+    @Transactional
     public Dokument erzeugeFolgebeleg(String belegnummer) {
         Dokument vorgaenger = pruefeBeleg(belegnummer);
         LocalDate datum = LocalDate.now();
@@ -179,6 +168,7 @@ public class StandardDokumentService implements DokumentService {
     }
 
     @Override
+    @Transactional
     public void versende(String belegnummer) {
         Dokument dokument = pruefeBeleg(belegnummer);
         dokument.versende();
@@ -187,6 +177,7 @@ public class StandardDokumentService implements DokumentService {
     }
 
     @Override
+    @Transactional
     public void storniere(String rechnungsnummer) {
         Dokument dokument = pruefeBeleg(rechnungsnummer);
         if (!(dokument instanceof Rechnung rechnung)) {

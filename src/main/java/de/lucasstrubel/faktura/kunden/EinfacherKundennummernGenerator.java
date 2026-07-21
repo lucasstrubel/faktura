@@ -23,12 +23,20 @@ public class EinfacherKundennummernGenerator implements KundennummernGenerator {
 
     /** Initialisiert den Zähler aus der höchsten bereits vergebenen Nummer im Bestand. */
     public static EinfacherKundennummernGenerator ausRepository(KundenRepository repository) {
-        int hoechste = repository.alleSortiertNachName().stream()
+        return new EinfacherKundennummernGenerator(hoechsteImBestand(repository) + 1);
+    }
+
+    /**
+     * Höchste im Bestand vergebene laufende Nummer; 0, wenn keine vergeben ist.
+     * Auch {@link JdbcKundennummernGenerator} leitet daraus den Startwert seines
+     * Nummernkreises ab, damit die Ableitungsregel nur einmal existiert.
+     */
+    public static int hoechsteImBestand(KundenRepository repository) {
+        return repository.alleSortiertNachName().stream()
                 .map(Kunde::getKundennummer)
                 .mapToInt(EinfacherKundennummernGenerator::nummernWert)
                 .max()
                 .orElse(0);
-        return new EinfacherKundennummernGenerator(hoechste + 1);
     }
 
     private static int nummernWert(String kundennummer) {

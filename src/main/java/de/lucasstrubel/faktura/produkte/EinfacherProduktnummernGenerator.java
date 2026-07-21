@@ -23,12 +23,20 @@ public class EinfacherProduktnummernGenerator implements ProduktnummernGenerator
 
     /** Initialisiert den Zähler aus der höchsten bereits vergebenen Nummer im Bestand. */
     public static EinfacherProduktnummernGenerator ausRepository(ProduktRepository repository) {
-        int hoechste = repository.alleSortiertNachBezeichnung().stream()
+        return new EinfacherProduktnummernGenerator(hoechsteImBestand(repository) + 1);
+    }
+
+    /**
+     * Höchste im Bestand vergebene laufende Nummer; 0, wenn keine vergeben ist.
+     * Auch {@link JdbcProduktnummernGenerator} leitet daraus den Startwert seines
+     * Nummernkreises ab, damit die Ableitungsregel nur einmal existiert.
+     */
+    public static int hoechsteImBestand(ProduktRepository repository) {
+        return repository.alleSortiertNachBezeichnung().stream()
                 .map(Produkt::getProduktnummer)
                 .mapToInt(EinfacherProduktnummernGenerator::nummernWert)
                 .max()
                 .orElse(0);
-        return new EinfacherProduktnummernGenerator(hoechste + 1);
     }
 
     private static int nummernWert(String produktnummer) {

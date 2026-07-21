@@ -6,9 +6,9 @@ import de.lucasstrubel.faktura.gemeinsam.LoeschAbgelehntException;
 import de.lucasstrubel.faktura.gemeinsam.Validierung;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -27,13 +27,6 @@ public class KundenVerwaltungsService implements KundenService {
 
     public KundenVerwaltungsService(KundenRepository repository,
                                     KundennummernGenerator nummernGenerator,
-                                    KundenReferenzPruefung referenzPruefung) {
-        this(repository, nummernGenerator, referenzPruefung, ereignis -> { });
-    }
-
-    @Autowired
-    public KundenVerwaltungsService(KundenRepository repository,
-                                    KundennummernGenerator nummernGenerator,
                                     KundenReferenzPruefung referenzPruefung,
                                     ApplicationEventPublisher ereignisse) {
         this.repository = repository;
@@ -42,7 +35,12 @@ public class KundenVerwaltungsService implements KundenService {
         this.ereignisse = ereignisse;
     }
 
-    /** Legt einen neuen Kunden an und vergibt die Kundennummer (F-01, F-02). */
+    /**
+     * Legt einen neuen Kunden an und vergibt die Kundennummer (F-01, F-02).
+     * Nummernvergabe und Speichern laufen in einer Transaktion — schlägt das
+     * Speichern fehl, ist die Nummer nicht verbraucht.
+     */
+    @Transactional
     public Kunde legeAn(Kunde kunde) {
         validiere(kunde);
         kunde.setKundennummer(nummernGenerator.naechsteNummer());
@@ -52,6 +50,7 @@ public class KundenVerwaltungsService implements KundenService {
     }
 
     /** Ändert einen bestehenden Kunden; die Pflichtfeldprüfung gilt unverändert (F-05). */
+    @Transactional
     public Kunde aendere(Kunde kunde) {
         if (kunde.getKundennummer() == null) {
             throw new ValidierungsException("Kundennummer", "Der Kunde wurde noch nicht angelegt.");
@@ -66,6 +65,7 @@ public class KundenVerwaltungsService implements KundenService {
      * Löscht einen Kunden ohne verknüpfte Dokumente (F-08); bei verknüpften
      * Dokumenten wird der Vorgang mit Angabe der Anzahl abgelehnt (F-09, GR-04).
      */
+    @Transactional
     public void loescheKunde(String kundennummer) {
         int anzahl = referenzPruefung.anzahlVerknuepfterDokumente(kundennummer);
         if (anzahl > 0) {

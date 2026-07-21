@@ -6,9 +6,9 @@ import de.lucasstrubel.faktura.gemeinsam.LoeschAbgelehntException;
 import de.lucasstrubel.faktura.gemeinsam.Validierung;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -32,13 +32,6 @@ public class ProduktVerwaltungsService implements ProduktService {
 
     public ProduktVerwaltungsService(ProduktRepository repository,
                                      ProduktnummernGenerator nummernGenerator,
-                                     ProduktReferenzPruefung referenzPruefung) {
-        this(repository, nummernGenerator, referenzPruefung, ereignis -> { });
-    }
-
-    @Autowired
-    public ProduktVerwaltungsService(ProduktRepository repository,
-                                     ProduktnummernGenerator nummernGenerator,
                                      ProduktReferenzPruefung referenzPruefung,
                                      ApplicationEventPublisher ereignisse) {
         this.repository = repository;
@@ -47,7 +40,12 @@ public class ProduktVerwaltungsService implements ProduktService {
         this.ereignisse = ereignisse;
     }
 
-    /** Legt ein neues Produkt an und vergibt die Produktnummer (F-01, F-02). */
+    /**
+     * Legt ein neues Produkt an und vergibt die Produktnummer (F-01, F-02).
+     * Nummernvergabe und Speichern laufen in einer Transaktion — schlägt das
+     * Speichern fehl, ist die Nummer nicht verbraucht.
+     */
+    @Transactional
     public Produkt legeAn(Produkt produkt) {
         validiere(produkt);
         produkt.setProduktnummer(nummernGenerator.naechsteNummer());
@@ -60,6 +58,7 @@ public class ProduktVerwaltungsService implements ProduktService {
      * Ändert ein bestehendes Produkt (F-05). Bereits erstellte Dokumente bleiben
      * unverändert, da Komponente A Preis und Steuersatz als Snapshot ablegt (F-06).
      */
+    @Transactional
     public Produkt aendere(Produkt produkt) {
         if (produkt.getProduktnummer() == null) {
             throw new ValidierungsException("Produktnummer", "Das Produkt wurde noch nicht angelegt.");
@@ -74,6 +73,7 @@ public class ProduktVerwaltungsService implements ProduktService {
      * Löscht ein nicht referenziertes Produkt (F-08); referenzierte Produkte
      * werden mit Hinweis abgelehnt (F-09, F-10).
      */
+    @Transactional
     public void loescheProdukt(String produktnummer) {
         if (referenzPruefung.istProduktReferenziert(produktnummer)) {
             throw new LoeschAbgelehntException(

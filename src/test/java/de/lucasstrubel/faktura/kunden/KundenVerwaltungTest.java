@@ -41,7 +41,8 @@ class KundenVerwaltungTest {
 
     private KundenVerwaltungsService service(KundennummernGenerator generator) {
         return new KundenVerwaltungsService(repository, generator,
-                kundennummer -> verknuepfteDokumente.getOrDefault(kundennummer, 0));
+                kundennummer -> verknuepfteDokumente.getOrDefault(kundennummer, 0),
+                ereignis -> { });
     }
 
     private KundenVerwaltungsService serviceAusRepository() {

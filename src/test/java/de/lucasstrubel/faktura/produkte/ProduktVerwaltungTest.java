@@ -40,7 +40,8 @@ class ProduktVerwaltungTest {
     }
 
     private ProduktVerwaltungsService service(ProduktnummernGenerator generator) {
-        return new ProduktVerwaltungsService(repository, generator, referenzierteProdukte::contains);
+        return new ProduktVerwaltungsService(repository, generator,
+                referenzierteProdukte::contains, ereignis -> { });
     }
 
     private ProduktVerwaltungsService serviceAusRepository() {

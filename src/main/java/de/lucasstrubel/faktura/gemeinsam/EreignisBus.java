@@ -5,8 +5,9 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * Einfacher synchroner Ereignis-Verteiler (Observer-Muster): Die Services
@@ -15,6 +16,12 @@ import org.springframework.stereotype.Component;
  * dieser Bus empfängt es ({@link #empfange}) und benachrichtigt die
  * abonnierten Modulansichten. Dadurch entfallen manuelle Refresh-Aufrufe
  * zwischen den Modulen, und die Ansichten müssen keine Spring-Beans sein.
+ *
+ * <p>Die Zustellung erfolgt erst <em>nach</em> dem Commit der auslösenden
+ * Transaktion: Rollt eine Transaktion zurück — etwa weil das Speichern
+ * scheitert — darf die Oberfläche keinen Datensatz anzeigen, den es nicht
+ * gibt. {@code fallbackExecution} hält Ereignisse aus Aufrufen ohne laufende
+ * Transaktion weiterhin am Leben.
  *
  * <p>Alle Aufrufe laufen auf dem JavaFX-Application-Thread; eine
  * Synchronisierung ist daher nicht erforderlich (Einzelplatzbetrieb).
@@ -37,7 +44,7 @@ public class EreignisBus {
     }
 
     /** Brücke vom Spring-Ereignissystem zu den abonnierten Ansichten. */
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void empfange(DatenGeaendertEreignis ereignis) {
         melde(ereignis.bereich());
     }
