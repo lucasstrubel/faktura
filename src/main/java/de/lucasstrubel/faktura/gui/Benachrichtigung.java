@@ -6,6 +6,7 @@ import javafx.animation.SequentialTransition;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.util.Duration;
 
@@ -58,6 +59,11 @@ public final class Benachrichtigung {
         HBox meldung = new HBox(new FontIcon(Feather.CHECK_CIRCLE), textLabel(text));
         meldung.getStyleClass().add("benachrichtigung");
         meldung.setAlignment(Pos.CENTER_LEFT);
+        // Ein StackPane zieht seine Kinder sonst auf die volle Fläche auf: Die
+        // Meldung füllte damit das halbe Fenster. Die Größenbegrenzung gehört
+        // hierher und nicht ins Stylesheet -- -fx-max-* greift bei einer
+        // gestreckten HBox nicht zuverlässig.
+        meldung.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
         // Nur der Kasten selbst reagiert auf die Maus, die Ebene bleibt durchlässig
         meldung.setMouseTransparent(true);
 
@@ -67,10 +73,14 @@ public final class Benachrichtigung {
         spieleEinblendung(meldung);
     }
 
+    /** Breitenbegrenzung, damit lange Meldungen umbrechen statt sich zu strecken. */
+    private static final double TEXT_MAX_BREITE = 380;
+
     private static Label textLabel(String text) {
         Label beschriftung = new Label(text);
         beschriftung.getStyleClass().add("benachrichtigungs-text");
         beschriftung.setWrapText(true);
+        beschriftung.setMaxWidth(TEXT_MAX_BREITE);
         return beschriftung;
     }
 

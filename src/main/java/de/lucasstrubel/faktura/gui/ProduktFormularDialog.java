@@ -15,7 +15,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
@@ -51,9 +50,7 @@ public class ProduktFormularDialog extends Stage {
                                  Produkt vorhandenes) {
         this.service = service;
         this.vorhandeneNummer = vorhandenes == null ? null : vorhandenes.getProduktnummer();
-        initModality(Modality.APPLICATION_MODAL);
-        initOwner(besitzer);
-        setTitle(vorhandenes == null ? "Neues Produkt anlegen"
+        Dialoge.richteEin(this, besitzer, vorhandenes == null ? "Neues Produkt anlegen"
                 : "Produkt " + vorhandenes.getProduktnummer() + " bearbeiten");
 
         steuersatzWahl.getItems().addAll(STEUERSAETZE);
@@ -64,7 +61,7 @@ public class ProduktFormularDialog extends Stage {
         felder.put("Steuersatz", steuersatzWahl);
 
         Scene szene = new Scene(baueOberflaeche());
-        szene.getStylesheets().addAll(besitzer.getScene().getStylesheets());
+        Dialoge.uebernimmStil(szene, besitzer);
         setScene(szene);
 
         if (vorhandenes != null) {

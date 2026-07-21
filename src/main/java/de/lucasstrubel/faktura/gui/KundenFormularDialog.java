@@ -15,7 +15,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
@@ -51,9 +50,7 @@ public class KundenFormularDialog extends Stage {
                                 Kunde vorhandener) {
         this.service = service;
         this.vorhandeneNummer = vorhandener == null ? null : vorhandener.getKundennummer();
-        initModality(Modality.APPLICATION_MODAL);
-        initOwner(besitzer);
-        setTitle(vorhandener == null ? "Neuen Kunden anlegen"
+        Dialoge.richteEin(this, besitzer, vorhandener == null ? "Neuen Kunden anlegen"
                 : "Kunde " + vorhandener.getKundennummer() + " bearbeiten");
 
         felder.put("Name", nameFeld);
@@ -65,7 +62,7 @@ public class KundenFormularDialog extends Stage {
         felder.put("USt-IdNr.", ustIdNrFeld);
 
         Scene szene = new Scene(baueOberflaeche());
-        szene.getStylesheets().addAll(besitzer.getScene().getStylesheets());
+        Dialoge.uebernimmStil(szene, besitzer);
         setScene(szene);
 
         if (vorhandener != null) {

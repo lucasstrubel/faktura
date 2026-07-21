@@ -15,23 +15,20 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Spinner;
-import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,8 +39,6 @@ import java.util.List;
  */
 public class BelegDialog extends Stage {
 
-    private static final DateTimeFormatter DATUM = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-
     private final DokumentService dokumentService;
 
     private final ComboBox<Belegtyp> typWahl = new ComboBox<>();
@@ -52,16 +47,14 @@ public class BelegDialog extends Stage {
     private final Spinner<Integer> mengeWahl = new Spinner<>(1, 99999, 1);
     private final ListView<String> positionsListe = new ListView<>();
     private final Label datumBeschriftung = new Label("Gültig bis (leer = +30 Tage):");
-    private final TextField datumFeld = new TextField();
+    private final DatePicker datumFeld = Dialoge.datumsfeld(null);
 
     private final List<Positionsangabe> positionen = new ArrayList<>();
 
     public BelegDialog(Window besitzer, DokumentService dokumentService,
                        KundenService kundenService, ProduktService produktService) {
         this.dokumentService = dokumentService;
-        initModality(Modality.APPLICATION_MODAL);
-        initOwner(besitzer);
-        setTitle("Neuen Beleg erstellen");
+        Dialoge.richteEin(this, besitzer, "Neuen Beleg erstellen");
 
         typWahl.getItems().addAll(Belegtyp.ANGEBOT, Belegtyp.AUFTRAGSBESTAETIGUNG,
                 Belegtyp.LIEFERSCHEIN);
@@ -106,8 +99,10 @@ public class BelegDialog extends Stage {
             }
         });
 
-        Scene szene = new Scene(baueOberflaeche(), 640, 480);
-        szene.getStylesheets().addAll(besitzer.getScene().getStylesheets());
+        Scene szene = new Scene(baueOberflaeche(), 680, 520);
+        Dialoge.uebernimmStil(szene, besitzer);
+        setMinWidth(560);
+        setMinHeight(460);
         setScene(szene);
         setOnCloseRequest(ereignis -> {
             if (!darfVerwerfen()) {
@@ -125,7 +120,7 @@ public class BelegDialog extends Stage {
         kopf.add(new Label("Kunde: *"), 0, 1);
         kopf.add(kundenWahl, 1, 1);
         kopf.add(datumBeschriftung, 0, 2);
-        datumFeld.setTooltip(new Tooltip("Optional — Format: TT.MM.JJJJ"));
+        datumFeld.setTooltip(new Tooltip("Optional — über den Kalender wählbar"));
         kopf.add(datumFeld, 1, 2);
         Label legende = new Label("* Pflichtfeld");
         legende.getStyleClass().add("pflichtfeld-legende");
@@ -203,15 +198,9 @@ public class BelegDialog extends Stage {
     private void erstelle() {
         Kunde kunde = kundenWahl.getValue();
         String kundenNr = kunde == null ? null : kunde.getKundennummer();
-        LocalDate datum;
-        try {
-            String text = datumFeld.getText().strip();
-            datum = text.isEmpty() ? null : LocalDate.parse(text, DATUM);
-        } catch (DateTimeParseException e) {
-            FxMeldung.zeige(Meldung.fehler("Datum",
-                    "Das Datum ist ungültig. Format: TT.MM.JJJJ"), null);
-            return;
-        }
+        // Der DatePicker liefert entweder ein gültiges Datum oder null;
+        // eine Formatprüfung ist deshalb nicht mehr nötig.
+        LocalDate datum = datumFeld.getValue();
         try {
             Belegtyp typ = typWahl.getValue();
             Dokument beleg = switch (typ) {
