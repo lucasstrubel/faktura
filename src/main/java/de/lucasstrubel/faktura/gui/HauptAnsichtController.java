@@ -92,8 +92,8 @@ public class HauptAnsichtController {
 
     /**
      * Tastenkürzel für die Navigation ({@code Strg+1} bis {@code Strg+5}) und
-     * das Erscheinungsbild ({@code Strg+D}). Die ansichtseigenen Kürzel
-     * (Neu, Suche, Aktualisieren) registrieren die jeweiligen Controller.
+     * das Erscheinungsbild ({@code Strg+D}) gemäß D-F-22. Die ansichtseigenen
+     * Kürzel (Neu, Suche, Aktualisieren) registrieren die jeweiligen Controller.
      */
     private void registriereTastenkuerzel(Scene szene) {
         Navigationsziel[] ziele = Navigationsziel.values();

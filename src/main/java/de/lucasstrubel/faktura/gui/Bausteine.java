@@ -56,8 +56,8 @@ public final class Bausteine {
     }
 
     /**
-     * Platzhalter für eine leere Tabelle: Symbol, Überschrift und ein Satz,
-     * der erklärt, was als Nächstes zu tun ist — statt einer leeren Fläche.
+     * Platzhalter für eine leere Tabelle (D-F-23): Symbol, Überschrift und ein
+     * Satz, der erklärt, was als Nächstes zu tun ist — statt einer leeren Fläche.
      */
     public static VBox leerzustand(Feather symbol, String titel, String hinweis) {
         Label ueberschrift = new Label(titel);

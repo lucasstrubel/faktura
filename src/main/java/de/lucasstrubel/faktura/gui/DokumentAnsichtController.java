@@ -262,7 +262,7 @@ public class DokumentAnsichtController {
                         || dokument.getStatus() == DokumentStatus.VERSENDET)));
     }
 
-    /** Baut den Detailbereich zum gewählten Beleg auf (Kopfdaten, Positionen, Summen). */
+    /** Baut den Detailbereich zum gewählten Beleg auf (D-F-19). */
     private void zeigeEinzelheiten(Dokument dokument) {
         detailBereich.getChildren().clear();
         if (dokument == null) {

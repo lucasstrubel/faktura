@@ -45,6 +45,7 @@ header-includes: |
 | 2.0     | 18.07.2026 | Konsolidierung der vier Pflichtenhefte zu einem Gesamtdokument |
 | 2.1     | 18.07.2026 | Teil C: erweiterte Formatvalidierung F-16 bis F-18 ergänzt, E-Mail-Prüfung (F-04) verschärft |
 | 2.2     | 19.07.2026 | Teil D: Systemarchitektur auf JavaFX-Oberfläche (FXML, Spring-Controller-Factory, Spring Application Events) aktualisiert |
+| 2.3     | 21.07.2026 | Teil D: Oberflächenumbau nachgezogen — F-01 (Seitennavigation, fünf Bereiche) und F-06 (Belegliste ohne Typ-Spalte, dafür Suche) geändert, F-07 und F-17 ergänzt, neuer Abschnitt 4.7 mit F-18 bis F-23 (Übersicht, Detailbereich, Hintergrundausführung, Erscheinungsbild, Tastenkürzel, Leerzustände), Abnahmekriterien AC-D-07 bis AC-D-10 |
 
 \newpage
 
@@ -1216,8 +1217,12 @@ Dialogführung.
 ### 4.1 Hauptfenster und Navigation
 
 **F-01:** Das System MUSS nach dem Programmstart ein Hauptfenster anzeigen, das eine
-Navigation zu den drei Modulen *Kundenverwaltung*, *Produktverwaltung* und *Dokumente*
-bereitstellt.
+Navigation zu den Bereichen *Übersicht*, *Kunden*, *Produkte*, *Belege* und
+*Einstellungen* bereitstellt. Die Navigation MUSS den aktiven Bereich kenntlich machen.
+
+> *Änderung zu Version 2.2:* Zuvor waren nur die drei Fachmodule genannt und als
+> Reiterleiste umgesetzt. Mit der Übersicht (F-18) und dem Firmenprofil kamen zwei
+> weitere Bereiche hinzu; die Navigation liegt seither als Leiste am linken Rand.
 
 **F-02:** WENN die Anwender:in ein Modul auswählt, DANN MUSS das System die zugehörige
 Modulansicht anzeigen, ohne dass ungespeicherte Eingaben eines Formulars unbemerkt
@@ -1240,13 +1245,28 @@ sichtbar anzeigen und das betroffene Eingabefeld markieren (Q-09).
 
 ### 4.3 Dokumenten-Ansichten
 
-**F-06:** Das System MUSS eine Dokumentliste anzeigen, die je Beleg Belegnummer, Typ,
-Datum, Kunde, Bruttosumme und Status (`ENTWURF`, `OFFEN`, `VERSENDET`, `STORNIERT`)
-darstellt und nach Status filterbar ist.
+**F-06:** Das System MUSS eine Belegliste anzeigen, die je Beleg Belegnummer, Datum,
+Kunde, Bruttosumme und Status (`ENTWURF`, `OFFEN`, `VERSENDET`, `STORNIERT`) darstellt.
+Der Belegtyp MUSS erkennbar sein; er ergibt sich aus dem Präfix der Belegnummer
+(`AN`, `AB`, `LS`, `R`) und wird im Detailbereich (F-19) ausgeschrieben. Die Liste MUSS
+nach Status filterbar und nach Belegnummer oder Kundenname durchsuchbar sein.
 
-**F-07:** Das System MUSS je Beleg die Aktionen *PDF exportieren*, optional *Drucken* und
-optional *Per E-Mail versenden* anbieten; die Ausführung wird an die Dienste der Komponente A
-delegiert.
+> *Änderung zu Version 2.2:* Zuvor forderte F-06 eine eigene Spalte *Typ*. Sie wurde
+> entfernt, weil die Liste seit der Master-Detail-Darstellung die Fensterbreite mit dem
+> Detailbereich teilt und sonst alle Spalten beschnitten wurden. Die Information geht
+> nicht verloren: Das Präfix der Belegnummer nennt den Typ, der Detailbereich schreibt
+> ihn aus. Die Suche ist neu hinzugekommen.
+
+**F-07:** Das System MUSS je Beleg die Aktionen *PDF exportieren*, *E-Rechnung
+exportieren* (nur für Rechnungen im Status `OFFEN` oder `VERSENDET`), optional *Drucken*
+und optional *Per E-Mail versenden* anbieten; die Ausführung wird an die Dienste der
+Komponente A delegiert und erfolgt gemäß F-20 außerhalb des Bedienfadens. Die Ausgabewege
+MÜSSEN gebündelt angeboten werden, damit sie die Statuswechsel-Aktionen (F-08, F-14)
+nicht optisch überlagern.
+
+> *Anmerkung:* Die E-Rechnung nach EN 16931 wurde in Version 2.0 ergänzt, ohne dass in
+> Teil A eine Anforderung dafür aufgenommen wurde. Diese Lücke besteht weiterhin und ist
+> getrennt nachzuziehen; F-07 beschreibt hier nur die Sicht der Oberfläche.
 
 **F-08:** WENN ein Beleg den Status `VERSENDET` oder `STORNIERT` hat, DANN MUSS das System
 alle inhaltlichen Änderungsaktionen für diesen Beleg deaktivieren (GR-02; Logik bei
@@ -1293,7 +1313,42 @@ Meldung benennt das Feld namentlich.
 
 **F-17:** Das System MUSS nach jeder erfolgreichen Aktion (Speichern, Löschen, Export,
 Storno) eine Erfolgsmeldung anzeigen und nach jeder abgelehnten Aktion die Begründung der
-Fachkomponente darstellen.
+Fachkomponente darstellen. Erfolgsmeldungen DÜRFEN die Bedienung NICHT blockieren und
+MÜSSEN von selbst wieder verschwinden; Fehlermeldungen und Rückfragen MÜSSEN eine
+ausdrückliche Kenntnisnahme verlangen.
+
+---
+
+### 4.7 Übersicht und Bedienkomfort
+
+**F-18:** Das System MUSS eine Übersichtsansicht bereitstellen, die den offenen Betrag
+(Summe unbezahlter Rechnungen), die überfälligen Rechnungen (Zahlungsziel vor dem
+aktuellen Tag) mit Anzahl und Betrag, den Bruttoumsatz des laufenden Jahres ohne
+stornierte Rechnungen sowie die Gesamtzahl der Belege ausweist. Überfällige Beträge
+MÜSSEN optisch hervorgehoben sein. Zusätzlich MUSS die Ansicht die zuletzt erstellten
+Belege auflisten.
+
+**F-19:** WENN in der Belegliste ein Beleg ausgewählt ist, DANN MUSS das System seine
+Einzelheiten anzeigen: Belegart und -nummer, Status, Datum, Kunde mit Anschrift,
+gegebenenfalls Vorgängerbeleg und Zahlungsziel, die Positionen sowie Netto-, Steuer- und
+Bruttosumme.
+
+**F-20:** Vorgänge, die länger dauern können (PDF- und E-Rechnungs-Export, CSV-Ausgabe,
+Datensicherung, Druck, Mailversand), MÜSSEN außerhalb des Bedienfadens ausgeführt werden.
+Das System MUSS währenddessen bedienbar bleiben, den laufenden Vorgang anzeigen und das
+auslösende Bedienelement sperren.
+
+**F-21:** Das System MUSS ein helles und ein dunkles Erscheinungsbild anbieten und
+zwischen beiden umschalten können. Die Wahl sowie Größe und Position des Hauptfensters
+MÜSSEN über das Programmende hinaus erhalten bleiben. Eine gespeicherte Fensterposition
+außerhalb aller angeschlossenen Bildschirme MUSS verworfen werden.
+
+**F-22:** Das System MUSS die häufigen Aktionen über Tastenkürzel anbieten: Wechsel
+zwischen den Bereichen (`Strg+1` bis `Strg+5`), Neuanlage (`Strg+N`), Suche (`Strg+F`),
+Aktualisieren (`F5`), Löschen (`Entf`) und Erscheinungsbild wechseln (`Strg+D`).
+
+**F-23:** WENN eine Liste leer ist, DANN MUSS das System an ihrer Stelle einen Hinweis
+anzeigen, der den Zustand benennt und die nächste sinnvolle Handlung nennt.
 
 ---
 
@@ -1508,6 +1563,36 @@ Beleg.
 Erwartet: Der Filter zeigt ausschließlich Belege des gewählten Status; für den
 versendeten Beleg sind alle inhaltlichen Änderungsaktionen deaktiviert, PDF-Export bleibt
 verfügbar.
+
+**AC-D-07 (zu F-18)** — *Kennzahlen der Übersicht*
+Vorbedingung: Es existieren eine offene Rechnung mit Zahlungsziel in der Zukunft, eine
+versendete Rechnung mit überschrittenem Zahlungsziel und eine stornierte Rechnung.
+Aktion: Anwender:in öffnet die Übersicht.
+Erwartet: Der offene Betrag enthält die offene und die versendete Rechnung, nicht die
+stornierte; die überfällige Rechnung ist mit Anzahl 1 und ihrem Bruttobetrag hervorgehoben
+ausgewiesen; der Jahresumsatz enthält keine stornierte Rechnung.
+
+**AC-D-08 (zu F-19)** — *Einzelheiten des gewählten Belegs*
+Vorbedingung: Eine Rechnung mit mindestens einer Position existiert.
+Aktion: Anwender:in wählt die Rechnung in der Belegliste aus.
+Erwartet: Der Detailbereich nennt Belegart und -nummer, den Status, Datum, Kunde mit
+Anschrift, das Zahlungsziel, jede Position mit Menge und Betrag sowie Netto-, Steuer- und
+Bruttosumme; die Bruttosumme stimmt mit der Spalte der Liste überein.
+
+**AC-D-09 (zu F-20)** — *Ausgabe blockiert die Bedienung nicht*
+Vorbedingung: Ein Beleg ist ausgewählt.
+Aktion: Anwender:in löst den PDF-Export aus und bedient währenddessen die Navigation.
+Erwartet: Das Fenster bleibt bedienbar, der laufende Vorgang wird in der Statuszeile
+benannt, das auslösende Bedienelement ist bis zum Abschluss gesperrt; anschließend liegt
+die Datei am gewählten Ort und eine Erfolgsmeldung erscheint, ohne die Bedienung zu
+blockieren (F-17).
+
+**AC-D-10 (zu F-21)** — *Erscheinungsbild und Fensterzustand bleiben erhalten*
+Vorbedingung: Die Anwendung läuft im hellen Erscheinungsbild.
+Aktion: Anwender:in schaltet auf das dunkle Erscheinungsbild, ändert die Fenstergröße,
+beendet die Anwendung und startet sie erneut.
+Erwartet: Die Anwendung startet im dunklen Erscheinungsbild mit der zuletzt gewählten
+Fenstergröße und -position; alle Ansichten sind lesbar dargestellt.
 
 ---
 

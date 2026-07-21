@@ -20,9 +20,10 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Führt länger laufende Vorgänge außerhalb des FX-Application-Threads aus
- * (Q-05): PDF- und E-Rechnungs-Export, CSV-Ausgabe, Datensicherung, Druck und
- * Mailversand. Zuvor liefen diese Vorgänge direkt im Ereignis-Handler — die
- * Oberfläche fror für ihre gesamte Dauer ohne jede Rückmeldung ein.
+ * (D-F-20, Q-05): PDF- und E-Rechnungs-Export, CSV-Ausgabe, Datensicherung,
+ * Druck und Mailversand. Zuvor liefen diese Vorgänge direkt im
+ * Ereignis-Handler — die Oberfläche fror für ihre gesamte Dauer ohne jede
+ * Rückmeldung ein.
  *
  * <p>Während ein Vorgang läuft, wird das auslösende Bedienelement gesperrt und
  * der Mauszeiger auf „beschäftigt“ gesetzt; {@link #laeuft()} und

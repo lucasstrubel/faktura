@@ -16,8 +16,8 @@ import org.springframework.stereotype.Component;
 import java.util.prefs.Preferences;
 
 /**
- * Erscheinungsbild und Fensterzustand über Sitzungen hinweg: heller oder
- * dunkler Modus sowie Größe und Position des Hauptfensters. Beides liegt in
+ * Erscheinungsbild und Fensterzustand über Sitzungen hinweg (D-F-21): heller
+ * oder dunkler Modus sowie Größe und Position des Hauptfensters. Beides liegt in
  * den Benutzereinstellungen des Betriebssystems
  * ({@link Preferences}) — es sind Bedienvorlieben, keine Fachdaten, und hat
  * deshalb in der Datenbank nichts verloren.
