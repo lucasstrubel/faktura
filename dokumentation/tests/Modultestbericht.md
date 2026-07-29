@@ -71,8 +71,15 @@ D – Programmoberfläche), der gemeinsam genutzten Infrastruktur (Paket `gemein
 übergreifenden Performance-/Lastnachweise. Für jeden im Plan festgelegten Testfall werden die
 ausführende JUnit-5-Testmethode und das tatsächliche Ergebnis (`Bestanden`/`Fehlgeschlagen`)
 ausgewiesen. Quelle der Wahrheit sind die Testklassen unter
-`src/test/java/de/team1/faktura/…` sowie die beim Testlauf erzeugten Surefire-Berichte
+`src/test/java/de/lucasstrubel/faktura/…` sowie die beim Testlauf erzeugten Surefire-Berichte
 (`target/surefire-reports/`).
+
+> **Stand:** Dieses Dokument ist der Nachweis des Modultestlaufs zur Abnahme der
+> **Version 1.0** (Stand 24.06.2026) und wird als historischer Beleg unverändert geführt.
+> Alle Ergebnisse, Laufzeiten und Aussagen zur Oberfläche beziehen sich auf diesen Stand —
+> insbesondere die Angabe „ohne Swing-Rendering“ in Kapitel 5 — und geben nicht den aktuellen
+> Stand der Anwendung wieder. Die Testsuite umfasst inzwischen 135 Tests; die
+> Abdeckungsschwelle wird seit Version 3.0 im Build erzwungen. Vgl. `Fallstudie.md`.
 
 ### 1.2 Testgegenstand und Referenzdokumente
 Prüfgegenstand ist die Anwendung `fakturierung` in Version 1.0.0. Grundlage der Testfälle

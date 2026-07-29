@@ -123,6 +123,12 @@ style: |
 
 ### Schlanke, lokal betriebene Fakturierung für Kleinstunternehmen
 
+<small>**Stand: Version 1.0** (Abschlusspräsentation des Hochschulprojekts, 07/2026). Dieser
+Foliensatz wird als historischer Beleg unverändert geführt. Die Angaben zu Technik und
+Architektur — Swing/FlatLaf, manuelle Dependency Injection in `Main.java`, JSON-Persistenz,
+E-Rechnung als Nichtziel — beschreiben diesen Stand und **nicht** die heutige Anwendung
+(siehe `Fallstudie.md` und `Projektuebersicht.md`).</small>
+
 ---
 
 ## Agenda

@@ -72,7 +72,11 @@ die übergreifenden Performance-/Lastnachweise in einem Dokument zusammen. Die T
 leiten sich aus den funktionalen Anforderungen, Daten/Schnittstellen und testbaren
 Abnahmekriterien der jeweiligen Pflichtenhefte ab und überführen diese in deterministische,
 mit JUnit 5 umgesetzte Testfälle. Quelle der Wahrheit sind die Testklassen unter
-`src/test/java/de/team1/faktura/…`.
+`src/test/java/de/lucasstrubel/faktura/…`.
+
+> **Stand:** Dieses Dokument beschreibt den Testumfang der **Version 1.0** (71 Testfälle,
+> Abnahme 06/2026). Die Testsuite ist seither auf 135 Tests gewachsen; die in den Versionen
+> 2.0 und 3.0 ergänzten Testklassen sind hier nicht aufgeführt. Vgl. `Fallstudie.md`.
 
 ### 1.2 Rahmenbedingungen
 Die folgenden Testfälle sind deterministisch (feste Ein-/Ausgaben) und mit JUnit 5

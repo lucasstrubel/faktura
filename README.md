@@ -1,6 +1,9 @@
 # Faktura
 
 [![CI](https://github.com/lucasstrubel/faktura/actions/workflows/ci.yml/badge.svg)](https://github.com/lucasstrubel/faktura/actions/workflows/ci.yml)
+[![Java 21](https://img.shields.io/badge/Java-21-007396?logo=openjdk&logoColor=white)](https://adoptium.net/temurin/releases/?version=21)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Built with Claude](https://img.shields.io/badge/Built%20with-Claude-D97757?logo=claude&logoColor=white)](https://claude.com/claude-code)
 
 **A lightweight desktop invoicing application for freelancers and micro-businesses — 100 % local, no cloud, no subscription.**
 
@@ -14,11 +17,16 @@ numbering (GoBD), and immutability of sent documents.
 > module testing, acceptance). I am now redesigning and extending it solo into a
 > production-quality application — see the [roadmap](#roadmap) below.
 
-## Features (v1.0)
+📄 **[Read the case study](CASE_STUDY.md)** — the compliance problem behind the domain, the
+four decisions that carry it, why each rebuild step happened, and what I got wrong on the way.
+([German version](dokumentation/projekt/Fallstudie.md))
+
+## Features
 
 - **Customer & product management** — CRUD with system-assigned numbers
   (`K-000017`, `P-000042`), full-text search, and delete protection: master data
-  referenced by documents cannot be deleted (referential integrity without a database)
+  referenced by documents cannot be deleted (enforced across components in the domain
+  layer, not only by the database schema)
 - **Document cycle** — each document can be derived from its predecessor (data
   carry-over + back-reference); prices and customer address are stored as immutable
   snapshots, so later master-data changes never alter existing documents
@@ -75,20 +83,45 @@ fails below a coverage floor) · SpotBugs · GitHub Actions
 **Windows installer (MSI):** grab the latest release from the
 [Releases page](https://github.com/lucasstrubel/faktura/releases) — installs
 per-user with a start-menu entry; application data lives under
-`<home>/Faktura/daten`.
+`<home>/Faktura/daten`. No JDK needed: the installer bundles its own runtime.
 
-**From source:**
+### Prerequisites (building from source)
+
+- **JDK 21 or newer** — the only requirement. ([Temurin 21](https://adoptium.net/temurin/releases/?version=21)
+  or any other distribution; the code is compiled with `--release 21`, so a newer JDK works too.)
+- **No Maven installation** — the Maven wrapper (`mvnw`) is included and downloads what it needs.
+- **No separate JavaFX SDK** — JavaFX is resolved as an ordinary Maven dependency, with the
+  native libraries for your platform picked automatically.
+
+Building from source works on Windows, Linux and macOS. The published installer is
+Windows-only; on other platforms, run the JAR.
+
+### Build
 
 ```bash
+git clone https://github.com/lucasstrubel/faktura.git
+cd faktura
+
 ./mvnw test                       # run all tests (JUnit 5)
+./mvnw verify                     # tests + coverage gate + SpotBugs (what CI runs)
 ./mvnw package                    # build fat JAR (Spring Boot repackage)
+
 java -jar target/faktura-3.0.0.jar
+```
+
+On Windows PowerShell, use `.\mvnw.cmd` instead of `./mvnw`.
+
+The application starts with an empty database and creates its schema on first launch.
+Data is stored locally in a SQLite database under `daten/` (git-ignored); the directory
+is configurable via `faktura.daten-verzeichnis` in `application.yml` or as a command-line
+argument:
+
+```bash
+java -jar target/faktura-3.0.0.jar --faktura.daten-verzeichnis=/path/to/data
 ```
 
 Releases are cut by pushing a version tag (`git tag v3.0.0 && git push github v3.0.0`);
 a GitHub Actions workflow then builds the MSI with jpackage and publishes it.
-
-Application data is stored locally in a SQLite database under `daten/` (git-ignored).
 
 ## Architecture
 
@@ -140,14 +173,29 @@ Full German software-engineering documentation under [`dokumentation/`](dokument
 - [`anforderungen/`](dokumentation/anforderungen/) — *Lastenheft* (customer
   requirements), consolidated *Pflichtenheft* (system requirements specification,
   parts A–D), requirements traceability matrix
-- [`tests/`](dokumentation/tests/) — module test plan and test report (71/71 passed)
-- [`projekt/`](dokumentation/projekt/) — project overview with roadmap, final
-  presentation slides
+- [`tests/`](dokumentation/tests/) — module test plan and test report documenting the
+  v1.0 acceptance run (71/71 passed); the suite has since grown to **135 tests**
+- [`projekt/`](dokumentation/projekt/) — project overview with roadmap,
+  [case study](dokumentation/projekt/Fallstudie.md), final presentation slides
 - [`diagramme/`](dokumentation/diagramme/) — UML class and sequence diagrams
   (PlantUML sources + rendered PNGs)
 
 The Markdown specifications can be rendered to PDF with pandoc + XeLaTeX; diagrams
 are rendered with [PlantUML](https://plantuml.com/download) (`java -jar plantuml.jar -Playout=smetana`, no Graphviz needed); place the jar under `tools/` (git-ignored).
+
+## Built with Claude
+
+This project was developed with [Claude Code](https://claude.com/claude-code) as a working
+tool, and it seems fairer to say what that means than to leave it implied. The agent did the
+mechanical bulk — package-wide refactors, repository and service boilerplate, test scaffolding,
+PlantUML sources, drafts of the German specifications. The design decisions were mine: which
+rules are invariants, that gapless numbering belongs inside the transaction, what to keep from
+v1.0 and what to delete, and whether a change was actually finished. Every change landed behind
+the same gates as any other — tests, coverage floor, SpotBugs — and anything visual was checked
+by running the application and looking at it.
+
+The [case study](CASE_STUDY.md#working-with-claude-code) goes into where this worked well and
+where the output needed correcting.
 
 ## License & author
 
