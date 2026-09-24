@@ -72,14 +72,14 @@ public class UebersichtAnsichtController {
     private void initialize() {
         nummerSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(z.getValue().getBelegnummer()));
         typSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(
-                z.getValue().belegtyp().anzeigename()));
+                Bausteine.belegart(z.getValue())));
         datumSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(
                 TabellenFormat.datum(z.getValue().getDatum())));
         kundeSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(z.getValue().getKundeName()));
         bruttoSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(
                 TabellenFormat.betrag(z.getValue().getSummeBrutto())));
         statusSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(
-                z.getValue().getStatus().name()));
+                Bausteine.anzeigestatus(z.getValue())));
         statusSpalte.setCellFactory(Bausteine.statusZelle());
         Bausteine.alsNummernspalte(nummerSpalte);
         Bausteine.alsBetragsspalte(bruttoSpalte);

@@ -1,5 +1,6 @@
 package de.lucasstrubel.faktura.produkte;
 
+import de.lucasstrubel.faktura.gemeinsam.Sortierung;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.lucasstrubel.faktura.gemeinsam.JsonPersistenz;
@@ -73,7 +74,7 @@ public class JsonProduktRepository implements ProduktRepository {
     @Override
     public List<Produkt> alleSortiertNachBezeichnung() {
         return produkte.stream()
-                .sorted(Comparator.comparing(Produkt::getBezeichnung, String.CASE_INSENSITIVE_ORDER))
+                .sorted(Comparator.comparing(Produkt::getBezeichnung, Sortierung.DEUTSCH))
                 .toList();
     }
 
@@ -83,7 +84,7 @@ public class JsonProduktRepository implements ProduktRepository {
         return produkte.stream()
                 .filter(p -> p.getBezeichnung().toLowerCase(Locale.ROOT).contains(begriff)
                         || p.getProduktnummer().toLowerCase(Locale.ROOT).contains(begriff))
-                .sorted(Comparator.comparing(Produkt::getBezeichnung, String.CASE_INSENSITIVE_ORDER))
+                .sorted(Comparator.comparing(Produkt::getBezeichnung, Sortierung.DEUTSCH))
                 .toList();
     }
 }

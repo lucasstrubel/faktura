@@ -42,6 +42,7 @@ import org.kordamp.ikonli.feather.Feather;
 import java.io.File;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -226,6 +227,10 @@ public class DokumentAnsichtController {
         List<Dokument> liste = controller.gefiltert(null, suchbegriff).stream()
                 .filter(d -> filter == null || ALLE.equals(filter)
                         || filter.equals(Bausteine.anzeigestatus(d)))
+                // Jüngste Belege zuerst — nach ihnen wird am häufigsten gesucht
+                .sorted(Comparator.comparing(Dokument::getDatum,
+                                Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(Dokument::getBelegnummer, Comparator.reverseOrder()))
                 .toList();
         tabelle.getItems().setAll(liste);
         int gesamt = controller.gefiltert(null, null).size();
@@ -298,9 +303,7 @@ public class DokumentAnsichtController {
         }
 
         Rechnung rechnung = dokument instanceof Rechnung r ? r : null;
-        String belegart = rechnung != null && rechnung.istStornorechnung()
-                ? "Stornorechnung" : dokument.belegtyp().anzeigename();
-        Label titel = new Label(belegart + " " + dokument.getBelegnummer());
+        Label titel = new Label(Bausteine.belegart(dokument) + " " + dokument.getBelegnummer());
         titel.getStyleClass().add("detail-titel");
         titel.setWrapText(true);
 
@@ -368,6 +371,8 @@ public class DokumentAnsichtController {
         Label rechts = new Label(wert == null || wert.isBlank() ? "—" : wert);
         rechts.getStyleClass().add("detail-wert");
         rechts.setWrapText(true);
+        // Ohne Mindesthöhe kürzt JavaFX mit „…“, statt umzubrechen
+        rechts.setMinHeight(Region.USE_PREF_SIZE);
         rechts.setMaxWidth(Double.MAX_VALUE);
         rechts.setAlignment(Pos.TOP_RIGHT);
         rechts.setTextAlignment(TextAlignment.RIGHT);
@@ -387,6 +392,7 @@ public class DokumentAnsichtController {
         Label links = new Label(bezeichnung);
         links.getStyleClass().add("detail-beschriftung");
         links.setWrapText(true);
+        links.setMinHeight(Region.USE_PREF_SIZE);
         links.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(links, Priority.ALWAYS);
 

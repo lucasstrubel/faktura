@@ -1,5 +1,6 @@
 package de.lucasstrubel.faktura.kunden;
 
+import de.lucasstrubel.faktura.gemeinsam.Sortierung;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.lucasstrubel.faktura.gemeinsam.JsonPersistenz;
@@ -73,7 +74,7 @@ public class JsonKundenRepository implements KundenRepository {
     @Override
     public List<Kunde> alleSortiertNachName() {
         return kunden.stream()
-                .sorted(Comparator.comparing(Kunde::getName, String.CASE_INSENSITIVE_ORDER))
+                .sorted(Comparator.comparing(Kunde::getName, Sortierung.DEUTSCH))
                 .toList();
     }
 
@@ -83,7 +84,7 @@ public class JsonKundenRepository implements KundenRepository {
         return kunden.stream()
                 .filter(k -> k.getName().toLowerCase(Locale.ROOT).contains(begriff)
                         || k.getKundennummer().toLowerCase(Locale.ROOT).contains(begriff))
-                .sorted(Comparator.comparing(Kunde::getName, String.CASE_INSENSITIVE_ORDER))
+                .sorted(Comparator.comparing(Kunde::getName, Sortierung.DEUTSCH))
                 .toList();
     }
 }

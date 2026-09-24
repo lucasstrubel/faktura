@@ -1,5 +1,6 @@
 package de.lucasstrubel.faktura.produkte;
 
+import de.lucasstrubel.faktura.gemeinsam.Sortierung;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -66,7 +67,7 @@ public class JdbcProduktRepository implements ProduktRepository {
     @Override
     public List<Produkt> alleSortiertNachBezeichnung() {
         return jdbc.query("SELECT * FROM produkt", ZEILE).stream()
-                .sorted(Comparator.comparing(Produkt::getBezeichnung, String.CASE_INSENSITIVE_ORDER))
+                .sorted(Comparator.comparing(Produkt::getBezeichnung, Sortierung.DEUTSCH))
                 .toList();
     }
 
@@ -76,7 +77,7 @@ public class JdbcProduktRepository implements ProduktRepository {
         return jdbc.query("SELECT * FROM produkt", ZEILE).stream()
                 .filter(p -> p.getBezeichnung().toLowerCase(Locale.ROOT).contains(begriff)
                         || p.getProduktnummer().toLowerCase(Locale.ROOT).contains(begriff))
-                .sorted(Comparator.comparing(Produkt::getBezeichnung, String.CASE_INSENSITIVE_ORDER))
+                .sorted(Comparator.comparing(Produkt::getBezeichnung, Sortierung.DEUTSCH))
                 .toList();
     }
 }

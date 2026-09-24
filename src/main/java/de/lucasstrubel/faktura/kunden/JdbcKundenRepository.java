@@ -1,5 +1,6 @@
 package de.lucasstrubel.faktura.kunden;
 
+import de.lucasstrubel.faktura.gemeinsam.Sortierung;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -63,7 +64,7 @@ public class JdbcKundenRepository implements KundenRepository {
     @Override
     public List<Kunde> alleSortiertNachName() {
         return jdbc.query("SELECT * FROM kunde", ZEILE).stream()
-                .sorted(Comparator.comparing(Kunde::getName, String.CASE_INSENSITIVE_ORDER))
+                .sorted(Comparator.comparing(Kunde::getName, Sortierung.DEUTSCH))
                 .toList();
     }
 
@@ -73,7 +74,7 @@ public class JdbcKundenRepository implements KundenRepository {
         return jdbc.query("SELECT * FROM kunde", ZEILE).stream()
                 .filter(k -> k.getName().toLowerCase(Locale.ROOT).contains(begriff)
                         || k.getKundennummer().toLowerCase(Locale.ROOT).contains(begriff))
-                .sorted(Comparator.comparing(Kunde::getName, String.CASE_INSENSITIVE_ORDER))
+                .sorted(Comparator.comparing(Kunde::getName, Sortierung.DEUTSCH))
                 .toList();
     }
 }

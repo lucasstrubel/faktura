@@ -70,6 +70,14 @@ public final class Bausteine {
         };
     }
 
+    /** Belegart für Listen und Detailansicht; eine Stornorechnung heißt auch so (A-F-29). */
+    public static String belegart(Dokument dokument) {
+        if (dokument instanceof Rechnung rechnung && rechnung.istStornorechnung()) {
+            return "Stornorechnung";
+        }
+        return dokument.belegtyp().anzeigename();
+    }
+
     /**
      * Status, wie er in Listen erscheint: eine bezahlte Rechnung zeigt
      * „Bezahlt“ statt „Versendet“ — die Frage „ist das Geld da?“ ist in der

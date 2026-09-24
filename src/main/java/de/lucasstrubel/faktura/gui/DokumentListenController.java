@@ -120,7 +120,7 @@ public class DokumentListenController {
                 .map(d -> (Rechnung) d)
                 .filter(r -> r.getStorniertAm() != null)
                 .findFirst()
-                .map(r -> " am " + r.getStorniertAm()
+                .map(r -> " am " + TabellenFormat.datum(r.getStorniertAm())
                         + (r.getStorniertVon() == null ? "" : " durch " + r.getStorniertVon()))
                 .orElse("");
     }

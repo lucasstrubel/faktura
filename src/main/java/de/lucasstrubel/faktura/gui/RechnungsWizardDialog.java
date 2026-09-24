@@ -250,13 +250,16 @@ public class RechnungsWizardDialog extends Stage {
         return element;
     }
 
-    /** Schritt 3: Rechnungsdatum und Zahlungsziel bestätigen (F-09, F-10). */
+    /** Schritt 3: Rechnungs-, Leistungsdatum und Zahlungsziel bestätigen (F-09, F-10, A-F-31). */
     private Node baueSchrittDaten() {
         rechnungsdatumFeld.setTooltip(new Tooltip("Pflichtfeld — über den Kalender wählbar"));
         zahlungszielFeld.setTooltip(new Tooltip(
                 "Optional — leer bedeutet 14 Tage nach Rechnungsdatum"));
         leistungsdatumFeld.setTooltip(new Tooltip(
                 "Optional — Tag der Lieferung oder Leistung; leer bedeutet Rechnungsdatum"));
+        // Der Platzhalter sagt, was ein leeres Feld bedeutet
+        leistungsdatumFeld.setPromptText("wie Rechnungsdatum");
+        zahlungszielFeld.setPromptText("+14 Tage");
         Label legende = new Label("* Pflichtfeld");
         legende.getStyleClass().add("pflichtfeld-legende");
 
@@ -368,7 +371,7 @@ public class RechnungsWizardDialog extends Stage {
         return switch (schritt) {
             case KUNDE_WAEHLEN -> "Kunde auswählen";
             case POSITIONEN_ERFASSEN -> "Positionen erfassen";
-            case DATEN_BESTAETIGEN -> "Rechnungsdatum und Zahlungsziel";
+            case DATEN_BESTAETIGEN -> "Rechnungsdatum, Leistungsdatum und Zahlungsziel";
             case ZUSAMMENFASSUNG -> "Zusammenfassung prüfen";
             case SPEICHERN -> "Speichern";
         };
