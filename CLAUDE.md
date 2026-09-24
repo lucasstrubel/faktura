@@ -20,7 +20,7 @@ java -jar target/faktura-3.0.0.jar                    # Anwendung starten
 
 Unter Windows ohne Git Bash `mvnw.cmd` statt `./mvnw`. `verify` ist das CI-Gate und bricht ab bei SpotBugs-Befunden (Ausnahmen in `spotbugs-exclude.xml`) oder unterschrittener JaCoCo-Schwelle (Bundle: 85 % Instruktionen, 70 % Zweige). Die Schwelle liegt bewusst knapp unter dem Ist-Stand — wer die Abdeckung hebt, zieht sie im `pom.xml` nach. FX-gebundene Klassen (`gui/*Ansicht*`, `*Dialog*`, `Bausteine`, `FxMeldung`, `HintergrundAufgaben`, `Tastenkuerzel`, `FxAnwendung` …) sind ausgenommen; Dialogführung und Logik gehören deshalb in GUI-freie `*Controller`-Klassen, die ohne JavaFX-Laufzeit testbar sind und mitgezählt werden.
 
-Release: Ein Tag `v*` löst `.github/workflows/release.yml` aus (Windows-Runner, Abgleich Tag ↔ pom-Version, `jpackage` → MSI mit `installer/faktura.ico`, GitHub-Release mit MSI + Fat-JAR). Das Fat-JAR enthält die JavaFX-Natives für win, linux und mac-aarch64 (ausdrückliche Klassifikatoren im `pom.xml`). Die Version im `pom.xml`, im `java -jar`-Pfad oben, im README und im CHANGELOG mitziehen. Remote für GitHub heißt lokal `github`; `origin` ist die Hochschul-Gitea und der Zweig `uni-archive` enthält Daten der Kommilitonen — beides nie nach GitHub pushen.
+Release: Ein Tag `v*` löst `.github/workflows/release.yml` aus (Windows-Runner, Abgleich Tag ↔ pom-Version, `jpackage` → MSI mit `installer/faktura.ico`, GitHub-Release mit MSI + Fat-JAR). Das Fat-JAR enthält die JavaFX-Natives für win, linux und mac-aarch64 (ausdrückliche Klassifikatoren im `pom.xml`). Die Version im `pom.xml`, im `java -jar`-Pfad oben, im README und im CHANGELOG mitziehen.
 
 ### Tests
 

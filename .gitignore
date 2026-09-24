@@ -21,6 +21,7 @@ dokumentation/**/*.html
 
 # Lokale Werkzeug- und Agenteneinstellungen
 .claude/
+CLAUDE.local.md
 
 # IDE
 .idea/
