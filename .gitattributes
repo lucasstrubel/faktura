@@ -1,0 +1,12 @@
+# Einheitliche Zeilenenden im Repository (LF); Windows-Skripte behalten CRLF
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binärdateien nie anfassen
+*.png binary
+*.ico binary
+*.pdf binary
+*.ttf binary
+*.jar binary

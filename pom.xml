@@ -37,8 +37,6 @@
         <maven.compiler.release>21</maven.compiler.release>
         <spring-boot.version>4.1.0</spring-boot.version>
         <javafx.version>21.0.11</javafx.version>
-        <jackson.version>2.17.2</jackson.version>
-        <junit.version>5.10.2</junit.version>
         <pdfbox.version>3.0.5</pdfbox.version>
         <ikonli.version>12.3.1</ikonli.version>
     </properties>
@@ -78,15 +76,15 @@
         </dependency>
 
         <!-- Persistenz: JSON-Dateien (IF-01) -->
+        <!-- Version aus der Spring-Boot-Stückliste: Eine eigene, ältere Version
+             mischte sonst jackson-databind 2.17 mit jackson-core 2.21 -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
 
         <!-- PDF-Export der Belege (Komponente A, F-04/F-07/F-10/F-15) -->
@@ -114,6 +112,88 @@
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+        <!--
+            Plattformübergreifendes Fat-JAR: Ohne Klassifikator zieht JavaFX nur
+            die nativen Bibliotheken des Build-Rechners — das auf Windows
+            gebaute Release-JAR startete unter Linux und macOS nicht. Die
+            Natives für Windows, Linux und macOS (Apple Silicon) werden deshalb
+            ausdrücklich mitgenommen. Intel-Macs sind bewusst nicht dabei: Beide
+            macOS-Varianten liefern gleichnamige Bibliotheken, und die falsche
+            Architektur würde zuerst geladen; dort bleibt der Build aus dem
+            Quellcode.
+        -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-base</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>win</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-base</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>linux</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-base</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>mac-aarch64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-graphics</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>win</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-graphics</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>linux</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-graphics</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>mac-aarch64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>win</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>linux</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>mac-aarch64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>win</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>linux</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>mac-aarch64</classifier>
+        </dependency>
         <dependency>
             <groupId>io.github.mkpaz</groupId>
             <artifactId>atlantafx-base</artifactId>
@@ -135,7 +215,6 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -191,6 +270,7 @@
                                 <exclude>de/lucasstrubel/faktura/gui/Erscheinungsbild*</exclude>
                                 <exclude>de/lucasstrubel/faktura/gui/FxMeldung*</exclude>
                                 <exclude>de/lucasstrubel/faktura/gui/HintergrundAufgaben*</exclude>
+                                <exclude>de/lucasstrubel/faktura/gui/Tastenkuerzel*</exclude>
                                 <exclude>de/lucasstrubel/faktura/FxAnwendung*</exclude>
                             </excludes>
                             <rules>
@@ -200,12 +280,12 @@
                                         <limit>
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.70</minimum>
+                                            <minimum>0.85</minimum>
                                         </limit>
                                         <limit>
                                             <counter>BRANCH</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.60</minimum>
+                                            <minimum>0.70</minimum>
                                         </limit>
                                     </limits>
                                 </rule>

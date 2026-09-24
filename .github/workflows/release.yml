@@ -16,6 +16,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Tag und Projektversion müssen übereinstimmen: Sonst enthielte etwa
+      # ein MSI "3.0.1" das JAR faktura-3.0.0.jar. jpackage verlangt zudem
+      # eine rein numerische Version (kein "-rc1").
+      - name: Check tag against project version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}".TrimStart('v')
+          $pom = ([xml](Get-Content pom.xml)).project.version
+          if ($tag -notmatch '^\d+\.\d+\.\d+$') { throw "Tag $tag ist keine numerische Version (X.Y.Z)" }
+          if ($tag -ne $pom) { throw "Tag $tag passt nicht zur Projektversion $pom in pom.xml" }
+          Write-Host "Version $tag bestätigt"
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
