@@ -8,7 +8,7 @@ skinparam classAttributeIconSize 0
 skinparam linetype ortho
 hide empty members
 
-title UML-Klassendiagramm — Produktverwaltung (Komponente B)
+title UML-Klassendiagramm — Produktverwaltung (Komponente B), Stand 3.0
 
 ' ===================== Domänenmodell =====================
 
@@ -41,7 +41,7 @@ interface ProduktnummernGenerator <<interface>> {
   + naechsteNummer() : String
 }
 
-class EinfacherProduktnummernGenerator {
+class JdbcProduktnummernGenerator {
   + naechsteNummer() : String
 }
 
@@ -53,16 +53,24 @@ interface ProduktRepository <<interface>> {
   + suche(suchbegriff : String) : List<Produkt>
 }
 
-class JsonProduktRepository {
+class JdbcProduktRepository <<SQLite>> {
 }
 
 class ProduktCsvExport {
   + exportiere(produkte : List<Produkt>, zielDatei : Path)
 }
 
+class DatenGeaendertEreignis <<record>> {
+  + bereich : DatenBereich
+}
+
 class EreignisBus {
   + abonniere(bereich : DatenBereich, beobachter : Runnable)
-  + melde(bereich : DatenBereich)
+  + empfange(ereignis) <<AFTER_COMMIT>>
+}
+
+class JdbcNummernkreis <<gemeinsam>> {
+  + naechsterWert(bereich, jahr, startwert) : int
 }
 
 enum DatenBereich {
@@ -80,16 +88,18 @@ interface ProduktReferenzPruefung <<extern (Komponente A)>> {
 ' ===================== Realisierungen (konkrete Implementierungen) =====================
 
 ProduktService <|.. ProduktVerwaltungsService
-ProduktRepository <|.. JsonProduktRepository
-ProduktnummernGenerator <|.. EinfacherProduktnummernGenerator
+ProduktRepository <|.. JdbcProduktRepository
+ProduktnummernGenerator <|.. JdbcProduktnummernGenerator
+JdbcProduktnummernGenerator ..> JdbcNummernkreis : gleiche Transaktion
 
 ' ===================== Nutzungs-/Abhängigkeitsbeziehungen =====================
 
 ProduktVerwaltungsService ..> ProduktRepository
 ProduktVerwaltungsService ..> ProduktnummernGenerator
 ProduktVerwaltungsService ..> ProduktReferenzPruefung
-ProduktVerwaltungsService ..> EreignisBus
-EreignisBus ..> DatenBereich
+ProduktVerwaltungsService ..> DatenGeaendertEreignis : veröffentlicht
+DatenGeaendertEreignis ..> EreignisBus : zugestellt nach Commit
+DatenGeaendertEreignis ..> DatenBereich
 
 ' Zugriff auf Produkt = Abhängigkeit (liefert/speichert), KEIN 1:n-Container
 ProduktVerwaltungsService ..> Produkt : verwaltet

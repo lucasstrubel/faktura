@@ -123,11 +123,7 @@ style: |
 
 ### Schlanke, lokal betriebene Fakturierung für Kleinstunternehmen
 
-<small>**Stand: Version 1.0** (Abschlusspräsentation des Hochschulprojekts, 07/2026). Dieser
-Foliensatz wird als historischer Beleg unverändert geführt. Die Angaben zu Technik und
-Architektur — Swing/FlatLaf, manuelle Dependency Injection in `Main.java`, JSON-Persistenz,
-E-Rechnung als Nichtziel — beschreiben diesen Stand und **nicht** die heutige Anwendung
-(siehe `Fallstudie.md` und `Projektuebersicht.md`).</small>
+> Abschlusspräsentation im Modul Software Engineering 1, TH Mannheim (07/2026) — historischer Stand der Version 1.0 (Swing, JSON, manuelle DI). Aktueller Stand 3.0: siehe Fallstudie.
 
 ---
 
@@ -148,7 +144,7 @@ E-Rechnung als Nichtziel — beschreiben diesen Stand und **nicht** die heutige 
 
 ## Projektorganisation
 
-Vier fachliche Komponenten, arbeitsteilig spezifiziert und implementiert:
+12 Studierende in vier Gruppen zu je drei Personen — je Gruppe eine fachliche Komponente:
 
 | Komponente | Verantwortung |
 |---|---|
@@ -253,7 +249,7 @@ Geführte Rechnungserstellung *(BA-13)* · Navigation, Pflichtfeldhinweise *(Q-0
   <small>Swing + FlatLaf · `HauptFenster` · `RechnungsWizardController`</small>
 
 ### Live-Demo
-**Wizard**: Kunde → Positionen → Bestätigen → Zusammenfassung → Speichern · Statusfilter „offen" · Pflichtfeldhinweis · PDF-/CSV-Export
+**Wizard**: Kunde → Positionen → Bestätigen → Zusammenfassung → Speichern · Statusfilter „offen“ · Pflichtfeldhinweis · PDF-/CSV-Export
 
 ---
 
@@ -272,17 +268,17 @@ Geführte Rechnungserstellung *(BA-13)* · Navigation, Pflichtfeldhinweise *(Q-0
 
 | Bereich | Testfälle | Ergebnis |
 |---|---|---|
-| A — Dokumentenzyklus | 18 | ✅ bestanden |
-| B — Produktverwaltung | 14 | ✅ bestanden |
-| C — Kundenverwaltung | 14 | ✅ bestanden |
-| D — Programmoberfläche | 15 | ✅ bestanden |
-| Infrastruktur | 6 | ✅ bestanden |
-| Performance | 4 | ✅ Schranken eingehalten |
+| A — Dokumentenzyklus | 18 | bestanden |
+| B — Produktverwaltung | 14 | bestanden |
+| C — Kundenverwaltung | 14 | bestanden |
+| D — Programmoberfläche | 15 | bestanden |
+| Infrastruktur | 6 | bestanden |
+| Performance | 4 | Schranken eingehalten |
 | **Gesamt** | **71** | **100 % bestanden** |
 
 <small>Deterministische JUnit-5-Tests, Nachbarkomponenten als Stubs/Mocks. Traceability **Anforderung → Code (`@DisplayName`) → Testfall**; spezifiziert in `Modultestplan.md`, nachgewiesen in `Anforderungsabgleich.md`.</small>
 
-> Alle durch Code/Tests belegbaren Anforderungen ✅ — offen bleiben nur organisatorische Usability-Tests (Q-05 / AC-11).
+> Alle durch Code/Tests belegbaren Anforderungen erfüllt — offen bleiben nur organisatorische Usability-Tests (Q-05 / AC-11).
 
 ---
 
@@ -294,8 +290,8 @@ Geführte Rechnungserstellung *(BA-13)* · Navigation, Pflichtfeldhinweise *(Q-0
 - **Diagramme & Tooling:** PlantUML-Quellen, Maven-Konfiguration, pandoc-/PDF-Workflow
 
 **Bewertung**
-- 👍 Hohes Tempo bei Produktion, Tests & Doku; konsistente deutsche Fachsprache; schnelle Iteration nach Feedback
-- 👎 Vorschläge teils zu generisch
+- **Stärken:** Hohes Tempo bei Produktion, Tests & Doku; konsistente deutsche Fachsprache; schnelle Iteration nach Feedback
+- **Schwächen:** Vorschläge teils zu generisch
 
 ---
 

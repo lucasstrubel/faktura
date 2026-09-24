@@ -1,23 +1,25 @@
 @startuml sequenz_rechnung_erstellen
-' UML-Sequenzdiagramm "Rechnung erstellen" (Pflichtenheft Teil A, Abschnitt 7.2)
+' UML-Sequenzdiagramm "Rechnung erstellen" (Pflichtenheft Teil A, Abschnitt 7.2), Stand 3.0
 ' Ablauf gemäß StandardDokumentService.erstelleRechnung(...) und exportierePdf(...).
 
 skinparam shadowing false
 skinparam sequenceMessageAlign center
 hide footbox
 
-title UML-Sequenzdiagramm — „Rechnung erstellen" (Komponente A)
+title UML-Sequenzdiagramm — „Rechnung erstellen“ (Komponente A), Stand 3.0
 
 participant "GUI\n(Komponente D)" as GUI
 participant "dokumentService :\nStandardDokumentService" as DS
 participant "kundenService :\nKundenService" as KS
 participant "produktService :\nProduktService" as PS
-participant "nummernGenerator :\nBelegnummernGenerator" as NG
-participant "repository :\nDokumentRepository" as REPO
+participant "firmenprofilService :\nFirmenprofilService" as FP
+participant "nummernGenerator :\nJdbcBelegnummernGenerator" as NG
+participant "repository :\nJdbcDokumentRepository" as REPO
 participant "ereignisBus :\nEreignisBus" as EB
 
-GUI -> DS : erstelleRechnung(kundenNr, positionen,\nrechnungsdatum, zahlungsziel)
+GUI -> DS : erstelleRechnung(kundenNr, positionen,\nrechnungsdatum, leistungsdatum, zahlungsziel)
 activate DS
+note over DS, REPO : eine Transaktion (@Transactional) — ein Fehlschlag verbraucht keine Nummer (GR-01)
 
 DS -> KS : findeKunde(kundenNr)
 activate KS
@@ -33,37 +35,39 @@ loop für jede Positionsangabe
   note right of DS : Preis- und Steuersatz-Snapshot\ndes Produkts (GR-03, F-23)
 end
 
+DS -> FP : fuerBeleg(rechnung = true)
+activate FP
+FP --> DS : firmenprofil
+deactivate FP
+note right of DS : ohne Profil bzw. ohne Steuernummer/\nUSt-IdNr. Abbruch vor der Nummernvergabe (F-26)
+
 DS -> NG : naechsteNummer(RECHNUNG, jahr)
 activate NG
 NG --> DS : "R-2026-000124"
 deactivate NG
 
-DS -> DS : zahlungsziel = rechnungsdatum + 14 Tage\n(falls nicht angegeben, GR-06)
-
 create participant "rechnung :\nRechnung" as R
 DS -> R : «create»
+DS -> R : setzeKunde(...), setzeAussteller(firmenprofil)
 DS -> R : setzePositionen(positionen)
 activate R
-R -> R : berechneSummen()
+R -> R : berechneSummen()\n(Steuer je Steuersatz, F-25)
 deactivate R
-DS -> R : setzeStatus(OFFEN)
+DS -> R : Leistungsdatum, Zahlungsziel (+14 Tage, GR-06), Status OFFEN
 
 DS -> REPO : speichere(rechnung)
 activate REPO
 REPO --> DS : rechnung
 deactivate REPO
 
-DS -> EB : melde(DOKUMENTE)
-activate EB
-note right of EB : benachrichtigt die abonnierten\nModulansichten (Observer-Muster)
-EB --> DS
-deactivate EB
+DS ->> EB : DatenGeaendertEreignis(DOKUMENTE)
+note right of EB : Zustellung an die Modulansichten\nerst nach dem Commit (AFTER_COMMIT)
 
 DS --> GUI : rechnung
 deactivate DS
 
-group Separater Aufruf: PDF-Export (F-15, IF-01)
-  participant "pdfExporter :\nPdfExporter" as PDF
+group Separater Aufruf: PDF-Export im Hintergrund (F-15, IF-01)
+  participant "pdfExporter :\nPdfBoxPdfExporter" as PDF
   GUI -> DS : exportierePdf(belegnummer, zielDatei)
   activate DS
   DS -> REPO : findeNachNummer(belegnummer)
@@ -72,6 +76,7 @@ group Separater Aufruf: PDF-Export (F-15, IF-01)
   deactivate REPO
   DS -> PDF : exportiere(rechnung, zielDatei)
   activate PDF
+  note right of PDF : Briefkopf aus dem Aussteller-Snapshot,\nUSt je Steuersatz, eingebettete Schrift
   PDF --> DS
   deactivate PDF
   DS --> GUI : PDF im lokalen Dateisystem

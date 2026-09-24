@@ -8,7 +8,7 @@ skinparam classAttributeIconSize 0
 skinparam linetype ortho
 hide empty members
 
-title UML-Klassendiagramm — Kundenverwaltung (Komponente C)
+title UML-Klassendiagramm — Kundenverwaltung (Komponente C), Stand 3.0
 
 ' ===================== Domänenmodell =====================
 
@@ -44,7 +44,7 @@ interface KundennummernGenerator <<interface>> {
   + naechsteNummer() : String
 }
 
-class EinfacherKundennummernGenerator {
+class JdbcKundennummernGenerator {
   + naechsteNummer() : String
 }
 
@@ -56,16 +56,24 @@ interface KundenRepository <<interface>> {
   + suche(suchbegriff : String) : List<Kunde>
 }
 
-class JsonKundenRepository {
+class JdbcKundenRepository <<SQLite>> {
 }
 
 class KundenCsvExport {
   + exportiere(kunden : List<Kunde>, zielDatei : Path)
 }
 
+class DatenGeaendertEreignis <<record>> {
+  + bereich : DatenBereich
+}
+
 class EreignisBus {
   + abonniere(bereich : DatenBereich, beobachter : Runnable)
-  + melde(bereich : DatenBereich)
+  + empfange(ereignis) <<AFTER_COMMIT>>
+}
+
+class JdbcNummernkreis <<gemeinsam>> {
+  + naechsterWert(bereich, jahr, startwert) : int
 }
 
 enum DatenBereich {
@@ -83,16 +91,18 @@ interface KundenReferenzPruefung <<extern (Komponente A)>> {
 ' ===================== Realisierungen (konkrete Implementierungen) =====================
 
 KundenService <|.. KundenVerwaltungsService
-KundenRepository <|.. JsonKundenRepository
-KundennummernGenerator <|.. EinfacherKundennummernGenerator
+KundenRepository <|.. JdbcKundenRepository
+KundennummernGenerator <|.. JdbcKundennummernGenerator
+JdbcKundennummernGenerator ..> JdbcNummernkreis : gleiche Transaktion
 
 ' ===================== Nutzungs-/Abhängigkeitsbeziehungen =====================
 
 KundenVerwaltungsService ..> KundenRepository
 KundenVerwaltungsService ..> KundennummernGenerator
 KundenVerwaltungsService ..> KundenReferenzPruefung
-KundenVerwaltungsService ..> EreignisBus
-EreignisBus ..> DatenBereich
+KundenVerwaltungsService ..> DatenGeaendertEreignis : veröffentlicht
+DatenGeaendertEreignis ..> EreignisBus : zugestellt nach Commit
+DatenGeaendertEreignis ..> DatenBereich
 
 ' Zugriff auf Kunde = Abhängigkeit (liefert/speichert), KEIN 1:n-Container
 KundenVerwaltungsService ..> Kunde : verwaltet

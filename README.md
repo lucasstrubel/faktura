@@ -1,202 +1,214 @@
 # Faktura
 
 [![CI](https://github.com/lucasstrubel/faktura/actions/workflows/ci.yml/badge.svg)](https://github.com/lucasstrubel/faktura/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/lucasstrubel/faktura?label=Release)](https://github.com/lucasstrubel/faktura/releases/latest)
 [![Java 21](https://img.shields.io/badge/Java-21-007396?logo=openjdk&logoColor=white)](https://adoptium.net/temurin/releases/?version=21)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Built with Claude](https://img.shields.io/badge/Built%20with-Claude-D97757?logo=claude&logoColor=white)](https://claude.com/claude-code)
+[![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-green.svg)](LICENSE)
+[![Mit Claude entwickelt](https://img.shields.io/badge/entwickelt%20mit-Claude-D97757?logo=claude&logoColor=white)](https://claude.com/claude-code)
 
-**A lightweight desktop invoicing application for freelancers and micro-businesses — 100 % local, no cloud, no subscription.**
+**Schlanke Desktop-Fakturierung für Freiberufler und Kleinstunternehmen — vollständig lokal,
+ohne Cloud, ohne Abo.**
 
-Faktura manages customers and products and covers the full German commercial document
-cycle — *Angebot* (quote) → *Auftragsbestätigung* (order confirmation) → *Lieferschein*
-(delivery note) → *Rechnung* (invoice) — including PDF export, gapless invoice
-numbering (GoBD), and immutability of sent documents.
+Faktura verwaltet Kunden und Produkte und bildet den vollständigen kaufmännischen
+Dokumentenzyklus ab — Angebot → Auftragsbestätigung → Lieferschein → Rechnung —
+einschließlich PDF-Ausgabe, E-Rechnung nach EN 16931, lückenloser Rechnungsnummern und
+unveränderlicher versendeter Belege (GoBD).
 
-> **Origin:** This project started as a software engineering course project at
-> TH Mannheim (full V-model process: requirements specification, design, implementation,
-> module testing, acceptance). I am now redesigning and extending it solo into a
-> production-quality application — see the [roadmap](#roadmap) below.
+> **Herkunft:** Faktura ist im Rahmen des Moduls **Software Engineering 1** an der
+> **TH Mannheim** gestartet (Sommersemester 2026). 12 Studierende in vier Gruppen zu je
+> drei Personen haben den vollständigen V-Modell-Prozess durchlaufen — Lastenheft,
+> Pflichtenheft, Entwurf, Modultest, Abnahme —, jede Gruppe mit einer der vier Komponenten.
+> Ich habe dabei das Repository verwaltet und sämtliche Projektdokumente verfasst. Seit
+> Projektabschluss entwickle ich Faktura allein zu einer auslieferbaren Anwendung weiter.
 
-📄 **[Read the case study](CASE_STUDY.md)** — the compliance problem behind the domain, the
-four decisions that carry it, why each rebuild step happened, and what I got wrong on the way.
-([German version](dokumentation/projekt/Fallstudie.md))
+📄 **[Fallstudie lesen](dokumentation/projekt/Fallstudie.md)** ([PDF](dokumentation/pdf/Fallstudie.pdf))
+— das Compliance-Problem hinter der Fachlichkeit, die fünf Entscheidungen, die es tragen,
+warum jeder Umbauschritt nötig war und was ich unterwegs gelernt habe.
 
-## Features
+## Funktionen
 
-- **Customer & product management** — CRUD with system-assigned numbers
-  (`K-000017`, `P-000042`), full-text search, and delete protection: master data
-  referenced by documents cannot be deleted (enforced across components in the domain
-  layer, not only by the database schema)
-- **Document cycle** — each document can be derived from its predecessor (data
-  carry-over + back-reference); prices and customer address are stored as immutable
-  snapshots, so later master-data changes never alter existing documents
-- **Guided invoice creation** — 5-step wizard (customer → positions → dates →
-  summary → save)
-- **Compliance by design** — gapless invoice numbers per year (`R-2026-000124`),
-  documents are never deleted (only cancelled), sent documents reject every
-  modification (GoBD), § 14 UStG mandatory invoice fields, all money handled as
-  `BigDecimal` scale 2
-- **PDF export** (Apache PDFBox), **e-invoicing** per EN 16931 (ZUGFeRD/XRechnung CII
-  via Mustang), and **CSV export** (UTF-8, open format)
-- **Local-only persistence** — SQLite database with Flyway-managed schema; a legacy
-  JSON stock is imported automatically on first start; no network access (DSGVO)
+- **Kunden- und Produktverwaltung** — Anlegen, Ändern, Suchen, Löschen mit vergebenen
+  Nummern (`K-000017`, `P-000042`) und Löschsperre: Stammdaten, die in Belegen verwendet
+  werden, lassen sich nicht löschen
+- **Dokumentenzyklus** — jeder Beleg lässt sich aus seinem Vorgänger ableiten; Preise,
+  Kunde und Aussteller werden als unveränderlicher Snapshot gespeichert, spätere
+  Stammdatenänderungen verändern keine bestehenden Belege
+- **Geführte Rechnungserstellung** — Assistent in fünf Schritten (Kunde → Positionen →
+  Daten → Prüfen → Speichern)
+- **Rechtssicher aufgebaut** — lückenlose Rechnungsnummern je Jahr (`R-2026-000124`),
+  transaktional abgesichert; Belege werden nie gelöscht; versendete Rechnungen werden
+  über eine **Stornorechnung** korrigiert; Pflichtangaben nach § 14 UStG einschließlich
+  Steuernummer und **Umsatzsteuer je Steuersatz**; Geldbeträge durchgängig `BigDecimal`
+- **Zahlungseingang** — bezahlte Rechnungen verschwinden aus offenem Betrag und
+  Überfälligkeit; die Übersicht zeigt Offenes, Überfälliges und den Jahresumsatz
+- **Ausgabe** — PDF (Apache PDFBox, eingebettete Schrift), **E-Rechnung nach EN 16931**
+  (ZUGFeRD/XRechnung-CII über Mustang, Stornorechnung als korrigierte Rechnung),
+  CSV-Export (UTF-8, Excel-tauglich), Druck und E-Mail über das Betriebssystem
+- **Nur lokal** — SQLite-Datenbank im Benutzerverzeichnis, Schema über Flyway, Sicherung
+  per Knopfdruck als ZIP; keine Netzwerkzugriffe (DSGVO)
 
-## Screenshots
+## Bildschirmfotos
 
-The overview answers the three questions a freelancer opens the app for — what is
-outstanding, what is overdue, what has been invoiced this year:
+Die Übersicht beantwortet die drei Fragen, für die man die Anwendung öffnet: Was ist offen,
+was ist überfällig, was wurde in diesem Jahr berechnet?
 
-![Overview](dokumentation/bilder/uebersicht-hell.png)
+![Übersicht](dokumentation/bilder/uebersicht-hell.png)
 
-Documents in master-detail, dark theme. Actions are enabled per status: this invoice is
-`VERSENDET`, so every content-changing action is disabled (GoBD immutability) while export
-stays available:
+Belege als Master-Detail, dunkles Erscheinungsbild. Die Aktionen richten sich nach dem
+Status: Diese Rechnung ist bezahlt, deshalb sind *Versenden*, *Bezahlt* und *Stornieren*
+gesperrt — die Ausgabe bleibt verfügbar:
 
-![Documents, dark theme](dokumentation/bilder/belege-dunkel.png)
+![Belege, dunkles Erscheinungsbild](dokumentation/bilder/belege-dunkel.png)
 
-*The data shown is fictional demo data.*
+Rechnung als PDF, mit Steuernummer im Briefkopf und Umsatzsteuer je Steuersatz:
 
-## What's new in 3.0
+![Rechnung als PDF](dokumentation/bilder/rechnung-pdf.png)
 
-- **Gapless numbering is now enforced by the database, not by a counter in memory.**
-  Number allocation runs inside the same transaction as the insert, so a failed save
-  rolls it back instead of burning an invoice number — the property GoBD actually
-  requires. Covered by a test that forces a mid-write failure and asserts no gap.
-- **Nothing blocks the UI.** PDF/e-invoice/CSV export, backup, printing and mail run
-  on a background executor with a progress indicator.
-- **Customer data no longer leaks to the temp directory.** Interim PDFs live in a
-  session directory that is wiped on shutdown.
-- **Consistent backups** — the database is snapshotted with `VACUUM INTO` rather than
-  copied while connections are open.
-- **Redesigned interface** — sidebar navigation, an overview dashboard (outstanding
-  amount, overdue invoices, revenue YTD), master-detail document view, status badges,
-  non-blocking notifications, dark mode, keyboard shortcuts and empty states.
+*Alle gezeigten Daten sind erfundene Demodaten.*
 
-## Tech stack
+## Download und Start
 
-Java 21 · Spring Boot · JavaFX + AtlantaFX + Ikonli · SQLite + Spring JDBC + Flyway ·
-Maven · Jackson · Apache PDFBox · Mustang · SLF4J/Logback · JUnit 5 · JaCoCo (build
-fails below a coverage floor) · SpotBugs · GitHub Actions
+**Windows-Installer (MSI):** unter
+[Releases](https://github.com/lucasstrubel/faktura/releases/latest) herunterladen —
+installiert je Benutzer ohne Administratorrechte, mit Startmenü-Eintrag und eigener
+Java-Laufzeit.
 
-## Download & run
+**JAR (Windows, Linux, macOS mit Apple Silicon):** `faktura-3.0.0.jar` aus demselben
+Release laden und mit Java 21 oder neuer starten:
 
-**Windows installer (MSI):** grab the latest release from the
-[Releases page](https://github.com/lucasstrubel/faktura/releases) — installs
-per-user with a start-menu entry; application data lives under
-`<home>/Faktura/daten`. No JDK needed: the installer bundles its own runtime.
+```bash
+java -jar faktura-3.0.0.jar
+```
 
-### Prerequisites (building from source)
+Die Daten liegen unter `<Benutzerverzeichnis>/Faktura/daten`. Ein anderes Verzeichnis
+lässt sich beim Start angeben:
 
-- **JDK 21 or newer** — the only requirement. ([Temurin 21](https://adoptium.net/temurin/releases/?version=21)
-  or any other distribution; the code is compiled with `--release 21`, so a newer JDK works too.)
-- **No Maven installation** — the Maven wrapper (`mvnw`) is included and downloads what it needs.
-- **No separate JavaFX SDK** — JavaFX is resolved as an ordinary Maven dependency, with the
-  native libraries for your platform picked automatically.
+```bash
+java -jar faktura-3.0.0.jar --faktura.daten-verzeichnis=/pfad/zu/daten
+```
 
-Building from source works on Windows, Linux and macOS. The published installer is
-Windows-only; on other platforms, run the JAR.
+Vor der ersten Rechnung unter **Einstellungen** das Firmenprofil hinterlegen — Name,
+Anschrift und Steuernummer oder USt-IdNr. stehen auf jedem Beleg.
 
-### Build
+## Aus dem Quellcode bauen
+
+Voraussetzung ist nur ein **JDK 21 oder neuer** (etwa
+[Temurin 21](https://adoptium.net/temurin/releases/?version=21)). Maven lädt der
+enthaltene Maven-Wrapper selbst, JavaFX kommt als gewöhnliche Maven-Abhängigkeit.
 
 ```bash
 git clone https://github.com/lucasstrubel/faktura.git
 cd faktura
 
-./mvnw test                       # run all tests (JUnit 5)
-./mvnw verify                     # tests + coverage gate + SpotBugs (what CI runs)
-./mvnw package                    # build fat JAR (Spring Boot repackage)
+./mvnw test        # alle Tests (JUnit 5)
+./mvnw verify      # Tests + Abdeckungsschwelle + SpotBugs (wie die CI)
+./mvnw package     # ausführbares JAR unter target/
 
 java -jar target/faktura-3.0.0.jar
 ```
 
-On Windows PowerShell, use `.\mvnw.cmd` instead of `./mvnw`.
+Unter Windows ohne Git Bash `mvnw.cmd` statt `./mvnw` verwenden. Ein Release entsteht durch
+einen Versions-Tag (`git tag v3.0.0 && git push origin v3.0.0`): Der Workflow prüft Tag und
+Projektversion, baut MSI und JAR und veröffentlicht beide.
 
-The application starts with an empty database and creates its schema on first launch.
-Data is stored locally in a SQLite database under `daten/` (git-ignored); the directory
-is configurable via `faktura.daten-verzeichnis` in `application.yml` or as a command-line
-argument:
+## Technik
 
-```bash
-java -jar target/faktura-3.0.0.jar --faktura.daten-verzeichnis=/path/to/data
-```
+Java 21 · Spring Boot · JavaFX + AtlantaFX + Ikonli · SQLite + Spring JDBC + Flyway ·
+Apache PDFBox · Mustang (EN 16931) · Jackson · SLF4J/Logback · Maven · JUnit 5 ·
+JaCoCo (Build bricht unter der Abdeckungsschwelle ab) · SpotBugs · GitHub Actions ·
+jpackage
 
-Releases are cut by pushing a version tag (`git tag v3.0.0 && git push github v3.0.0`);
-a GitHub Actions workflow then builds the MSI with jpackage and publishes it.
+## Architektur
 
-## Architecture
+Vier fachliche Komponenten — entsprechend den vier Gruppen des ursprünglichen
+Projektteams — und zwei Querschnittspakete, verdrahtet über den Spring-IoC-Container:
 
-Four domain components plus a shared cross-cutting package, wired by the Spring IoC
-container (`FakturaApplication`, `PersistenzKonfiguration`; data directory configurable
-via `application.yml`):
+| Paket | Komponente | Verantwortung |
+|-------|------------|---------------|
+| `dokumente` | A | Dokumentenzyklus, Belegnummern, Zahlungseingang, Stornorechnung, PDF, E-Rechnung |
+| `produkte`  | B | Produktverwaltung (CRUD, Nummernvergabe, Löschsperre) |
+| `kunden`    | C | Kundenverwaltung (CRUD, Nummernvergabe, Löschsperre) |
+| `gui`       | D | JavaFX-Oberfläche (FXML-Ansichten, Spring-injizierte Controller, Rechnungsassistent) |
+| `gemeinsam` | — | Ereignisbus, Validierung, Nummernkreis, CSV, Datensicherung, Ausnahmen |
+| `firma`     | — | Firmenprofil des Ausstellers (Briefkopf, Steuerkennung, Bankverbindung) |
 
-| Package | Component | Responsibility |
-|---------|-----------|----------------|
-| `dokumente` | A | Document cycle, document numbers, PDF export, EN 16931 e-invoice |
-| `produkte`  | B | Product management (CRUD, numbering, delete protection) |
-| `kunden`    | C | Customer management (CRUD, numbering, delete protection) |
-| `gui`       | D | JavaFX UI (FXML views, Spring-managed controllers, dialogs, invoice wizard) |
-| `gemeinsam` | — | Event bus (observer), validation, CSV helper, backup, exceptions |
-| `firma`     | — | Company profile (letterhead, bank details) for documents and e-invoices |
+Tragende Muster: Repository-Schnittstellen mit SQLite-Implementierung (JSON bleibt für die
+einmalige Übernahme und als Sicherungsformat); Nummernvergabe in derselben Transaktion wie
+das Speichern; Ereignisse an die Oberfläche erst nach dem Commit; Löschsperre über
+Referenzprüfungs-Schnittstellen zwischen den Komponenten; Dialogführung in GUI-freien,
+testbaren Controller-Klassen.
 
-Key patterns: repository interfaces with Spring JDBC/SQLite implementations (the
-JSON implementations remain for one-time import and backup),
-number generators derived from the persisted stock, an event bus decoupling services
-from UI refresh, and cross-component delete protection via reference-check interfaces.
-
-Source: [`src/main/java/de/lucasstrubel/faktura/`](src/main/java/de/lucasstrubel/faktura/) ·
+Quellcode: [`src/main/java/de/lucasstrubel/faktura/`](src/main/java/de/lucasstrubel/faktura/) ·
 Tests: [`src/test/java/de/lucasstrubel/faktura/`](src/test/java/de/lucasstrubel/faktura/)
+
+## Qualität
+
+- **201 automatisierte Tests** (164 Testmethoden), alle grün; zur Abnahme der Version 1.0
+  waren es 71
+- **Abdeckungsschwelle im Build:** 85 % Anweisungen, 70 % Zweige im nicht-grafischen Code
+- **SpotBugs:** keine Befunde, im Build erzwungen
+- **Performance als Test:** 5.000 Kunden, 5.000 Produkte, 1.000 Belege gegen die
+  Grenzwerte des Lastenhefts (Start ≤ 5 s, Suche ≤ 1 s, PDF ≤ 2 s)
+- **Nachvollziehbarkeit:** jede Anforderung ist im
+  [Anforderungsabgleich](dokumentation/anforderungen/Anforderungsabgleich.md) auf Code und
+  Testfall abgebildet
+
+## Dokumentation
+
+Die vollständige Software-Engineering-Dokumentation liegt unter
+[`dokumentation/`](dokumentation/) — als Markdown und als PDF:
+
+| Dokument | Inhalt | PDF |
+|----------|--------|-----|
+| [Lastenheft](dokumentation/anforderungen/Lastenheft.md) | Anforderungen aus Sicht des Auftraggebers (Version 1.0) | [PDF](dokumentation/pdf/Lastenheft.pdf) |
+| [Pflichtenheft](dokumentation/anforderungen/Pflichtenheft.md) | Systemanforderungen, Teile A–D, fortgeschrieben bis Version 3.0 | [PDF](dokumentation/pdf/Pflichtenheft.pdf) |
+| [Anforderungsabgleich](dokumentation/anforderungen/Anforderungsabgleich.md) | Traceability-Matrix Anforderung ↔ Code ↔ Test | [PDF](dokumentation/pdf/Anforderungsabgleich.pdf) |
+| [Modultestplan](dokumentation/tests/Modultestplan.md) | Testfälle der Version 1.0 und aller Ergänzungen | [PDF](dokumentation/pdf/Modultestplan.pdf) |
+| [Modultestbericht](dokumentation/tests/Modultestbericht.md) | Abnahmetest 1.0 und Nachtest 3.0 | [PDF](dokumentation/pdf/Modultestbericht.pdf) |
+| [Projektübersicht](dokumentation/projekt/Projektuebersicht.md) | Ziele, Verlauf, Roadmap, offene Punkte | [PDF](dokumentation/pdf/Projektuebersicht.pdf) |
+| [Fallstudie](dokumentation/projekt/Fallstudie.md) | Entscheidungen und Erkenntnisse der Weiterentwicklung | [PDF](dokumentation/pdf/Fallstudie.pdf) |
+| [Abschlusspräsentation](dokumentation/projekt/Praesentation.md) | Foliensatz der Abnahme im Modul SE1 (historischer Stand 1.0) | [PDF](dokumentation/pdf/Praesentation.pdf) |
+
+Die UML-Diagramme (PlantUML-Quellen und PNG) liegen unter
+[`dokumentation/diagramme/`](dokumentation/diagramme/). Die PDFs erzeugt
+`tools/dokumentation-bauen.ps1` mit pandoc und XeLaTeX (Präsentation mit Marp).
 
 ## Roadmap
 
-Turning the course project into a customer-ready product, step by step:
+Erledigt:
 
-- [x] **Quality baseline** — stricter input validation (postal code, VAT ID, email),
-      logging (SLF4J/Logback), CI with GitHub Actions, coverage & static analysis
-- [x] **Spring Boot** — IoC container replacing manual wiring, configuration via
-      `application.yml`, Spring application events for UI refresh
-- [x] **SQLite persistence** — Spring JDBC + Flyway migrations behind the existing
-      repository interfaces (JSON kept as import/export format)
-- [x] **JavaFX UI** — complete rewrite (FXML, AtlantaFX theme, Spring-injected
-      controllers) with live inline form validation
-- [x] **Company profile & settings** — configurable letterhead and bank details
-      (shown on invoices), plus one-click ZIP backup of the local data
-- [x] **E-invoicing** — structured EN 16931 XML export (ZUGFeRD CII profile) for
-      invoices, the format mandated for German B2B invoicing since 2025
-- [x] **Native installer** — Windows installer (MSI) via jpackage, built and
-      published as GitHub Releases by a tag-triggered workflow
+- [x] **Qualitäts-Baseline** — Validierung, Logging, CI mit Abdeckung und statischer Analyse
+- [x] **Spring Boot** — IoC-Container statt manueller Verdrahtung, Ereignisse für die Oberfläche
+- [x] **SQLite** — Spring JDBC und Flyway hinter den bestehenden Repository-Schnittstellen
+- [x] **JavaFX** — vollständiger Neubau der Oberfläche mit Seitennavigation, Übersicht, Dunkelmodus
+- [x] **E-Rechnung** — EN 16931 (ZUGFeRD-CII), Firmenprofil, Datensicherung
+- [x] **Auslieferung** — Windows-Installer und plattformübergreifendes JAR per Release-Workflow
+- [x] **Rechtssicherheit** — transaktionale Nummernvergabe, Stornorechnung, Zahlungseingang,
+      Steuer je Steuersatz, Aussteller-Snapshot
 
-## Documentation
+Offen:
 
-Full German software-engineering documentation under [`dokumentation/`](dokumentation/)
-— written and maintained as a showcase of a complete specification-driven process:
+- [ ] Usability-Test mit fünf Personen (einziges Abnahmekriterium, das Code nicht belegen kann)
+- [ ] Steuerbefreiungen und Kleinunternehmerregelung (§ 19 UStG) mit Pflichthinweis
+- [ ] Mahnwesen
+- [ ] Installationspakete für Linux und macOS
 
-- [`anforderungen/`](dokumentation/anforderungen/) — *Lastenheft* (customer
-  requirements), consolidated *Pflichtenheft* (system requirements specification,
-  parts A–D), requirements traceability matrix
-- [`tests/`](dokumentation/tests/) — module test plan and test report documenting the
-  v1.0 acceptance run (71/71 passed); the suite has since grown to **135 tests**
-- [`projekt/`](dokumentation/projekt/) — project overview with roadmap,
-  [case study](dokumentation/projekt/Fallstudie.md), final presentation slides
-- [`diagramme/`](dokumentation/diagramme/) — UML class and sequence diagrams
-  (PlantUML sources + rendered PNGs)
+## Mit Claude entwickelt
 
-The Markdown specifications can be rendered to PDF with pandoc + XeLaTeX; diagrams
-are rendered with [PlantUML](https://plantuml.com/download) (`java -jar plantuml.jar -Playout=smetana`, no Graphviz needed); place the jar under `tools/` (git-ignored).
+Faktura ist mit [Claude Code](https://claude.com/claude-code) als Werkzeug entstanden, und es
+erscheint mir redlicher, das zu sagen, als es offen zu lassen. Das Werkzeug hat die
+mechanische Masse übernommen — paketweite Umbauten, Repository- und Service-Gerüste,
+Testgerüste, PlantUML-Quellen, Entwürfe der Spezifikationen, die systematische Fehlersuche.
+Die Entscheidungen lagen bei mir: welche Regeln Invarianten sind, dass die Nummernvergabe in
+die Transaktion gehört, was aus Version 1.0 bleibt und was verschwindet, und ob eine Änderung
+wirklich fertig war. Jede Änderung musste dieselben Hürden nehmen — Tests,
+Abdeckungsschwelle, SpotBugs —, und alles Sichtbare wurde durch Starten und Hinsehen geprüft.
 
-## Built with Claude
+Wo das gut funktioniert hat und wo nachgebessert werden musste, beschreibt die
+[Fallstudie](dokumentation/projekt/Fallstudie.md#arbeiten-mit-claude-code).
 
-This project was developed with [Claude Code](https://claude.com/claude-code) as a working
-tool, and it seems fairer to say what that means than to leave it implied. The agent did the
-mechanical bulk — package-wide refactors, repository and service boilerplate, test scaffolding,
-PlantUML sources, drafts of the German specifications. The design decisions were mine: which
-rules are invariants, that gapless numbering belongs inside the transaction, what to keep from
-v1.0 and what to delete, and whether a change was actually finished. Every change landed behind
-the same gates as any other — tests, coverage floor, SpotBugs — and anything visual was checked
-by running the application and looking at it.
+## Lizenz
 
-The [case study](CASE_STUDY.md#working-with-claude-code) goes into where this worked well and
-where the output needed correcting.
-
-## License & author
-
-Developed by **Lucas Strubel**. Released under the [MIT License](LICENSE).
+Entwickelt von **Lucas Strubel**, veröffentlicht unter der [MIT-Lizenz](LICENSE). Die
+eingebettete Schrift Liberation Sans steht unter der SIL Open Font License
+([Lizenztext](src/main/resources/schrift/LICENSE-LiberationSans.txt)).

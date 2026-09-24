@@ -1,53 +1,31 @@
 ---
 title: "Lastenheft"
-subtitle: "Desktop-Fakturierungsanwendung"
-author:
-  - Lucas Strubel
-version: "1.3"
+subtitle: "Faktura — Desktop-Fakturierungsanwendung"
+author: "Lucas Strubel"
+date: "24.09.2026"
+version: "1.4"
 lang: de-DE
-toc: true
-toc-depth: 3
-numbersections: false
-papersize: a4
-geometry: "margin=3cm"
-fontsize: 12pt
-linestretch: 1.5
-mainfont: "Times New Roman"
-sansfont: "Arial"
-monofont: "DejaVu Sans Mono"
-header-includes: |
-  \usepackage{fancyhdr}
-  \usepackage{lastpage}
-  \pagestyle{fancy}
-  \fancyhf{}
-  \fancyhead[L]{Faktura}
-  \fancyhead[C]{Lastenheft}
-  \fancyhead[R]{Version 1.3}
-  \fancyfoot[C]{\thepage\ /\ \pageref{LastPage}}
-  \renewcommand{\headrulewidth}{0.4pt}
-  \renewcommand{\footrulewidth}{0pt}
 ---
 
-\newpage
 
-+-------------------------+
-| Autor                   |
-+=========================+
-| Strubel, Lucas          |
-+-------------------------+
-| Entwickler              |
-+-------------------------+
-| 09.06.2026              |
-+-------------------------+
+| Autor | Rolle | Stand |
+|-------|-------|-------|
+| Lucas Strubel | Verfasser für das SE1-Projektteam (Repository-Verwaltung, Projektdokumentation) | 09.06.2026 (Anforderungen), 24.09.2026 (redaktionell) |
+
+> **Stand:** Dieses Lastenheft beschreibt die Anforderungen des Hochschulprojekts
+> (Version 1.0) und wird inhaltlich unverändert geführt. Anforderungen, die mit der
+> Weiterentwicklung hinzukamen — etwa E-Rechnung, Zahlungseingang und Stornorechnung —,
+> sind im Pflichtenheft ab Version 2.1 spezifiziert.
 
 ## Dokumentenhistorie
 
 | Version | Datum      | Grund der Änderung  |
-|---------|------------|---------------------|
+|----|------|------------------------------|
 | 1.0     | 11.05.2026 | Initiale Erstellung |
 | 1.1     | 11.05.2026 | Ergänzung Anforderungen Komponente D |
 | 1.2     | 14.05.2026 | Ergänzung + Überarbeitung Anforderungen Komponenten A–C |
 | 1.3     | 09.06.2026 | Überarbeitung nach Feedback |
+| 1.4     | 24.09.2026 | Redaktionell: Teamzusammensetzung, Belegnummern-Beispiele mit Jahresangabe, Hinweis auf den Stand; Anforderungen unverändert |
 
 ## 1. Einleitung und Zielbestimmung
 
@@ -98,7 +76,7 @@ Die Anwendung weist folgende Merkmale auf:
 - **Regulatorisch (bekannt, dokumentiert, nicht vollständig umgesetzt):**
   - **GoBD** – Versendete Rechnungen dürfen nachträglich nicht mehr inhaltlich verändert werden; alle Geschäftsvorfälle sind lückenlos zu erfassen.
   - **E-Rechnungspflicht (B2B) ab 01.01.2025** – strukturierte Formate (ZUGFeRD, XRechnung) gesetzlich vorgeschrieben; Umsetzung in diesem Projekt explizit Nichtziel.
-- **Lehrkontext:** Studentisches Projekt im Modul Software Engineering 1 (SoSe 2026), Teamgröße 12 Personen, ca. 2 Stunden/Woche pro Person.
+- **Lehrkontext:** Studentisches Projekt im Modul Software Engineering 1 (SoSe 2026), Teamgröße 12 Personen in vier Gruppen zu je drei (je Gruppe eine Komponente A–D), ca. 2 Stunden/Woche pro Person.
 
 ---
 
@@ -298,59 +276,59 @@ Wenn eine neue Rechnung erstellt wird und kein abweichendes Zahlungsziel angegeb
 
 ### 7.1 Akzeptanzkriterien zu den fachlichen Anforderungen
 
-**AC-01 (zu BA-01, BA-04)** – *Kunde anlegen und auffinden*
-Vorbedingung: Anwendung gestartet, Modul Kundenverwaltung geöffnet.
-Aktion: Die Anwenderin bzw. der Anwender erfasst einen neuen Kunden mit Pflichtfeldern und speichert.
+**AC-01 (zu BA-01, BA-04)** – *Kunde anlegen und auffinden*\
+Vorbedingung: Anwendung gestartet, Modul Kundenverwaltung geöffnet.\
+Aktion: Die Anwenderin bzw. der Anwender erfasst einen neuen Kunden mit Pflichtfeldern und speichert.\
 Erwartet: Das System vergibt eine eindeutige Kundennummer, der Kunde erscheint in der Suchergebnisliste innerhalb von ≤ 1 Sekunde (gemäß Q-02).
 
-**AC-02 (zu BA-02, BA-03, GR-04)** – *Kunde ändern und Löschsperre*
-Vorbedingung: Ein Kunde mit mindestens einer verknüpften Rechnung existiert.
-Aktion: Die Anwenderin bzw. der Anwender ändert einen Adressbestandteil und speichert; anschließend wird versucht, den Kunden zu löschen.
+**AC-02 (zu BA-02, BA-03, GR-04)** – *Kunde ändern und Löschsperre*\
+Vorbedingung: Ein Kunde mit mindestens einer verknüpften Rechnung existiert.\
+Aktion: Die Anwenderin bzw. der Anwender ändert einen Adressbestandteil und speichert; anschließend wird versucht, den Kunden zu löschen.\
 Erwartet: Das System speichert die Änderung erfolgreich, lehnt das Löschen ab und zeigt einen Hinweis mit der Anzahl verknüpfter Dokumente.
 
-**AC-03 (zu BA-05, BA-06, GR-02)** – *Produkt anlegen, ändern, Snapshot-Verhalten*
-Vorbedingung: Ein Produkt ist bereits in einer früheren Rechnung erfasst.
-Aktion: Die Anwenderin bzw. der Anwender ändert den Einzelpreis des Produkts und erstellt anschließend eine neue Rechnung mit diesem Produkt.
+**AC-03 (zu BA-05, BA-06, GR-02)** – *Produkt anlegen, ändern, Snapshot-Verhalten*\
+Vorbedingung: Ein Produkt ist bereits in einer früheren Rechnung erfasst.\
+Aktion: Die Anwenderin bzw. der Anwender ändert den Einzelpreis des Produkts und erstellt anschließend eine neue Rechnung mit diesem Produkt.\
 Erwartet: Die alte Rechnung behält den ursprünglichen Preis, die neue Rechnung übernimmt den geänderten Preis.
 
-**AC-04 (zu BA-07, BA-08)** – *Produkt löschen und suchen*
-Vorbedingung: Mindestens 100 Produkte sind im System.
-Aktion: Die Anwenderin bzw. der Anwender sucht ein Produkt anhand der Bezeichnung und löscht es (sofern unverknüpft).
+**AC-04 (zu BA-07, BA-08)** – *Produkt löschen und suchen*\
+Vorbedingung: Mindestens 100 Produkte sind im System.\
+Aktion: Die Anwenderin bzw. der Anwender sucht ein Produkt anhand der Bezeichnung und löscht es (sofern unverknüpft).\
 Erwartet: Die Suchergebnisse erscheinen in ≤ 1 Sekunde (gemäß Q-02); das gelöschte Produkt erscheint anschließend nicht mehr in der Liste.
 
-**AC-05 (zu BA-09, Q-03)** – *Angebot erstellen und exportieren*
-Vorbedingung: Mindestens ein Kunde und 5 Produkte sind erfasst.
-Aktion: Die Anwenderin bzw. der Anwender erstellt ein Angebot mit 5 Positionen und exportiert es als PDF.
+**AC-05 (zu BA-09, Q-03)** – *Angebot erstellen und exportieren*\
+Vorbedingung: Mindestens ein Kunde und 5 Produkte sind erfasst.\
+Aktion: Die Anwenderin bzw. der Anwender erstellt ein Angebot mit 5 Positionen und exportiert es als PDF.\
 Erwartet: Das Angebot ist mit Angebotsnummer und korrekten Summen gespeichert; der PDF-Export ist in ≤ 2 Sekunden abgeschlossen (gemäß Q-03).
 
-**AC-06 (zu BA-10)** – *Auftragsbestätigung erstellen*
-Vorbedingung: Ein Angebot liegt vor.
-Aktion: Die Anwenderin bzw. der Anwender erstellt eine Auftragsbestätigung mit Übernahme aller Positionen.
+**AC-06 (zu BA-10)** – *Auftragsbestätigung erstellen*\
+Vorbedingung: Ein Angebot liegt vor.\
+Aktion: Die Anwenderin bzw. der Anwender erstellt eine Auftragsbestätigung mit Übernahme aller Positionen.\
 Erwartet: Die Auftragsbestätigung ist mit eindeutiger Nummer gespeichert und als PDF exportierbar.
 
-**AC-07 (zu BA-11)** – *Lieferschein erstellen*
-Vorbedingung: Eine Auftragsbestätigung liegt vor.
-Aktion: Die Anwenderin bzw. der Anwender erstellt einen Lieferschein mit Lieferdatum.
+**AC-07 (zu BA-11)** – *Lieferschein erstellen*\
+Vorbedingung: Eine Auftragsbestätigung liegt vor.\
+Aktion: Die Anwenderin bzw. der Anwender erstellt einen Lieferschein mit Lieferdatum.\
 Erwartet: Der Lieferschein ist mit eindeutiger Nummer und allen Positionsdaten gespeichert und als PDF exportierbar.
 
-**AC-08 (zu BA-12, GR-01, GR-06)** – *Rechnung erstellen mit Pflichtangaben*
-Vorbedingung: Kunde und mindestens eine Position liegen vor; letzte Rechnungsnummer = R-000123.
-Aktion: Die Anwenderin bzw. der Anwender erstellt eine Rechnung ohne abweichendes Zahlungsziel.
-Erwartet: Die neue Rechnung trägt die Nummer R-000124, ein Zahlungsziel von 14 Tagen und alle Pflichtangaben gemäß § 14 UStG.
+**AC-08 (zu BA-12, GR-01, GR-06)** – *Rechnung erstellen mit Pflichtangaben*\
+Vorbedingung: Kunde und mindestens eine Position liegen vor; letzte Rechnungsnummer = R-2026-000123.\
+Aktion: Die Anwenderin bzw. der Anwender erstellt eine Rechnung ohne abweichendes Zahlungsziel.\
+Erwartet: Die neue Rechnung trägt die Nummer R-2026-000124, ein Zahlungsziel von 14 Tagen und alle Pflichtangaben gemäß § 14 UStG.
 
-**AC-09 (zu BA-13)** – *Geführte Rechnungserstellung*
-Vorbedingung: Mindestens ein Kunde und ein Produkt sind im System vorhanden.
-Aktion: Die Anwenderin bzw. der Anwender startet die Rechnungserstellung, wählt einen Kunden aus, erfasst eine Produktposition mit Menge, prüft Rechnungsdatum und Zahlungsziel und speichert nach Anzeige der Zusammenfassung.
+**AC-09 (zu BA-13)** – *Geführte Rechnungserstellung*\
+Vorbedingung: Mindestens ein Kunde und ein Produkt sind im System vorhanden.\
+Aktion: Die Anwenderin bzw. der Anwender startet die Rechnungserstellung, wählt einen Kunden aus, erfasst eine Produktposition mit Menge, prüft Rechnungsdatum und Zahlungsziel und speichert nach Anzeige der Zusammenfassung.\
 Erwartet: Die Rechnung wird gespeichert; die Zusammenfassung enthält Kunde, Produktposition, Menge, Summen, Rechnungsdatum und Zahlungsziel.
 
-**AC-10 (zu BA-14)** – *Rechnung stornieren*
-Vorbedingung: Eine Rechnung im Status „offen“ existiert im System.
-Aktion: Die Anwenderin bzw. der Anwender wählt die Rechnung aus und führt die Stornierung durch.
+**AC-10 (zu BA-14)** – *Rechnung stornieren*\
+Vorbedingung: Eine Rechnung im Status „offen“ existiert im System.\
+Aktion: Die Anwenderin bzw. der Anwender wählt die Rechnung aus und führt die Stornierung durch.\
 Erwartet: Die Rechnung erhält den Status „storniert“, erscheint nicht mehr in der Liste offener Rechnungen, und der Vorgang ist mit Datum protokolliert.
 
-**AC-11 (zu Q-09)** – *Pflichtfeldhinweis korrigieren*
-Vorbedingung: Die Formulare „Kunde anlegen“, „Produkt anlegen“ und „Rechnung erstellen“ sind erreichbar.
-Aktion: Testpersonen versuchen in jedem Formular ohne jeweils ein Pflichtfeld zu speichern; anschließend ergänzen sie die fehlende Angabe und speichern erneut.
+**AC-11 (zu Q-09)** – *Pflichtfeldhinweis korrigieren*\
+Vorbedingung: Die Formulare „Kunde anlegen“, „Produkt anlegen“ und „Rechnung erstellen“ sind erreichbar.\
+Aktion: Testpersonen versuchen in jedem Formular ohne jeweils ein Pflichtfeld zu speichern; anschließend ergänzen sie die fehlende Angabe und speichern erneut.\
 Erwartet: Das System verhindert jeweils zuerst das Speichern und zeigt einen Hinweis mit dem Namen des fehlenden Pflichtfelds; in mindestens 80 % der Testdurchläufe gelingt die Korrektur ohne externe Hilfe im ersten Korrekturversuch.
 
 ### 7.2 Abnahmebedingungen (Gesamtprojekt)

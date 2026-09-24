@@ -6,7 +6,7 @@ skinparam shadowing false
 skinparam sequenceMessageAlign center
 hide footbox
 
-title UML-Sequenzdiagramm — „Produkt löschen mit Löschsperre" (Komponente B)
+title UML-Sequenzdiagramm — „Produkt löschen mit Löschsperre“ (Komponente B), Stand 3.0
 
 participant "GUI\n(Komponente D)" as GUI
 participant "produktService :\nProduktVerwaltungsService" as PVS
@@ -30,11 +30,8 @@ else nicht referenziert
   activate REPO
   REPO --> PVS
   deactivate REPO
-  PVS -> EB : melde(DatenBereich.PRODUKTE)
-  activate EB
-  note right of EB : benachrichtigt die abonnierte\nProduktansicht (Observer-Muster)
-  EB --> PVS
-  deactivate EB
+  PVS ->> EB : DatenGeaendertEreignis(PRODUKTE)
+  note right of EB : Zustellung an die Ansicht\nerst nach dem Commit (AFTER_COMMIT)
   PVS --> GUI : Produkt gelöscht
 end
 

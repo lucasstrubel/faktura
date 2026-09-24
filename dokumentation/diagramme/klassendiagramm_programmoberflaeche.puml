@@ -1,46 +1,64 @@
-@startuml
+@startuml klassendiagramm_programmoberflaeche
+' UML-Klassendiagramm Programmoberfläche (Pflichtenheft Teil D, Abschnitt 7.1), Stand 3.0
 !pragma layout smetana
-title UML-Klassendiagramm Programmoberflaeche (Komponente D)
+title UML-Klassendiagramm — Programmoberfläche (Komponente D), Stand 3.0
+skinparam shadowing false
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
+hide empty members
 
-package "gui" {
-  class HauptFenster {
-    - aktuellesModul : String
-    - wechsleZu(String)
+package "gui — Ansichten (FXML + Ansicht-Controller)" {
+  class HauptAnsichtController {
+    - ansichten : Map<Navigationsziel, Parent>
+    - zeige(ziel : Navigationsziel)
   }
-
-  class KundenPanel
-  class ProduktPanel
-  class DokumentListenPanel
+  enum Navigationsziel {
+    UEBERSICHT
+    KUNDEN
+    PRODUKTE
+    BELEGE
+    EINSTELLUNGEN
+  }
+  class UebersichtAnsichtController
+  class KundenAnsichtController
+  class ProduktAnsichtController
+  class DokumentAnsichtController
+  class EinstellungenAnsichtController
   class RechnungsWizardDialog
+  class FxmlLader <<Spring-Controller-Factory>>
+  class HintergrundAufgaben {
+    + starte(titel, ausloeser, arbeit, beiErfolg)
+  }
+  class Tastenkuerzel {
+    + {static} binde(anker, neu, suche, aktualisiere)
+  }
+}
 
+package "gui — GUI-freie Controller und Modell" {
   class StammdatenController {
-    + kundenListe(String) : List<Kunde>
-    + produkteListe(String) : List<Produkt>
+    + kundenListe(suchbegriff) : List<Kunde>
+    + produkteListe(suchbegriff) : List<Produkt>
   }
-
   class DokumentListenController {
-    + gefiltert(DokumentStatus) : List<Dokument>
-    + aktionenFuer(Dokument) : BelegAktionen
-    + storniere(String, boolean) : Meldung
+    + gefiltert(status, suchbegriff) : List<Dokument>
+    + aktionenFuer(dokument) : BelegAktionen
+    + storniere(nummer, bestaetigt) : Meldung
+    + markiereBezahlt(nummer, datum) : Meldung
   }
-
   class RechnungsWizardController {
     + weiter() : boolean
     + zurueck()
     + erzeugeZusammenfassung() : String
     + speichern() : Meldung
   }
-
   class RechnungsWizardModel {
     - aktuellerSchritt : WizardSchritt
     - kundenNr : String
     - positionen : List<PositionsEingabe>
     - rechnungsdatum : LocalDate
+    - leistungsdatum : LocalDate
     - zahlungsziel : LocalDate
   }
-
   enum WizardSchritt {
     KUNDE_WAEHLEN
     POSITIONEN_ERFASSEN
@@ -48,63 +66,59 @@ package "gui" {
     ZUSAMMENFASSUNG
     SPEICHERN
   }
-
-  class Meldung {
-    - typ : MeldungsTyp
-    - feldname : String
-    - text : String
+  class BelegAktionen <<record>> {
+    stornierbar, aenderbar, pdfExport, bezahltMarkierbar
   }
-
-  class BelegAktionen
-  class PositionsEingabe
+  class Meldung <<record>>
 }
 
-package "Komponente A: Dokumentenzyklus" {
+package "Komponenten A–C und firma" {
   interface DokumentService
-  class StandardDokumentService
-}
-
-package "Komponente B: Produktverwaltung" {
-  interface ProduktService
-  class ProduktVerwaltungsService
-}
-
-package "Komponente C: Kundenverwaltung" {
   interface KundenService
-  class KundenVerwaltungsService
+  interface ProduktService
+  class KennzahlenDienst
+  class FirmenprofilService
 }
 
 package "gemeinsam" {
   class EreignisBus
 }
 
-HauptFenster "1" *-- "1" KundenPanel
-HauptFenster "1" *-- "1" ProduktPanel
-HauptFenster "1" *-- "1" DokumentListenPanel
+HauptAnsichtController --> Navigationsziel
+HauptAnsichtController ..> FxmlLader : lädt Ansichten
+HauptAnsichtController o-- UebersichtAnsichtController
+HauptAnsichtController o-- KundenAnsichtController
+HauptAnsichtController o-- ProduktAnsichtController
+HauptAnsichtController o-- DokumentAnsichtController
+HauptAnsichtController o-- EinstellungenAnsichtController
 
-KundenPanel --> StammdatenController
-ProduktPanel --> StammdatenController
-DokumentListenPanel --> DokumentListenController
+KundenAnsichtController --> StammdatenController
+ProduktAnsichtController --> StammdatenController
+DokumentAnsichtController --> DokumentListenController
+DokumentAnsichtController ..> RechnungsWizardDialog : öffnet
 RechnungsWizardDialog --> RechnungsWizardController
+UebersichtAnsichtController ..> KennzahlenDienst
+EinstellungenAnsichtController ..> FirmenprofilService
 
-StammdatenController ..> KundenService : nutzt
-StammdatenController ..> ProduktService : nutzt
-DokumentListenController ..> DokumentService : nutzt
-RechnungsWizardController ..> DokumentService : nutzt
-RechnungsWizardController ..> KundenService : nutzt
-RechnungsWizardController ..> ProduktService : nutzt
+DokumentAnsichtController ..> HintergrundAufgaben : PDF, E-Rechnung, CSV
+EinstellungenAnsichtController ..> HintergrundAufgaben : Datensicherung
+KundenAnsichtController ..> Tastenkuerzel
+DokumentAnsichtController ..> Tastenkuerzel
 
-DokumentService <|.. StandardDokumentService
-ProduktService <|.. ProduktVerwaltungsService
-KundenService <|.. KundenVerwaltungsService
+StammdatenController ..> KundenService
+StammdatenController ..> ProduktService
+DokumentListenController ..> DokumentService
+RechnungsWizardController ..> DokumentService
+RechnungsWizardController ..> KundenService
+RechnungsWizardController ..> ProduktService
 
 RechnungsWizardController *-- RechnungsWizardModel
 RechnungsWizardModel --> WizardSchritt
-RechnungsWizardModel *-- PositionsEingabe
 RechnungsWizardController --> Meldung
 DokumentListenController --> BelegAktionen
 
-KundenPanel ..> EreignisBus : aktualisiert
-ProduktPanel ..> EreignisBus : aktualisiert
-DokumentListenPanel ..> EreignisBus : aktualisiert
+UebersichtAnsichtController ..> EreignisBus : abonniert
+KundenAnsichtController ..> EreignisBus : abonniert
+ProduktAnsichtController ..> EreignisBus : abonniert
+DokumentAnsichtController ..> EreignisBus : abonniert
 @enduml

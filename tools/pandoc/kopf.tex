@@ -1,0 +1,20 @@
+% Gemeinsamer LaTeX-Vorspann der Dokumentation (eingelesen von kopfzeile.lua).
+% Titel und Version setzt der Filter kopfzeile.lua als \fakturatitel und
+% \fakturaversion.
+\usepackage{etoolbox}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Faktura}
+\fancyhead[C]{\fakturatitel}
+\fancyhead[R]{\fakturaversion}
+\fancyfoot[C]{\thepage\ /\ \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+\setlength{\headheight}{14pt}
+
+% Umbruchstellen in Code-Bezeichnern setzt kopfzeile.lua (Funktion Code).
+
+% Tabellen etwas kleiner setzen, damit breite Matrizen auf die Seite passen
+\AtBeginEnvironment{longtable}{\small}

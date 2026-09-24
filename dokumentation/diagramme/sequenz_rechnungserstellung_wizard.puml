@@ -1,5 +1,5 @@
 @startuml
-title UML-Sequenzdiagramm Gefuehrte Rechnungserstellung (Komponente D)
+title UML-Sequenzdiagramm — Geführte Rechnungserstellung (Komponente D), Stand 3.0
 autonumber
 
 actor "Anwender:in" as Anw
@@ -12,9 +12,9 @@ participant "DokumentService\n(Komponente A)" as Dokumente
 Anw -> Dialog : Wizard starten
 Dialog -> Controller : getModel()
 Controller --> Dialog : aktuellerSchritt = KUNDE_WAEHLEN
-Dialog --> Anw : Schritt 1: Kunde waehlen
+Dialog --> Anw : Schritt 1: Kunde wählen
 
-Anw -> Dialog : Kunde suchen und auswaehlen
+Anw -> Dialog : Kunde suchen und auswählen
 Dialog -> Kunden : suche(suchbegriff)
 Kunden --> Dialog : List<Kunde>
 Dialog -> Controller : weiter()
@@ -28,13 +28,19 @@ Dialog -> Controller : weiter()
 alt Position fehlt oder Menge <= 0
   Controller --> Dialog : Meldung mit Feldname
   Dialog --> Anw : Feld markieren und Meldung anzeigen
-else Eingabe vollstaendig
+else Eingabe vollständig
   Controller --> Dialog : Schritt 3 anzeigen
 end
 
-Anw -> Dialog : Rechnungsdatum und Zahlungsziel bestaetigen
+Anw -> Dialog : Rechnungs-, Leistungsdatum und Zahlungsziel eingeben
+Dialog -> Dialog : Datumstext lesen (tolerant, z. B. 1.11.26)
 Dialog -> Controller : weiter()
-Controller --> Dialog : Schritt 4 anzeigen
+
+alt Zahlungsziel vor Rechnungsdatum
+  Controller --> Dialog : Meldung "Zahlungsziel" (A-F-32)
+else Daten plausibel
+  Controller --> Dialog : Schritt 4 anzeigen
+end
 
 Dialog -> Controller : erzeugeZusammenfassung()
 Controller -> Kunden : findeKunde(kundennummer)
@@ -44,9 +50,9 @@ Dokumente --> Controller : Summen
 Controller --> Dialog : Zusammenfassung
 Dialog --> Anw : Zusammenfassung anzeigen
 
-Anw -> Dialog : Speichern bestaetigen
+Anw -> Dialog : Speichern bestätigen
 Dialog -> Controller : speichern()
-Controller -> Dokumente : erstelleRechnung(kundenNr, positionen,\nrechnungsdatum, zahlungsziel)
+Controller -> Dokumente : erstelleRechnung(kundenNr, positionen,\nrechnungsdatum, leistungsdatum, zahlungsziel)
 Dokumente --> Controller : Rechnung mit Rechnungsnummer
 Controller --> Dialog : Erfolgsmeldung
 Dialog --> Anw : Rechnungsnummer anzeigen

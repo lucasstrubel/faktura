@@ -1,0 +1,21 @@
+# Gemeinsame pandoc-Einstellungen für alle Dokumente unter dokumentation/
+# (Aufruf über tools/dokumentation-bauen.ps1). Die Markdown-Dateien tragen im
+# Front Matter nur Titel, Untertitel, Autor, Datum, Version und Sprache — das
+# Seitenlayout liegt hier, damit GitHub die Dateien ohne LaTeX-Ballast zeigt.
+from: markdown
+pdf-engine: xelatex
+table-of-contents: true
+toc-depth: 3
+variables:
+  documentclass: article
+  papersize: a4
+  geometry: "margin=2.5cm"
+  fontsize: 11pt
+  linestretch: 1.25
+  mainfont: "Times New Roman"
+  sansfont: "Arial"
+  monofont: "Consolas"
+  colorlinks: true
+  linkcolor: "black"
+  urlcolor: "blue"
+  toccolor: "black"

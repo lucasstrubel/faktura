@@ -1,51 +1,16 @@
 ---
 title: "Modultestplan"
-subtitle: "Desktop-Fakturierungsanwendung — Gesamtsystem (alle Komponenten)"
-author:
-  - Lucas Strubel
-version: "2.0"
+subtitle: "Faktura — Desktop-Fakturierungsanwendung"
+author: "Lucas Strubel"
+date: "24.09.2026"
+version: "3.0"
 lang: de-DE
-toc: true
-toc-depth: 3
-numbersections: false
-papersize: a4
-geometry: "margin=3cm"
-fontsize: 12pt
-linestretch: 1.5
-mainfont: "Times New Roman"
-sansfont: "Arial"
-monofont: "DejaVu Sans Mono"
-header-includes: |
-  \usepackage{fancyhdr}
-  \usepackage{lastpage}
-  \pagestyle{fancy}
-  \fancyhf{}
-  \fancyhead[L]{Faktura}
-  \fancyhead[C]{Modultestplan}
-  \fancyhead[R]{Version 2.0}
-  \fancyfoot[C]{\thepage\ /\ \pageref{LastPage}}
-  \renewcommand{\headrulewidth}{0.4pt}
-  \renewcommand{\footrulewidth}{0pt}
-  \makeatletter
-  \def\brk@scan#1{\ifx\brk@end#1\else#1\allowbreak\expandafter\brk@scan\fi}
-  \newcommand{\brk}[1]{\brk@scan#1\brk@end}
-  \let\origtexttt\texttt
-  \renewcommand{\texttt}[1]{\origtexttt{\brk{#1}}}
-  \makeatother
-  \AtBeginEnvironment{longtable}{\small}
 ---
 
-\newpage
 
-+-------------------------+-------------------------+-------------------------+
-| Autor                   | Prüfer                  | Freigebender            |
-+=========================+=========================+=========================+
-| Strubel, Lucas          |
-+-------------------------+-------------------------+-------------------------+
-| Entwickler (Gesamtsystem) |
-+-------------------------+-------------------------+-------------------------+
-| 15.06.2026              | 15.06.2026              | 15.06.2026              |
-+-------------------------+-------------------------+-------------------------+
+| Autor | Rolle | Stand |
+|-------|-------|-------|
+| Lucas Strubel | Verfasser für das SE1-Projektteam (Gesamtsystem) | 15.06.2026 (v2.0), 24.09.2026 (v3.0) |
 
 **Freigabevermerk:** Dieses Dokument ist nach Prüfung und Freigabe durch den
 Modulverantwortlichen verbindliche Grundlage für den Modultest des Gesamtsystems
@@ -55,11 +20,11 @@ Performance-Nachweise).
 ## Dokumentenhistorie
 
 | Version | Datum      | Autor                       | Grund der Änderung  |
-|---------|------------|-----------------------------|---------------------|
+|----|------|--------|------------------------------|
 | 1.0     | 15.06.2026 | Lucas Strubel  | Initiale Erstellung (ausgegliedert aus dem Pflichtenheft, Teil A) |
 | 2.0     | 15.06.2026 | Lucas Strubel  | Konsolidierung aller Komponenten-Testfälle (A–D, gemeinsame Infrastruktur, Performance) in einen projektweiten Modultestplan |
+| 3.0     | 24.09.2026 | Lucas Strubel  | Kapitel 3: ergänzte Testfälle der Versionen 2.0 und 3.0 (164 Testmethoden, 201 Ausführungen); Testumfang-Übersicht auf Stand 3.0 |
 
-\newpage
 
 ## 1. Einleitung
 
@@ -74,9 +39,10 @@ Abnahmekriterien der jeweiligen Pflichtenhefte ab und überführen diese in dete
 mit JUnit 5 umgesetzte Testfälle. Quelle der Wahrheit sind die Testklassen unter
 `src/test/java/de/lucasstrubel/faktura/…`.
 
-> **Stand:** Dieses Dokument beschreibt den Testumfang der **Version 1.0** (71 Testfälle,
-> Abnahme 06/2026). Die Testsuite ist seither auf 135 Tests gewachsen; die in den Versionen
-> 2.0 und 3.0 ergänzten Testklassen sind hier nicht aufgeführt. Vgl. `Fallstudie.md`.
+> **Stand:** Kapitel 2 beschreibt den Testumfang der Abnahme von **Version 1.0**
+> (71 Testfälle, 06/2026) und bleibt als Beleg unverändert. Die mit den Versionen 2.0 und
+> 3.0 ergänzten Testfälle sind in Kapitel 3 aufgeführt; die Suite umfasst heute
+> 164 Testmethoden mit 201 Ausführungen.
 
 ### 1.2 Rahmenbedingungen
 Die folgenden Testfälle sind deterministisch (feste Ein-/Ausgaben) und mit JUnit 5
@@ -134,7 +100,7 @@ Anforderung des Pflichtenhefts B, nicht des Pflichtenhefts A.
 
 | TC    | Abgedeckte PH-Anf. | Vorbedingung | Eingabe | Erwartetes Ergebnis |
 |---------|------------|------------------------|----------------------|----------------------------|
-| TC-18 | Q-08, IF-04        | Repository mit 2 Rechnungen (je 1 Position); eine storniert (Datum 2026-06-10, Benutzer „Anwender") | `exportiereCsv(ziel)` | CSV mit Kopfzeile `belegnummer;belegtyp;datum;status…` + je Position eine Zeile (3 Zeilen); enthält `R-2026-000001` sowie `STORNIERT`/`Anwender` |
+| TC-18 | Q-08, IF-04        | Repository mit 2 Rechnungen (je 1 Position); eine storniert (Datum 2026-06-10, Benutzer „Anwender“) | `exportiereCsv(ziel)` | CSV mit Kopfzeile `belegnummer;belegtyp;datum;status…` + je Position eine Zeile (3 Zeilen); enthält `R-2026-000001` sowie `STORNIERT`/`Anwender` |
 
 ### 2.2 Komponente B — Produktverwaltung
 
@@ -143,17 +109,17 @@ PH-Anf.-Nummern beziehen sich auf Teil B des Pflichtenhefts. Die Schnittstelle
 
 | TC    | Abgedeckte PH-Anf. | Vorbedingung | Eingabe | Erwartetes Ergebnis |
 |---------|------------|------------------------|----------------------|----------------------------|
-| TC-01 | F-01, F-02         | Höchste Produktnummer `P-000041` | Produkt („Beratungsstunde", 80.00, 0.19) speichern | Produkt persistiert; Produktnummer = `P-000042` |
+| TC-01 | F-01, F-02         | Höchste Produktnummer `P-000041` | Produkt („Beratungsstunde“, 80.00, 0.19) speichern | Produkt persistiert; Produktnummer = `P-000042` |
 | TC-02 | F-02 (Format)      | Zähler = 7   | `naechsteNummer()` | liefert `P-000007` (führende Nullen, `String`) |
-| TC-03 | F-03               | gültiges Produkt | Einzelpreis `-1.00` | Speichern abgelehnt (Validierungsfehler „Einzelpreis") |
+| TC-03 | F-03               | gültiges Produkt | Einzelpreis `-1.00` | Speichern abgelehnt (Validierungsfehler „Einzelpreis“) |
 | TC-04 | F-03               | gültiges Produkt | Steuersatz `0.15` | Speichern abgelehnt (unzulässiger Steuersatz) |
-| TC-05 | F-04, NF-USE-01    | Produkt ohne Bezeichnung | `speichere()` | Speichern abgelehnt; Validierungsfehler benennt „Bezeichnung" |
+| TC-05 | F-04, NF-USE-01    | Produkt ohne Bezeichnung | `speichere()` | Speichern abgelehnt; Validierungsfehler benennt „Bezeichnung“ |
 | TC-06 | F-05               | Produkt `P-000042` mit Preis 80.00 | Preis auf 95.00 ändern, speichern | gespeichertes Produkt hat einzelpreisNetto = 95.00 |
 | TC-07 | F-07               | Produkt `P-000042` | Änderungsversuch der Produktnummer auf `P-999999` | wirft `IllegalArgumentException` / Änderung abgelehnt |
 | TC-08 | F-08               | Produkt unverknüpft (Stub: `istProduktReferenziert` → `false`) | `loescheProdukt("P-000011")` mit Bestätigung | Produkt entfernt; nicht mehr in `alleSortiertNachBezeichnung()` |
 | TC-09 | F-09, F-10         | Stub: `istProduktReferenziert("P-000010")` → `true` | `loescheProdukt("P-000010")` | Löschen abgelehnt; Produkt weiterhin vorhanden; Hinweis erzeugt |
-| TC-10 | F-11               | Produkte „Zaun", „Anker", „Mast" | `alleSortiertNachBezeichnung()` | Reihenfolge: „Anker", „Mast", „Zaun" |
-| TC-11 | F-12               | Produkt „Beratungsstunde" | `suche("BERATUNG")` | Trefferliste enthält „Beratungsstunde" (case-insensitive, Teilstring) |
+| TC-10 | F-11               | Produkte „Zaun“, „Anker“, „Mast“ | `alleSortiertNachBezeichnung()` | Reihenfolge: „Anker“, „Mast“, „Zaun“ |
+| TC-11 | F-12               | Produkt „Beratungsstunde“ | `suche("BERATUNG")` | Trefferliste enthält „Beratungsstunde“ (case-insensitive, Teilstring) |
 | TC-12 | F-12               | Produkt `P-000042` | `suche("P-000042")` | Trefferliste enthält genau dieses Produkt |
 | TC-13 | F-14               | Kein Produkt `P-999999` vorhanden | `findeProdukt("P-999999")` | liefert `null` |
 | TC-14 | F-15               | 3 Produkte im Bestand | `exportiereCsv(ziel)` | CSV-Datei mit Kopfzeile + 3 Datenzeilen, Semikolon-getrennt, UTF-8 |
@@ -165,18 +131,18 @@ PH-Anf.-Nummern beziehen sich auf Teil C des Pflichtenhefts. Die Schnittstelle
 
 | TC    | Abgedeckte PH-Anf. | Vorbedingung | Eingabe | Erwartetes Ergebnis |
 |---------|------------|------------------------|----------------------|----------------------------|
-| TC-01 | F-01, F-02         | Höchste Kundennummer `K-000016` | Kunde („Muster GmbH", „Hauptstr. 1", „68163", „Mannheim") speichern | Kunde persistiert; Kundennummer = `K-000017` |
+| TC-01 | F-01, F-02         | Höchste Kundennummer `K-000016` | Kunde („Muster GmbH“, „Hauptstr. 1“, „68163“, „Mannheim“) speichern | Kunde persistiert; Kundennummer = `K-000017` |
 | TC-02 | F-02 (Format)      | Zähler = 7   | `naechsteNummer()` | liefert `K-000007` (führende Nullen, `String`) |
-| TC-03 | F-03, NF-USE-01    | Kunde ohne Ort | `speichere()` | Speichern abgelehnt; Validierungsfehler benennt „Ort" |
-| TC-04 | F-03               | Kunde mit leerem Namen (`""`) | `speichere()` | Speichern abgelehnt; Validierungsfehler benennt „Name" |
+| TC-03 | F-03, NF-USE-01    | Kunde ohne Ort | `speichere()` | Speichern abgelehnt; Validierungsfehler benennt „Ort“ |
+| TC-04 | F-03               | Kunde mit leerem Namen (`""`) | `speichere()` | Speichern abgelehnt; Validierungsfehler benennt „Name“ |
 | TC-05 | F-04               | Kunde mit E-Mail `"max.mustermann"` | `speichere()` | Speichern abgelehnt (ungültiges E-Mail-Format) |
 | TC-06 | F-04               | Kunde mit E-Mail `"max@beispiel.de"` | `speichere()` | Kunde gespeichert (gültiges Format) |
-| TC-07 | F-05               | Kunde `K-000017` mit Ort „Mannheim" | Ort auf „Heidelberg" ändern, speichern | gespeicherter Kunde hat ort = „Heidelberg" |
+| TC-07 | F-05               | Kunde `K-000017` mit Ort „Mannheim“ | Ort auf „Heidelberg“ ändern, speichern | gespeicherter Kunde hat ort = „Heidelberg“ |
 | TC-08 | F-07               | Kunde `K-000017` | Änderungsversuch der Kundennummer auf `K-999999` | wirft `IllegalArgumentException` / Änderung abgelehnt |
 | TC-09 | F-08               | Stub: `anzahlVerknuepfterDokumente` → `0` | `loescheKunde("K-000011")` mit Bestätigung | Kunde entfernt; nicht mehr in `alleSortiertNachName()` |
 | TC-10 | F-09, F-10, GR-04  | Stub: `anzahlVerknuepfterDokumente("K-000010")` → `3` | `loescheKunde("K-000010")` | Löschen abgelehnt; Kunde weiterhin vorhanden; Hinweis enthält Anzahl `3` |
-| TC-11 | F-11               | Kunden „Zimmer", „Albrecht", „Maier" | `alleSortiertNachName()` | Reihenfolge: „Albrecht", „Maier", „Zimmer" |
-| TC-12 | F-12               | Kunde „Muster GmbH" | `suche("MUSTER")` | Trefferliste enthält „Muster GmbH" (case-insensitive, Teilstring) |
+| TC-11 | F-11               | Kunden „Zimmer“, „Albrecht“, „Maier“ | `alleSortiertNachName()` | Reihenfolge: „Albrecht“, „Maier“, „Zimmer“ |
+| TC-12 | F-12               | Kunde „Muster GmbH“ | `suche("MUSTER")` | Trefferliste enthält „Muster GmbH“ (case-insensitive, Teilstring) |
 | TC-13 | F-12, F-14         | Kunde `K-000017` vorhanden; `K-999999` nicht | `suche("K-000017")`; `findeKunde("K-999999")` | Treffer enthält `K-000017`; `findeKunde` liefert `null` |
 | TC-14 | F-15               | 3 Kunden im Bestand | `exportiereCsv(ziel)` | CSV-Datei mit Kopfzeile + 3 Datenzeilen, Semikolon-getrennt, UTF-8 |
 
@@ -191,18 +157,18 @@ Stubs/Mocks ersetzt.
 | TC-01 | F-09               | Wizard neu gestartet | `aktuellerSchritt` lesen | `KUNDE_WAEHLEN` (erster Schritt) |
 | TC-02 | F-09               | Schritt 1 mit gewähltem Kunden | `weiter()` 4-mal mit gültigen Eingaben | Schrittfolge: `POSITIONEN_ERFASSEN` → `DATEN_BESTAETIGEN` → `ZUSAMMENFASSUNG` → `SPEICHERN` |
 | TC-03 | F-10               | Schritt 1, kein Kunde gewählt (`kundenNr = null`) | `weiter()` | Wechsel verhindert; `Meldung(FEHLER, "Kunde", …)` erzeugt |
-| TC-04 | F-10               | Schritt 2, leere Positionsliste | `weiter()` | Wechsel verhindert; Meldung benennt „Position" |
-| TC-05 | F-10               | Schritt 2, Position mit `menge = 0` | `weiter()` | Wechsel verhindert; Meldung benennt „Menge" |
+| TC-04 | F-10               | Schritt 2, leere Positionsliste | `weiter()` | Wechsel verhindert; Meldung benennt „Position“ |
+| TC-05 | F-10               | Schritt 2, Position mit `menge = 0` | `weiter()` | Wechsel verhindert; Meldung benennt „Menge“ |
 | TC-06 | F-11               | Schritt 3 erreicht; Kunde `K-000017`, 1 Position erfasst | `zurueck()` bis Schritt 1 | `kundenNr` und `positionen` unverändert erhalten |
 | TC-07 | F-12               | Schritt 4; Stub `DokumentService` liefert Summen 200.00/38.00/238.00 | Zusammenfassung erzeugen | Zusammenfassung enthält Kunde, Positionen, Mengen, 200.00/38.00/238.00, Rechnungsdatum, Zahlungsziel |
 | TC-08 | F-13               | Schritt 5; gültiges Modell | `speichern()` | genau **ein** Aufruf `erstelleRechnung(...)` am Mock; Erfolgsmeldung enthält gelieferte Rechnungsnummer |
-| TC-09 | F-13 (Fehlerfall)  | Stub `erstelleRechnung` wirft Validierungsfehler „Rechnungsdatum" | `speichern()` | keine Erfolgsmeldung; `Meldung(FEHLER, "Rechnungsdatum", …)` dargestellt (F-05/F-16) |
+| TC-09 | F-13 (Fehlerfall)  | Stub `erstelleRechnung` wirft Validierungsfehler „Rechnungsdatum“ | `speichern()` | keine Erfolgsmeldung; `Meldung(FEHLER, "Rechnungsdatum", …)` dargestellt (F-05/F-16) |
 | TC-10 | F-14               | Dokumentliste mit Rechnungen in `OFFEN`, `VERSENDET`, `STORNIERT` | verfügbare Aktionen je Rechnung ermitteln | *Stornieren* nur bei Status `OFFEN` aktiviert |
 | TC-11 | F-15               | Rechnung `R-2026-000124` | `storniere()` ohne Bestätigung; danach mit Bestätigung | ohne Bestätigung: kein Service-Aufruf; mit Bestätigung: genau ein Aufruf `storniere("R-2026-000124")` |
 | TC-12 | F-08               | Beleg im Status `VERSENDET` | Änderungsaktionen ermitteln | alle inhaltlichen Änderungsaktionen deaktiviert; PDF-Export aktiviert |
 | TC-13 | F-06               | Belege mit Status `OFFEN` (2×) und `STORNIERT` (1×) | Statusfilter `OFFEN` anwenden | Liste enthält genau die 2 offenen Belege |
-| TC-14 | F-03               | Stub `KundenService.suche("Muster")` liefert 1 Treffer | Suchbegriff „Muster" eingeben | Controller delegiert an `KundenService.suche(...)`; Trefferliste enthält genau diesen Kunden |
-| TC-15 | F-03 (D-F-03)      | Stub `KundenService` mit 1 Kunden „Muster GmbH" | `kundenListe("")`, `("   ")`, `(null)`, `("Muster")`, `("unbekannt")` | leerer/fehlender Suchbegriff: gesamter Bestand (1); „Muster": 1 Treffer; „unbekannt": 0 Treffer |
+| TC-14 | F-03               | Stub `KundenService.suche("Muster")` liefert 1 Treffer | Suchbegriff „Muster“ eingeben | Controller delegiert an `KundenService.suche(...)`; Trefferliste enthält genau diesen Kunden |
+| TC-15 | F-03 (D-F-03)      | Stub `KundenService` mit 1 Kunden „Muster GmbH“ | `kundenListe("")`, `("   ")`, `(null)`, `("Muster")`, `("unbekannt")` | leerer/fehlender Suchbegriff: gesamter Bestand (1); „Muster“: 1 Treffer; „unbekannt“: 0 Treffer |
 
 ### 2.5 Gemeinsame Infrastruktur (Paket `gemeinsam`)
 
@@ -239,7 +205,228 @@ Querschnittliche Dienste, die von allen Komponenten genutzt werden. Der `Ereigni
 | Q-03 | Q-03 (PDF)      | Rechnung mit 50 Positionen | `exportiere(rechnung, ziel)` | PDF-Erstellung in ≤ 2 s |
 | Q-08 | Q-08 (Export)   | Bestand wie Q-04 | Vollexport Kunden + Produkte + Belege als CSV | abgeschlossen in ≤ 30 s |
 
-## 3. Testumfang-Übersicht
+## 3. Ergänzte Testfälle ab Version 2.0
+
+Kapitel 2 beschreibt den Testumfang der Abnahme von Version 1.0 und bleibt als
+Beleg unverändert. Die folgenden Testfälle kamen mit den Versionen 2.0 und 3.0 hinzu;
+die Beschreibung entspricht dem `@DisplayName` der Testmethode. Anforderungs-IDs mit
+Präfix (z. B. `A-F-29`) verweisen auf die Weiterentwicklung im Pflichtenheft v2.1–v2.4.
+
+Zwei Testfälle aus Kapitel 2 wurden mit Version 3.0 fachlich angepasst:
+
+- **D / TC-10:** *Stornieren* ist jetzt für offene **und** versendete, unbezahlte
+  Rechnungen aktiviert — eine versendete Rechnung wird über eine Stornorechnung
+  ausgeglichen (A-F-29). Zusätzlich wird die Aktion *Als bezahlt markieren* geprüft (A-F-28).
+- **D / TC-07:** Die Zusammenfassung zeigt die Beträge im deutschen Format
+  (`238,00 €` statt `238.00`) und zusätzlich das Leistungsdatum (A-F-31).
+
+### 3.1 A – Dokumentenzyklus: `DokumentzyklusTest`
+
+| ID | Testfall |
+|----|----------|
+| DZ-01 | Storno einer versendeten Rechnung erzeugt eine Stornorechnung mit negativen Mengen (A-F-29) |
+| DZ-02 | Eine offene Rechnung wird ohne Stornorechnung storniert; Stornorechnungen sind weder stornier- noch bezahlbar |
+| DZ-03 | Zahlungseingang einer versendeten Rechnung wird erfasst, der Inhalt bleibt gesperrt (A-F-28) |
+| DZ-04 | Zahlungsdatum ist Pflicht und darf nicht vor dem Rechnungsdatum liegen (A-F-28) |
+| DZ-05 | Rechnung aus Lieferschein übernimmt das Lieferdatum als Leistungsdatum (A-F-31) |
+| DZ-06 | Abweichendes Leistungsdatum wird übernommen; Zahlungsziel/Gültigkeit vor dem Belegdatum abgelehnt (A-F-31, A-F-32) |
+| DZ-07 | Belege speichern das Firmenprofil als Snapshot; spätere Änderungen wirken nicht zurück (A-F-27) |
+| DZ-08 | Ohne Firmenprofil bzw. ohne Steuerkennung kein Beleg — und keine verbrauchte Nummer (A-F-26, GR-01) |
+| DZ-09 | Liefert der Nummernkreis eine vergebene Nummer, wird nichts überschrieben (GR-01, GR-02) |
+| DZ-10 | Umsatzsteuer je Steuersatz — 7 % und 19 % getrennt ausgewiesen (A-F-25) |
+
+### 3.2 A – Dokumentenzyklus: `ERechnungExportTest`
+
+| ID | Testfall |
+|----|----------|
+| ERE-01 | EN-16931-XML ist wohlgeformt und trägt die Guideline-Kennung |
+| ERE-02 | Belegnummer, Parteien, Steuerkennungen und Bruttosumme stammen aus den Snapshots |
+| ERE-03 | Umsatzsteuer je Steuersatz gerundet — XML und Belegsumme stimmen überein (A-F-25) |
+| ERE-04 | Die Stornorechnung wird als korrigierte Rechnung (384) mit Verweis ausgegeben (A-F-29) |
+| ERE-05 | Eine stornierte Rechnung wird nicht mehr als E-Rechnung ausgestellt |
+| ERE-06 | Ein Komma in der Straßenangabe verschiebt die PLZ nicht |
+| ERE-07 | Der Aussteller-Snapshot hat Vorrang vor dem aktuellen Firmenprofil (A-F-27) |
+| ERE-08 | Ohne Steuernummer und USt-IdNr. wird keine E-Rechnung erzeugt (BR-CO-26) |
+
+### 3.3 A – Dokumentenzyklus: `JdbcDokumentRepositoryTest`
+
+| ID | Testfall |
+|----|----------|
+| JDB-01 | Rechnung mit Positionen wird verlustfrei gespeichert und geladen |
+| JDB-02 | versendete Rechnung bleibt nach dem Laden unveränderlich (GR-02) |
+| JDB-03 | stornierte Rechnung behält Stornodatum und -benutzer (BA-14) |
+| JDB-04 | alle vier Belegtypen werden über den Diskriminator korrekt geladen |
+| JDB-05 | unbekannte Belegnummer liefert null; Speichern aktualisiert per Upsert |
+| JDB-06 | Aussteller-Snapshot, Zahlungseingang und Stornoverweis überstehen die Rundreise (A-F-27 bis A-F-29) |
+| JDB-07 | Versendete Belege behalten ihre gespeicherten Summen, auch wenn die Rechenregel sich ändert (GR-02) |
+
+### 3.4 A – Dokumentenzyklus: `KennzahlenDienstTest`
+
+| ID | Testfall |
+|----|----------|
+| KZ-01 | Offene und versendete Rechnungen bilden den offenen Betrag |
+| KZ-02 | Überfällig ist nur, wessen Zahlungsziel vor dem Stichtag liegt (GR-06) |
+| KZ-03 | Der Jahresumsatz zählt nur nicht stornierte Rechnungen des laufenden Jahres |
+| KZ-04 | Die jüngsten Belege stehen zuerst und sind begrenzt |
+| KZ-05 | Ein leerer Bestand liefert Nullwerte statt einer Ausnahme |
+| KZ-06 | Bezahlte Rechnungen sind nicht mehr offen; Stornorechnungen zählen weder offen noch als Umsatz (A-F-28, A-F-29) |
+
+### 3.5 A – Dokumentenzyklus: `NummernkreisIntegritaetTest`
+
+| ID | Testfall |
+|----|----------|
+| NK-01 | Ein fehlgeschlagenes Speichern verbraucht keine Rechnungsnummer (GR-01) |
+| NK-02 | Ein ungültiger Beleg berührt den Nummernkreis nicht (F-18) |
+| NK-03 | Der Zähler übersteht einen Neustart und zählt lückenlos weiter (GR-01) |
+
+### 3.6 A – Dokumentenzyklus: `PdfBoxPdfExporterTest`
+
+| ID | Testfall |
+|----|----------|
+| PDF-01 | Namen außerhalb von WinAnsi (Ł, ő, Ş), Emoji und Tabulatoren brechen den Export nicht ab |
+| PDF-02 | Lange Bezeichnungen werden umbrochen statt abgeschnitten (§ 14 Abs. 4 Nr. 5 UStG) |
+| PDF-03 | Umsatzsteuer wird je Steuersatz mit Bemessungsgrundlage ausgewiesen (A-F-25) |
+| PDF-04 | Die Stornorechnung trägt ihren Titel, den Verweis und keinen Zahlungshinweis (A-F-29) |
+| PDF-05 | Ohne Aussteller-Snapshot und ohne Firmenprofil wird kein PDF erzeugt (A-F-26) |
+| PDF-06 | Die Anschrift wird an der letzten Trennstelle in Straße und PLZ/Ort geteilt |
+
+### 3.7 B – Produktverwaltung: `ProduktVerwaltungTest`
+
+| ID | Testfall |
+|----|----------|
+| TC-15 | Preise mit mehr als zwei Nachkommastellen werden abgelehnt statt still gerundet (B-F-03) |
+| TC-16 | Ändern eines nicht existierenden Produkts wird abgelehnt statt es anzulegen |
+
+### 3.8 C – Kundenverwaltung: `KundenVerwaltungTest`
+
+| ID | Testfall |
+|----|----------|
+| TC-15 | ungültige PLZ '123' wird beim Anlegen abgelehnt und benannt (C-F-16) |
+| TC-16 | ungültige USt-IdNr. wird beim Anlegen abgelehnt und benannt (C-F-17) |
+| TC-17 | ungültiges Telefon wird beim Ändern abgelehnt und benannt (C-F-18) |
+| TC-18 | Eingaben werden getrimmt, leere optionale Felder null, USt-IdNr. normalisiert (C-F-19) |
+| TC-19 | Ändern eines nicht existierenden Kunden wird abgelehnt statt ihn anzulegen |
+| TC-20 | Liefert der Nummernkreis eine vergebene Nummer, wird kein Bestandskunde überschrieben |
+
+### 3.9 D – Programmoberfläche: `DokumentListenControllerTest`
+
+| ID | Testfall |
+|----|----------|
+| DL-01 | Ohne Filter erscheinen alle Belege |
+| DL-02 | Der Statusfilter grenzt auf den gewählten Status ein |
+| DL-03 | Die Suche findet Belegnummer, Kundenname und Kundennummer |
+| DL-04 | Die Suche achtet nicht auf Groß- und Kleinschreibung |
+| DL-05 | Status und Suche wirken zusammen |
+| DL-06 | Ein Suchbegriff ohne Treffer liefert eine leere Liste |
+
+### 3.10 D – Programmoberfläche: `OberflaechenControllerTest`
+
+| ID | Testfall |
+|----|----------|
+| ZE-01 | Zahlungseingang wird an die Fachlogik gegeben und als Erfolg gemeldet (A-F-28) |
+| ZE-02 | Datumsprüfung im Wizard — Zahlungsziel vor dem Rechnungsdatum wird abgelehnt (A-F-32) |
+
+### 3.11 D – Programmoberfläche: `TabellenFormatTest`
+
+| ID | Testfall |
+|----|----------|
+| TF-01 | Übliche deutsche und englische Schreibweisen werden eindeutig gelesen |
+| TF-02 | Mehrdeutige oder ungültige Eingaben werden abgelehnt statt still falsch gelesen |
+
+### 3.12 Gemeinsame Infrastruktur: `CsvTest`
+
+| ID | Testfall |
+|----|----------|
+| CSV-01 | Die Datei beginnt mit einer UTF-8-Byte-Order-Mark und behält Umlaute |
+| CSV-02 | Trennzeichen, Anführungszeichen und Zeilenumbrüche (auch einzelnes CR) werden maskiert |
+| CSV-03 | Formeln werden entschärft, Zahlen und Telefonnummern bleiben unverändert |
+
+### 3.13 Gemeinsame Infrastruktur: `DatensicherungTest`
+
+| ID | Testfall |
+|----|----------|
+| DS-01 | Die Sicherung enthält eine gültige Datenbank mit den aktuellen Daten |
+| DS-02 | Vorhandene JSON-Bestände werden mitgesichert, Logdateien nicht |
+
+### 3.14 Gemeinsame Infrastruktur: `ValidierungTest`
+
+| ID | Testfall |
+|----|----------|
+| VAL-01 | fehlendes Pflichtfeld wird abgelehnt und benannt (Q-09) |
+| VAL-02 | gültige fünfstellige PLZ wird akzeptiert (C-F-16) |
+| VAL-03 | ungültige PLZ wird abgelehnt und benannt (C-F-16) |
+| VAL-04 | gültige E-Mail-Adressen werden akzeptiert (C-F-04) |
+| VAL-05 | ungültige E-Mail-Adressen werden abgelehnt (C-F-04) |
+| VAL-06 | gültige USt-IdNr. (auch mit Leerzeichen) wird akzeptiert (C-F-17) |
+| VAL-07 | ungültige USt-IdNr. wird abgelehnt und benannt (C-F-17) |
+| VAL-08 | gültige Telefonnummern werden akzeptiert (C-F-18) |
+| VAL-09 | zu kurze oder unzulässige Telefonnummern werden abgelehnt (C-F-18) |
+| VAL-10 | leere optionale Felder (E-Mail, Telefon, USt-IdNr., PLZ-Format) werfen nicht |
+| VAL-11 | USt-IdNr. anderer EU-Staaten und Kleinschreibung werden akzeptiert (C-F-17) |
+| VAL-12 | IBAN mit falscher Prüfziffer wird abgelehnt, gültige auch klein und mit Leerzeichen akzeptiert (C-F-20) |
+| VAL-13 | BIC mit 8 oder 11 Zeichen wird akzeptiert, andere Längen abgelehnt (C-F-20) |
+| VAL-14 | Steuernummer mit 10 bis 13 Ziffern und Schrägstrichen (C-F-20) |
+| VAL-15 | Normalisierung — leere Werte werden null, USt-IdNr./IBAN/BIC einheitlich (C-F-19) |
+
+### 3.15 Firmenprofil: `FirmenprofilServiceTest`
+
+| ID | Testfall |
+|----|----------|
+| FP-01 | Ohne gespeichertes Profil gibt es kein Platzhalterprofil, und Belege werden abgelehnt (A-F-26) |
+| FP-02 | Ein gespeichertes Profil wird vollständig wieder geladen |
+| FP-03 | Erneutes Speichern ersetzt das Profil, statt ein zweites anzulegen |
+| FP-04 | Fehlende Pflichtfelder werden mit Feldbezug abgelehnt (Q-09) |
+| FP-05 | Ungültige Formate der optionalen Felder werden abgelehnt (C-F-20) |
+| FP-06 | plzOrt() setzt die einzeilige Anschrift für den Briefkopf zusammen |
+| FP-07 | Rechnungen verlangen Steuernummer oder USt-IdNr., andere Belege nicht (A-F-26) |
+| FP-08 | Eingaben werden einheitlich gespeichert — getrimmt, USt-IdNr./IBAN/BIC normalisiert (C-F-19) |
+| FP-09 | hatSteuerkennung() erkennt Steuernummer oder USt-IdNr. |
+
+### 3.16 Anwendung/Querschnitt: `FakturaApplicationTest`
+
+| ID | Testfall |
+|----|----------|
+| KTX-01 | Spring-Kontext startet und verdrahtet alle Fachkomponenten |
+| KTX-02 | SQLite-Datenbank liegt im konfigurierten Datenverzeichnis (IF-01) |
+| KTX-03 | JSON-Bestand wird einmalig übernommen, Nummernvergabe läuft weiter |
+| KTX-04 | Übernommene JSON-Dateien werden umbenannt und nie erneut eingelesen (GR-01) |
+| KTX-05 | Eine fehlerhafte JSON-Datei bricht die Übernahme vollständig ab; der nächste Start holt sie nach |
+| KTX-06 | Das Datenverzeichnis kommt aus dem Startargument, sonst aus dem Benutzerverzeichnis |
+
+## 4. Testumfang-Übersicht
+
+### 4.1 Stand Version 3.0
+
+Parametrisierte Tests (`@ParameterizedTest`) werden je Parametersatz einmal ausgeführt;
+daher liegt die Zahl der Ausführungen über der Zahl der Testmethoden.
+
+| Testklasse | Bereich | Testmethoden | davon seit 2.0 | Ausführungen |
+|------------|---------|-------------:|---------------:|-------------:|
+| `dokumente/DokumentCsvExportTest` | A – Dokumentenzyklus | 1 | 0 | 1 |
+| `dokumente/DokumentzyklusTest` | A – Dokumentenzyklus | 23 | 10 | 23 |
+| `dokumente/ERechnungExportTest` | A – Dokumentenzyklus | 8 | 8 | 8 |
+| `dokumente/JdbcDokumentRepositoryTest` | A – Dokumentenzyklus | 7 | 7 | 7 |
+| `dokumente/JsonDokumentRepositoryTest` | A – Dokumentenzyklus | 1 | 0 | 1 |
+| `dokumente/KennzahlenDienstTest` | A – Dokumentenzyklus | 6 | 6 | 6 |
+| `dokumente/NummernkreisIntegritaetTest` | A – Dokumentenzyklus | 3 | 3 | 3 |
+| `dokumente/PdfBoxPdfExporterTest` | A – Dokumentenzyklus | 9 | 6 | 9 |
+| `produkte/ProduktVerwaltungTest` | B – Produktverwaltung | 16 | 2 | 16 |
+| `kunden/KundenVerwaltungTest` | C – Kundenverwaltung | 20 | 6 | 20 |
+| `gui/DokumentListenControllerTest` | D – Programmoberfläche | 6 | 6 | 6 |
+| `gui/OberflaechenControllerTest` | D – Programmoberfläche | 17 | 2 | 17 |
+| `gui/TabellenFormatTest` | D – Programmoberfläche | 2 | 2 | 16 |
+| `gemeinsam/CsvTest` | Gemeinsame Infrastruktur | 3 | 3 | 3 |
+| `gemeinsam/DatensicherungTest` | Gemeinsame Infrastruktur | 2 | 2 | 2 |
+| `gemeinsam/EreignisBusTest` | Gemeinsame Infrastruktur | 3 | 0 | 3 |
+| `gemeinsam/JsonPersistenzTest` | Gemeinsame Infrastruktur | 3 | 0 | 3 |
+| `gemeinsam/ValidierungTest` | Gemeinsame Infrastruktur | 15 | 15 | 38 |
+| `firma/FirmenprofilServiceTest` | Firmenprofil | 9 | 9 | 9 |
+| `FakturaApplicationTest` | Anwendung/Querschnitt | 6 | 6 | 6 |
+| `PerformanceTest` | Anwendung/Querschnitt | 4 | 0 | 4 |
+| **Summe** | | **164** | **93** | **201** |
+
+### 4.2 Stand Version 1.0 (Abnahme)
+
 
 | Testklasse | Komponente | Anzahl |
 |------------|-----------|--------|
@@ -260,7 +447,7 @@ Performance-Nachweise spezifiziert. Sie decken die funktionalen Kernregeln, die 
 Geschäftsregeln (GR-01…GR-06) sowie die Qualitäts-/Performanceanforderungen (Q-02, Q-03,
 Q-04, Q-08, Q-09) ab.
 
-## 4. Abkürzungen
+## 5. Abkürzungen
 | Abkürzung | Bedeutung |
 |-----------|-----------|
 | TC  | Testfall (Test Case) |

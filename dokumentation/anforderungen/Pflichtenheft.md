@@ -1,53 +1,25 @@
 ---
 title: "Pflichtenheft"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
-author:
-  - Lucas Strubel
-version: "2.2"
+author: "Lucas Strubel"
+date: "24.09.2026"
+version: "2.4"
 lang: de-DE
-toc: true
-toc-depth: 3
-numbersections: false
-papersize: a4
-geometry: "margin=3cm"
-fontsize: 12pt
-linestretch: 1.5
-mainfont: "Times New Roman"
-sansfont: "Arial"
-monofont: "DejaVu Sans Mono"
-header-includes: |
-  \usepackage{fancyhdr}
-  \usepackage{lastpage}
-  \pagestyle{fancy}
-  \fancyhf{}
-  \fancyhead[L]{Faktura}
-  \fancyhead[C]{Pflichtenheft}
-  \fancyhead[R]{Version 2.0}
-  \fancyfoot[C]{\thepage\ /\ \pageref{LastPage}}
-  \renewcommand{\headrulewidth}{0.4pt}
-  \renewcommand{\footrulewidth}{0pt}
-  \makeatletter
-  \def\brk@scan#1{\ifx\brk@end#1\else#1\allowbreak\expandafter\brk@scan\fi}
-  \newcommand{\brk}[1]{\brk@scan#1\brk@end}
-  \let\origtexttt\texttt
-  \renewcommand{\texttt}[1]{\origtexttt{\brk{#1}}}
-  \makeatother
-  \AtBeginEnvironment{longtable}{\small}
+seitenumbruch: kapitel
 ---
 
-\newpage
 
 ## Dokumentenhistorie
 
 | Version | Datum      | Grund der Änderung  |
-|---------|------------|---------------------|
+|----|------|------------------------------|
 | 1.x     | 06/2026    | Vier komponentenspezifische Pflichtenhefte (A: Dokumentenzyklus, B: Produkte, C: Kunden, D: Programmoberfläche) im Rahmen des Hochschulprojekts |
 | 2.0     | 18.07.2026 | Konsolidierung der vier Pflichtenhefte zu einem Gesamtdokument |
 | 2.1     | 18.07.2026 | Teil C: erweiterte Formatvalidierung F-16 bis F-18 ergänzt, E-Mail-Prüfung (F-04) verschärft |
 | 2.2     | 19.07.2026 | Teil D: Systemarchitektur auf JavaFX-Oberfläche (FXML, Spring-Controller-Factory, Spring Application Events) aktualisiert |
 | 2.3     | 21.07.2026 | Teil D: Oberflächenumbau nachgezogen — F-01 (Seitennavigation, fünf Bereiche) und F-06 (Belegliste ohne Typ-Spalte, dafür Suche) geändert, F-07 und F-17 ergänzt, neuer Abschnitt 4.7 mit F-18 bis F-23 (Übersicht, Detailbereich, Hintergrundausführung, Erscheinungsbild, Tastenkürzel, Leerzustände), Abnahmekriterien AC-D-07 bis AC-D-10 |
+| 2.4     | 24.09.2026 | Abschluss Version 3.0 — Teil A: F-19 (Storno auch versendeter Rechnungen), neuer Abschnitt 4.8 mit F-25 bis F-32 (Steuer je Steuersatz, Pflichtprofil, Aussteller-Snapshot, Zahlungseingang, Stornorechnung, E-Rechnung, Leistungsdatum, Datumsprüfung), Datenmodell und AC-A-08 bis AC-A-11. Teil B: F-03 (zwei Nachkommastellen). Teil C: F-17 (EU-USt-IdNr.), F-19/F-20. Teil D: F-06, F-14, F-19, F-22 angepasst, F-24/F-25 ergänzt. Teile A–D: Persistenz SQLite statt JSON, Diagramme auf Stand 3.0 |
 
-\newpage
 
 ## Einführung
 
@@ -64,7 +36,7 @@ eigenen Teil dieses Dokuments spezifiziert sind:
 
 | Komponente | Teil | Verantwortung |
 |------------|------|---------------|
-| A | Prozess / Dokumentenzyklus | Belegerzeugung, Belegnummern, Statusführung, PDF-Export |
+| A | Prozess / Dokumentenzyklus | Belegerzeugung, Belegnummern, Statusführung, Zahlungseingang, Stornorechnung, PDF-Export, E-Rechnung |
 | B | Verwaltung von Produkten   | Produktstammdaten (CRUD, Nummernvergabe, Löschsperre) |
 | C | Verwaltung von Kunden      | Kundenstammdaten (CRUD, Nummernvergabe, Löschsperre GR-04) |
 | D | Programmoberfläche         | Navigation, Listen/Formulare, Rechnungs-Wizard, Meldungen |
@@ -74,13 +46,13 @@ eigenen Teil dieses Dokuments spezifiziert sind:
 Anforderungs-IDs (`F-…`, `NF-…`, `AC-…`, `TC-…`) gelten **je Komponente**: Innerhalb
 eines Teils sind sie unpräfixiert (z. B. `F-12`), komponentenübergreifende Verweise —
 auch im Quellcode — tragen den Komponenten-Präfix (z. B. `A-F-12`, `C-F-06`, `B-F-10`,
-`D-F-03`). Kapitelverweise innerhalb eines Teils (z. B. „Kapitel 6.2") beziehen sich auf
+`D-F-03`). Kapitelverweise innerhalb eines Teils (z. B. „Kapitel 6.2“) beziehen sich auf
 die Kapitel desselben Teils. IDs aus dem Lastenheft (`BA-…`, `GR-…`, `Q-…`, `PZ-…`)
 sind global eindeutig.
 
 ### Referenzen
 
-- Lastenheft „Desktop-Fakturierungsanwendung", Version 1.3, 09.06.2026
+- Lastenheft „Desktop-Fakturierungsanwendung“, Version 1.3, 09.06.2026
 - § 14 UStG — Pflichtangaben einer Rechnung
 - GoBD — Grundsätze zur ordnungsmäßigen Führung und Aufbewahrung von Büchern
 - DSGVO — EU-Verordnung 2016/679
@@ -92,8 +64,10 @@ Datenhaltung** (keine Cloud, kein Server). Die Bedienung erfolgt über eine graf
 Benutzeroberfläche (Komponente D), über die die gesamte Funktionalität zugänglich ist:
 Stammdatenpflege für Kunden und Produkte, der vollständige Dokumentenzyklus Angebot →
 Auftragsbestätigung → Lieferschein → Rechnung, die geführte Rechnungserstellung als
-Wizard sowie PDF-Export und CSV-Datenexport. Erzeugte Belege werden lokal als **PDF**
-exportiert und können optional gedruckt oder per Standard-E-Mail-Client versendet werden.
+Wizard sowie PDF-Export, E-Rechnung (EN 16931) und CSV-Datenexport. Erzeugte Belege
+werden lokal als **PDF** exportiert und können optional gedruckt oder per
+Standard-E-Mail-Client versendet werden. Alle Daten liegen in einer lokalen
+SQLite-Datenbank im Benutzerverzeichnis.
 
 ## Stakeholder und Kontext
 
@@ -105,7 +79,6 @@ Angrenzende Systeme: lokales Dateisystem (Persistenz, PDF, CSV-Export), optional
 und Standard-E-Mail-Client. Da Kundendaten **personenbezogene Daten** im Sinne der DSGVO
 sind, gilt die lokale Datenhaltung (Q-06) in besonderem Maße.
 
-\newpage
 
 # Teil A — Prozess / Dokumentenzyklus
 
@@ -200,8 +173,9 @@ DANN MUSS das System das Speichern ablehnen und das fehlende Pflichtfeld benenne
 
 ### 4.6 Rechnung stornieren (aus BA-14)
 
-**F-19:** Das System MUSS es ERMÖGLICHEN, eine gespeicherte Rechnung im Status `OFFEN` zu
-stornieren.
+**F-19:** Das System MUSS es ERMÖGLICHEN, eine gespeicherte Rechnung im Status `OFFEN`
+oder `VERSENDET` zu stornieren, sofern sie noch nicht bezahlt (F-28) und selbst keine
+Stornorechnung (F-29) ist.
 
 **F-20:** WENN eine Rechnung storniert wird, DANN MUSS das System ihren Status auf
 `STORNIERT` setzen, sie nicht mehr in der Liste offener Rechnungen führen und den Vorgang
@@ -210,10 +184,12 @@ mit Datum protokollieren.
 **F-21:** WENN eine Rechnung den Status `STORNIERT` hat, DANN MUSS das System jede weitere
 inhaltliche Änderung ablehnen.
 
-> **Abgrenzung Stornierung vs. Stornorechnung:** Die In-place-Stornierung (F-19/F-20) ist
-> ausschließlich für Rechnungen im Status `OFFEN` zulässig. Eine bereits `VERSENDET`e Rechnung
-> wird **nicht** in-place storniert, sondern gemäß F-24 über eine **neue**
-> Storno-/Korrekturrechnung korrigiert.
+> **Abgrenzung Stornierung vs. Stornorechnung:** Eine Rechnung im Status `OFFEN` hat den
+> Empfänger noch nicht erreicht und wird nur als `STORNIERT` gekennzeichnet (F-20). Eine
+> bereits `VERSENDET`e Rechnung wird ebenfalls gekennzeichnet, ihr Inhalt bleibt aber
+> unverändert (F-24); ausgeglichen wird sie durch eine **neue** Stornorechnung (F-29).
+> *Änderung zu Version 2.3:* Zuvor war die Stornierung nur für `OFFEN` zulässig, für
+> versendete Rechnungen fehlte jeder Weg.
 
 ### 4.7 Übergreifende Prozessregeln
 
@@ -229,6 +205,59 @@ der Belegerstellung gültige Steuersatz und Einzelpreis des Produkts als unverä
 **F-24 (Unveränderlichkeit, GR-02 / Q-07):** WENN ein Beleg den Status `VERSENDET` hat,
 DANN MUSS das System jede inhaltliche Änderung ablehnen; Korrekturen erfolgen ausschließlich
 über neue Belege (Storno-/Korrekturrechnung).
+
+### 4.8 Weiterentwicklung ab Version 3.0
+
+Die folgenden Anforderungen gehen über das Lastenheft hinaus. Sie schließen Lücken, die
+für den produktiven Einsatz nach § 14 UStG, GoBD und EN 16931 bestehen; sie sind durch die
+Testfälle DZ-01 bis DZ-10, ERE-01 bis ERE-08, PDF-01 bis PDF-06, FP-01 bis FP-09 und
+KZ-06 belegt (Modultestplan, Kapitel 3).
+
+**F-25 (Umsatzsteuer je Steuersatz):** Das System MUSS die Umsatzsteuer eines Belegs je
+Steuersatz berechnen — die Nettosumme aller Positionen eines Satzes, einmal mit dem Satz
+multipliziert und kaufmännisch auf zwei Nachkommastellen gerundet — und nicht je Position.
+Beleg-PDF und E-Rechnung MÜSSEN Entgelt und Steuerbetrag je Steuersatz ausweisen
+(§ 14 Abs. 4 Nr. 7/8 UStG) und dieselben Beträge enthalten (EN 16931, BR-CO-17).
+
+**F-26 (Pflichtprofil):** WENN noch kein Firmenprofil gespeichert ist, DANN MUSS das System
+das Erstellen von Belegen ablehnen und auf das Firmenprofil verweisen. WENN eine Rechnung
+erstellt oder als E-Rechnung ausgegeben wird, DANN MUSS das Firmenprofil eine Steuernummer
+oder eine USt-IdNr. enthalten (§ 14 Abs. 4 Nr. 2 UStG); andernfalls MUSS der Vorgang
+abgelehnt werden. Ein Platzhalter-Aussteller DARF NICHT verwendet werden.
+
+**F-27 (Aussteller-Snapshot):** WENN ein Beleg erstellt wird, DANN MUSS das System die
+Daten des Ausstellers (Name, Anschrift, Steuernummer, USt-IdNr., Kontakt,
+Bankverbindung) als unveränderlichen Snapshot im Beleg ablegen. PDF-Export und E-Rechnung
+MÜSSEN diesen Snapshot verwenden; nur Belege aus der Zeit vor Version 3.0 ohne Snapshot
+DÜRFEN auf das aktuelle Firmenprofil zurückgreifen.
+
+**F-28 (Zahlungseingang):** Das System MUSS es ERMÖGLICHEN, für eine Rechnung im Status
+`OFFEN` oder `VERSENDET` einmalig den Zahlungseingang mit Datum zu erfassen. Der
+Zahlungseingang ist keine inhaltliche Änderung (F-24 bleibt unberührt); das Datum DARF
+NICHT vor dem Rechnungsdatum liegen. Bezahlte Rechnungen DÜRFEN NICHT als offen oder
+überfällig gelten (D-F-18) und NICHT mehr storniert werden.
+
+**F-29 (Stornorechnung):** WENN eine Rechnung im Status `VERSENDET` storniert wird, DANN
+MUSS das System in derselben Transaktion eine Stornorechnung erzeugen: eine neue Rechnung
+mit eigener, lückenloser Rechnungsnummer (GR-01), denselben Kunden-, Aussteller- und
+Leistungsdaten, allen Positionen mit negierter Menge, ohne Zahlungsziel und mit Verweis auf
+die stornierte Rechnung. Eine Stornorechnung DARF weder storniert noch als bezahlt erfasst
+werden und zählt weder als offener Betrag noch als Umsatz.
+
+**F-30 (E-Rechnung):** Das System MUSS es ERMÖGLICHEN, eine Rechnung im Status `OFFEN`
+oder `VERSENDET` als strukturierte E-Rechnung nach EN 16931 (CII-XML, ZUGFeRD-Profil
+EN 16931) in das lokale Dateisystem zu exportieren. Eine Stornorechnung MUSS als
+korrigierte Rechnung (Dokumentart 384) mit Verweis auf die stornierte Rechnung ausgegeben
+werden; eine stornierte Rechnung DARF NICHT mehr als E-Rechnung ausgegeben werden.
+
+**F-31 (Leistungsdatum):** Das System MUSS bei der Rechnungserstellung ein vom
+Rechnungsdatum abweichendes Leistungsdatum zulassen (Standard: Rechnungsdatum). WENN eine
+Rechnung aus einem Lieferschein erzeugt wird, DANN MUSS das Lieferdatum als Leistungsdatum
+übernommen werden (§ 14 Abs. 4 Nr. 6 UStG).
+
+**F-32 (Datumsplausibilität):** Das System MUSS ein Zahlungsziel vor dem Rechnungsdatum
+und ein Angebots-Gültigkeitsdatum vor dem Angebotsdatum ablehnen und das Feld benennen
+(Q-09).
 
 ## 5. Nicht-funktionale Anforderungen
 
@@ -277,7 +306,10 @@ bereits als Java-Typen angegeben.
 Bedeutung und Übergänge: `ENTWURF` = Beleg in Erstellung (Initialstatus); `OFFEN` =
 gespeichert und gültig; `VERSENDET` = an den Kunden übergeben (ab dann unveränderlich, F-24);
 `STORNIERT` = storniert. Zulässige Übergänge: `ENTWURF → OFFEN` (beim Speichern),
-`OFFEN → VERSENDET` (Markierung „versendet"), `OFFEN → STORNIERT` (Stornierung, F-19).
+`OFFEN → VERSENDET` (Markierung „versendet“), `OFFEN → STORNIERT` und
+`VERSENDET → STORNIERT` (Stornierung, F-19, F-29). Der Zahlungseingang (F-28) ist
+bewusst **kein** Status, sondern ein eigenes Datum: Er ändert den Beleginhalt nicht und
+darf deshalb auch bei `VERSENDET` erfasst werden.
 
 #### Klasse `Dokumentposition`
 | Attribut          | Java-Typ      | Beschreibung |
@@ -295,11 +327,13 @@ gespeichert und gültig; `VERSENDET` = an den Kunden übergeben (ab dann unverä
 | belegnummer    | `String`                   | eindeutig, vom System generiert |
 | datum          | `LocalDate`                | Erstelldatum |
 | kundenReferenz | `String`                   | Kundennummer (Komponente C) |
+| kundeName, kundeAnschrift | `String`        | Snapshot der Kundendaten zum Erstellzeitpunkt (C-F-06) |
+| aussteller     | `Firmenprofil`             | Snapshot der Ausstellerdaten zum Erstellzeitpunkt (F-27) |
 | positionen     | `List<Dokumentposition>`   | mind. 1 Position |
 | status         | `DokumentStatus`           | Lebenszyklus-Status |
 | vorgaengerNr   | `String` (optional, `null`)| Rückreferenz auf Vorgängerbeleg (GR-05) |
 | summeNetto     | `BigDecimal`               | Summe aller Positionssummen (Scale 2) |
-| summeSteuer    | `BigDecimal`               | Summe der Steuerbeträge (Scale 2) |
+| summeSteuer    | `BigDecimal`               | Summe der je Steuersatz gerundeten Steuerbeträge (Scale 2, F-25) |
 | summeBrutto    | `BigDecimal`               | `summeNetto + summeSteuer` (Scale 2) |
 
 #### Spezialisierungen (erben von `Dokument`)
@@ -308,7 +342,14 @@ gespeichert und gültig; `VERSENDET` = an den Kunden übergeben (ab dann unverä
 | `Angebot`              | `gueltigBis: LocalDate` |
 | `Auftragsbestaetigung` | — (nutzt `vorgaengerNr` → Angebot) |
 | `Lieferschein`         | `lieferdatum: LocalDate` |
-| `Rechnung`             | `leistungsdatum: LocalDate`, `zahlungsziel: LocalDate`, `storniertAm: LocalDate` (optional), `storniertVon: String` (optional) |
+| `Rechnung`             | `leistungsdatum: LocalDate`, `zahlungsziel: LocalDate` (bei Stornorechnungen `null`), `storniertAm: LocalDate` (optional), `storniertVon: String` (optional), `bezahltAm: LocalDate` (optional, F-28), `stornoZu: String` (optional; Belegnummer der stornierten Rechnung, F-29) |
+
+#### Wertetyp `Steuerzeile` (F-25)
+| Attribut   | Java-Typ     | Beschreibung |
+|------------|--------------|--------------|
+| steuersatz | `BigDecimal` | Steuersatz als Faktor, z. B. `0.19` |
+| netto      | `BigDecimal` | Summe der Positionsnettobeträge mit diesem Satz (Scale 2) |
+| steuer     | `BigDecimal` | `netto * steuersatz`, einmal gerundet (Scale 2, HALF_UP) |
 
 ### 6.2 Schnittstellen
 
@@ -316,7 +357,7 @@ gespeichert und gültig; `VERSENDET` = an den Kunden übergeben (ab dann unverä
 
 | ID    | Schnittstelle             | Zweck |
 |-------|---------------------------|-------|
-| IF-01 | Lokales Dateisystem       | Persistenz der Belege, Ablage exportierter PDF-Dokumente |
+| IF-01 | Lokales Dateisystem       | Persistenz der Belege (SQLite-Datenbank), Ablage exportierter PDF- und E-Rechnungs-Dokumente |
 | IF-02 | Druckersystem (optional)  | Direkter Druck eines Belegs |
 | IF-03 | Standard-E-Mail-Client (optional) | Versand eines Belegs als PDF-Anhang |
 | IF-04 | Datenexport (CSV)         | Export der Belegdaten als CSV in offenem Format (Q-08) |
@@ -361,9 +402,12 @@ und Datentypen sind dem Komponentenentwurf bzw. dem Modultestplan (eigenständig
 
 - **Belegnummernvergabe (GR-01):** liefert je Belegtyp und Jahr die nächste fortlaufende,
   lückenlose Belegnummer im festen Format mit Präfix und führenden Nullen (z. B. `R-2026-000124`).
-- **Belegpersistenz (IF-01):** speichert Belege im lokalen Dateisystem, liefert einen Beleg zur
-  Belegnummer und alle Belege; Belege werden nie gelöscht (GoBD).
+- **Belegpersistenz (IF-01):** speichert Belege in der lokalen SQLite-Datenbank, liefert einen
+  Beleg zur Belegnummer und alle Belege; Belege werden nie gelöscht (GoBD). Die Summen
+  versendeter und stornierter Belege werden beim Laden aus der Datenbank übernommen und
+  nicht neu berechnet.
 - **PDF-Export (IF-01):** exportiert einen Beleg als PDF in das lokale Dateisystem.
+- **E-Rechnung (F-30):** exportiert eine Rechnung als CII-XML nach EN 16931.
 - **Ereignisbenachrichtigung (Observer, Paket `gemeinsam`):** meldet Datenänderungen am
   Belegbestand an abonnierte Modulansichten (Komponente D).
 
@@ -372,11 +416,15 @@ und Datentypen sind dem Komponentenentwurf bzw. dem Modultestplan (eigenständig
 Die Komponente folgt einer einfachen Schichtung: die GUI (Komponente D) ruft den
 `DokumentService` (realisiert durch `StandardDokumentService`) auf, der die Fachlogik
 kapselt und die Dienste `BelegnummernGenerator`, `KundenService`, `ProduktService` und
-`PdfExporter` nutzt. Belege werden über ein `DokumentRepository` im lokalen Dateisystem
-persistiert (realisiert als JSON-Ablage). Nach jeder schreibenden Operation meldet der
-`DokumentService` die Datenänderung über einen **`EreignisBus`** (Observer-Muster, Paket
-`gemeinsam`; `melde(DatenBereich.DOKUMENTE)`); die Modulansichten der Komponente D abonnieren
-diesen Bus und aktualisieren sich automatisch.
+`PdfExporter` sowie das Firmenprofil (`FirmenprofilService`) nutzt. Belege werden über ein
+`DokumentRepository` persistiert, realisiert als SQLite-Datenbank über Spring JDBC
+(`JdbcDokumentRepository`, Schema per Flyway). Die Belegnummern vergibt der
+`JdbcBelegnummernGenerator` über den Nummernkreis in der Datenbank — in derselben
+Transaktion wie das Speichern, sodass ein Fehlschlag keine Nummer verbraucht (GR-01).
+Nach jeder schreibenden Operation veröffentlicht der `DokumentService` ein
+`DatenGeaendertEreignis`; der **`EreignisBus`** (Observer-Muster, Paket `gemeinsam`) stellt
+es nach dem Commit den Modulansichten der Komponente D zu, die sich automatisch
+aktualisieren. Die E-Rechnung erzeugt `ERechnungExport` mit der Bibliothek Mustang.
 
 ### 7.1 Klassendiagramm
 
@@ -393,15 +441,15 @@ Belegnummern), die Schnittstellen `KundenService`/`ProduktService` (Stammdaten),
 nach Datenänderungen, Observer-Muster). Der Status eines Belegs wird über das Enum
 `DokumentStatus` abgebildet.
 
-![Abbildung 1: UML-Klassendiagramm Dokumentenzyklus (Komponente A)](../diagramme/klassendiagramm_dokumentenzyklus.png)
+![UML-Klassendiagramm Dokumentenzyklus (Komponente A)](../diagramme/klassendiagramm_dokumentenzyklus.png)
 
 ### 7.2 Sequenzdiagramm
 
 **Beschreibung zu Abbildung 2:** Das Sequenzdiagramm stellt den Ablauf *Rechnung erstellen*
 dar. Die Anwender:in löst über die GUI (Komponente D)
-`erstelleRechnung(kundenNr, positionen, rechnungsdatum, zahlungsziel)` am
+`erstelleRechnung(kundenNr, positionen, rechnungsdatum, leistungsdatum, zahlungsziel)` am
 `DokumentService` aus (ist `zahlungsziel = null`, greift das Standard-Zahlungsziel). Dieser
-ermittelt über `KundenService.findeKunde(...)` und `ProduktService.findeProdukt(...)` die
+übernimmt das Firmenprofil als Aussteller-Snapshot (F-26, F-27), ermittelt über `KundenService.findeKunde(...)` und `ProduktService.findeProdukt(...)` die
 Stammdaten und legt sie als Snapshot je Position ab (Einzelpreis und Steuersatz, F-23),
 fordert vom `BelegnummernGenerator` mit `naechsteNummer(RECHNUNG, jahr)` eine lückenlose
 Rechnungsnummer an (GR-01), setzt das Standard-Zahlungsziel (+14 Tage, GR-06) und berechnet
@@ -413,56 +461,82 @@ Abschließend wird die gespeicherte `Rechnung` an die GUI zurückgegeben. Der PD
 `DokumentService` den Beleg erneut aus dem `DokumentRepository` und exportiert ihn mittels
 `PdfExporter.exportiere(...)` in das lokale Dateisystem (F-15, IF-01).
 
-![Abbildung 2: UML-Sequenzdiagramm „Rechnung erstellen" (Komponente A)](../diagramme/sequenz_rechnung_erstellen.png)
+![UML-Sequenzdiagramm „Rechnung erstellen“ (Komponente A)](../diagramme/sequenz_rechnung_erstellen.png)
 
 ## 8. Testbare Abnahmekriterien
 
-**AC-A-01 (zu F-01–F-04, NF-PERF-01)** — *Angebot erstellen und exportieren*
-Vorbedingung: Ein Kunde und 5 Produkte sind erfasst.
-Aktion: Anwender:in erstellt ein Angebot mit 5 Positionen und exportiert es als PDF.
+**AC-A-01 (zu F-01–F-04, NF-PERF-01)** — *Angebot erstellen und exportieren*\
+Vorbedingung: Ein Kunde und 5 Produkte sind erfasst.\
+Aktion: Anwender:in erstellt ein Angebot mit 5 Positionen und exportiert es als PDF.\
 Erwartet: Das Angebot ist mit Angebotsnummer (`AN-…`) und korrekten Summen gespeichert; der
 PDF-Export ist in ≤ 2 Sekunden abgeschlossen.
 
-**AC-A-02 (zu F-05–F-07, F-22)** — *Auftragsbestätigung aus Angebot*
-Vorbedingung: Ein Angebot liegt vor.
-Aktion: Anwender:in erstellt eine Auftragsbestätigung mit Übernahme aller Positionen.
+**AC-A-02 (zu F-05–F-07, F-22)** — *Auftragsbestätigung aus Angebot*\
+Vorbedingung: Ein Angebot liegt vor.\
+Aktion: Anwender:in erstellt eine Auftragsbestätigung mit Übernahme aller Positionen.\
 Erwartet: Die AB ist mit eindeutiger Nummer (`AB-…`), übernommenen Positionen/Mengen und
 Rückreferenz auf das Angebot gespeichert und als PDF exportierbar.
 
-**AC-A-03 (zu F-08–F-10, F-22)** — *Lieferschein erstellen*
-Vorbedingung: Eine Auftragsbestätigung liegt vor.
-Aktion: Anwender:in erstellt einen Lieferschein mit Lieferdatum.
+**AC-A-03 (zu F-08–F-10, F-22)** — *Lieferschein erstellen*\
+Vorbedingung: Eine Auftragsbestätigung liegt vor.\
+Aktion: Anwender:in erstellt einen Lieferschein mit Lieferdatum.\
 Erwartet: Der Lieferschein ist mit eindeutiger Nummer (`LS-…`), Lieferdatum und allen
 Positionsdaten gespeichert und als PDF exportierbar.
 
-**AC-A-04 (zu F-11–F-15, F-23)** — *Rechnung mit Pflichtangaben und Standard-Zahlungsziel*
-Vorbedingung: Kunde und mind. eine Position liegen vor; letzte Rechnungsnummer = `R-2026-000123`.
+**AC-A-04 (zu F-11–F-15, F-23)** — *Rechnung mit Pflichtangaben und Standard-Zahlungsziel*\
+Vorbedingung: Kunde und mind. eine Position liegen vor; letzte Rechnungsnummer = `R-2026-000123`.\
 Aktion: Anwender:in erstellt eine Rechnung mit Rechnungsdatum 09.06.2026 ohne abweichendes
-Zahlungsziel.
+Zahlungsziel.\
 Erwartet: Die Rechnung trägt die Nummer `R-2026-000124`, ein Zahlungsziel 23.06.2026
 (+14 Tage), alle Pflichtangaben gem. § 14 UStG sowie korrekte Netto-/Steuer-/Bruttosummen.
 
-**AC-A-05 (zu F-16–F-18, NF-USE-01/02)** — *Geführte Rechnungserstellung*
-Vorbedingung: Mind. ein Kunde und ein Produkt vorhanden.
+**AC-A-05 (zu F-16–F-18, NF-USE-01/02)** — *Geführte Rechnungserstellung*\
+Vorbedingung: Mind. ein Kunde und ein Produkt vorhanden.\
 Aktion: Anwender:in durchläuft die geführte Erstellung (Kunde → Position+Menge → Datum/
-Zahlungsziel → Zusammenfassung → speichern).
+Zahlungsziel → Zusammenfassung → speichern).\
 Erwartet: Vor dem Speichern erscheint eine Zusammenfassung mit Kunde, Position, Menge,
 Summen, Rechnungsdatum und Zahlungsziel; fehlt ein Pflichtfeld, wird das Speichern abgelehnt
 und das fehlende Feld benannt.
 
-**AC-A-06 (zu F-19–F-21)** — *Rechnung stornieren*
-Vorbedingung: Eine Rechnung im Status `OFFEN` existiert.
-Aktion: Anwender:in storniert die Rechnung.
+**AC-A-06 (zu F-19–F-21)** — *Rechnung stornieren*\
+Vorbedingung: Eine Rechnung im Status `OFFEN` existiert.\
+Aktion: Anwender:in storniert die Rechnung.\
 Erwartet: Status wird `STORNIERT`, die Rechnung erscheint nicht mehr in der Liste offener
 Rechnungen, der Vorgang ist mit Datum protokolliert; weitere Änderungen werden abgelehnt.
 
-**AC-A-07 (zu F-23, F-24, NF-INT-01)** — *Snapshot und Unveränderlichkeit*
+**AC-A-07 (zu F-23, F-24, NF-INT-01)** — *Snapshot und Unveränderlichkeit*\
 Vorbedingung: Eine Rechnung mit einem Produkt ist erstellt; danach wird der Produktpreis
-geändert; eine zweite Rechnung im Status `VERSENDET` existiert.
+geändert; eine zweite Rechnung im Status `VERSENDET` existiert.\
 Aktion: Vergleich der ersten Rechnung mit dem geänderten Produktpreis; Änderungsversuch an
-der versendeten Rechnung.
+der versendeten Rechnung.\
 Erwartet: Die erste Rechnung behält den ursprünglichen Preis (Snapshot); der Änderungsversuch
 an der versendeten Rechnung wird abgelehnt.
+
+**AC-A-08 (zu F-19, F-29, F-30)** — *Versendete Rechnung stornieren*\
+Vorbedingung: Eine Rechnung `R-2026-000008` im Status `VERSENDET`, nicht bezahlt.\
+Aktion: Anwender:in storniert die Rechnung.\
+Erwartet: Die Rechnung ist `STORNIERT`, ihr Inhalt unverändert; eine Stornorechnung mit
+der nächsten Rechnungsnummer, negierten Mengen und Verweis auf `R-2026-000008` ist
+gespeichert und als PDF sowie als E-Rechnung (Dokumentart 384) exportierbar.
+
+**AC-A-09 (zu F-28, D-F-18)** — *Zahlungseingang*\
+Vorbedingung: Eine versendete Rechnung mit überschrittenem Zahlungsziel.\
+Aktion: Anwender:in erfasst den Zahlungseingang.\
+Erwartet: Die Rechnung gilt als bezahlt, zählt weder als offen noch als überfällig und
+kann nicht mehr storniert werden; ihr Inhalt bleibt unverändert.
+
+**AC-A-10 (zu F-25)** — *Steuer je Steuersatz*\
+Vorbedingung: Rechnung mit zehn Positionen zu je 1,10 € bei 19 %.\
+Aktion: Summen berechnen, PDF und E-Rechnung exportieren.\
+Erwartet: Umsatzsteuer 2,09 € und Bruttosumme 13,09 € — identisch in Beleg, PDF und XML.
+
+**AC-A-11 (zu F-26, F-27)** — *Firmenprofil*\
+Vorbedingung: Kein Firmenprofil gespeichert.\
+Aktion: Anwender:in versucht, eine Rechnung zu erstellen; hinterlegt danach ein Profil mit
+Steuernummer, erstellt die Rechnung und ändert anschließend die Anschrift im Profil.\
+Erwartet: Der erste Versuch wird mit Verweis auf das Firmenprofil abgelehnt, ohne eine
+Nummer zu verbrauchen; die erstellte Rechnung zeigt auch nach der Profiländerung die
+ursprüngliche Anschrift.
 
 ## 9. Traceability LH ↔ PH
 
@@ -476,10 +550,10 @@ Pflichtenheft-Anforderung zugeordnet.
 | BA-11          | Lieferschein erstellen                    | F-08, F-09, F-10, F-22    |
 | BA-12          | Rechnung erstellen                        | F-11, F-12, F-13, F-14, F-15 |
 | BA-13          | Geführte Rechnungserstellung              | F-16, F-17, F-18          |
-| BA-14          | Rechnung stornieren                       | F-19, F-20, F-21          |
-| GR-01          | Lückenlose Rechnungsnummern               | F-12 (Belegnummern-Regel) |
+| BA-14          | Rechnung stornieren                       | F-19, F-20, F-21, F-29    |
+| GR-01          | Lückenlose Rechnungsnummern               | F-12 (Belegnummern-Regel), F-29 |
 | GR-02          | Unveränderlichkeit versendeter Dokumente  | F-24, F-21, NF-INT-01     |
-| GR-03          | Steuerberechnung (Snapshot)               | F-23, F-03, F-13          |
+| GR-03          | Steuerberechnung (Snapshot)               | F-23, F-03, F-13, F-25, F-27 |
 | GR-05          | Dokumentenzyklus-Konsistenz               | F-22, F-06, F-09          |
 | GR-06          | Standard-Zahlungsziel 14 Tage             | F-14                      |
 | Q-01           | Datenbestand-Referenzgröße (Lastannahme)  | NF-PERF-01 (Bedingung)    |
@@ -490,17 +564,19 @@ Pflichtenheft-Anforderung zugeordnet.
 | Q-08           | Datenexport (offenes Format, CSV)         | IF-04                     |
 | Q-09           | Pflichtfeldhinweise ≥ 80 %                | NF-USE-02, F-18           |
 
+> Hinweis: F-25 bis F-32 (Abschnitt 4.8) gehen über das Lastenheft hinaus; ihre Grundlage
+> sind § 14 UStG, die GoBD und EN 16931 (Weiterentwicklung ab Version 3.0).
+
 > Hinweis: GR-04 (Löschsperre für verknüpfte Kunden) liegt in der Verantwortung von
 > Komponente C; Komponente A nutzt Kundendaten nur lesend (IF/`KundenService`) und ist von
 > dieser Regel betroffen, spezifiziert sie aber nicht.
 
 > Hinweis: Q-02 (Such-/Auflistungs-Performance) betrifft die Module Kunden-/Produktverwaltung
 > (Komponenten C/B); Q-04 (Anwendungsstart) ist eine querschnittliche Start-/Integrationsanforderung.
-> Beide werden von Komponente A nicht spezifiziert; der Gesamtnachweis erfolgt im team-weiten
+> Beide werden von Komponente A nicht spezifiziert; der Gesamtnachweis erfolgt im
 > Anforderungsabgleich.
 
 
-\newpage
 
 # Teil B — Verwaltung von Produkten
 
@@ -533,9 +609,10 @@ Beschreibung und Einheit anzulegen.
 Produktnummer (Präfix `P-`, fortlaufend, führende Nullen) vergeben und anzeigen.
 
 **F-03:** WENN ein Produkt gespeichert wird, DANN MUSS das System die Eingaben validieren:
-der Netto-Einzelpreis MUSS größer oder gleich `0.00` sein und der Steuersatz MUSS einem
-der zulässigen Werte `{0.00, 0.07, 0.19}` entsprechen; andernfalls MUSS das Speichern
-abgelehnt werden.
+der Netto-Einzelpreis MUSS größer oder gleich `0.00` sein und darf höchstens zwei
+Nachkommastellen haben, und der Steuersatz MUSS einem der zulässigen Werte
+`{0.00, 0.07, 0.19}` entsprechen; andernfalls MUSS das Speichern abgelehnt werden.
+*(Ab v2.4: Ein Preis wie `10,005` wurde zuvor im Beleg still auf `10,01` gerundet.)*
 
 **F-04:** WENN ein Pflichtfeld fehlt (keine Bezeichnung, kein Einzelpreis, kein
 Steuersatz), DANN MUSS das System das Speichern ablehnen und das fehlende Pflichtfeld
@@ -605,7 +682,7 @@ Produktstammdaten (F-15) INNERHALB VON 30 SEKUNDEN abschließen, bei einem Daten
 gemäß Q-01.
 
 **NF-USE-01 (aus Q-09):** Das System MUSS fehlende Pflichtangaben im Formular „Produkt
-anlegen/ändern" so markieren und benennen, dass mindestens 80 % der Testpersonen die
+anlegen/ändern“ so markieren und benennen, dass mindestens 80 % der Testpersonen die
 fehlende Eingabe ohne externe Hilfe im ersten Korrekturversuch ergänzen können (Nachweis
 durch Usability-Test mit mind. 5 Testpersonen).
 
@@ -694,16 +771,17 @@ Die Komponente folgt einer einfachen Schichtung: die GUI (Komponente D) ruft den
 Löschsperre) kapselt und die Dienste `ProduktnummernGenerator`, `ProduktRepository` und
 `ProduktReferenzPruefung` (Komponente A) nutzt. Gegenüber Komponente A implementiert die
 Komponente das Interface `ProduktService`. Produkte werden über das `ProduktRepository`
-im lokalen Dateisystem persistiert (realisiert als JSON-Ablage). Nach jeder schreibenden
-Operation (Anlegen, Ändern, Löschen) meldet der `ProduktVerwaltungsService` die Änderung
-über einen **`EreignisBus`** (Observer-Muster, Paket `gemeinsam`;
-`melde(DatenBereich.PRODUKTE)`), den die Produktansicht der Komponente D abonniert und sich
-daraufhin automatisch aktualisiert.
+in der lokalen SQLite-Datenbank persistiert (`JdbcProduktRepository`); die Produktnummern
+vergibt der `JdbcProduktnummernGenerator` über den Nummernkreis in der Datenbank. Nach jeder
+schreibenden Operation (Anlegen, Ändern, Löschen) veröffentlicht der
+`ProduktVerwaltungsService` ein `DatenGeaendertEreignis`, das der **`EreignisBus`**
+(Observer-Muster, Paket `gemeinsam`) nach dem Commit an die Produktansicht der
+Komponente D weitergibt; diese aktualisiert sich daraufhin automatisch.
 
 ### 7.1 Klassendiagramm
 
 
-![Abbildung 1: UML-Klassendiagramm Produktverwaltung (Komponente B)](../diagramme/klassendiagramm_produktverwaltung.png)
+![UML-Klassendiagramm Produktverwaltung (Komponente B)](../diagramme/klassendiagramm_produktverwaltung.png)
 
 **Beschreibung zu Abbildung 1:** Das Klassendiagramm zeigt die Entitätsklasse `Produkt`
 mit ihren Attributen (Kapitel 6.1). Der `ProduktVerwaltungsService` orchestriert Anlegen,
@@ -719,7 +797,7 @@ Kopplung).
 ### 7.2 Sequenzdiagramm
 
 
-![Abbildung 2: UML-Sequenzdiagramm „Produkt löschen mit Löschsperre“ (Komponente B)](../diagramme/sequenz_produkt_loeschen.png)
+![UML-Sequenzdiagramm „Produkt löschen mit Löschsperre“ (Komponente B)](../diagramme/sequenz_produkt_loeschen.png)
 
 **Beschreibung zu Abbildung 2:** Das Sequenzdiagramm stellt den Ablauf *Produkt löschen*
 dar. Die Anwender:in löst über die GUI (Komponente D) `loescheProdukt(produktnummer)` am
@@ -734,43 +812,43 @@ das System die Bestätigung der Anwender:in an (F-08) und löscht das Produkt an
 
 ## 8. Testbare Abnahmekriterien
 
-**AC-B-01 (zu F-01–F-04)** — *Produkt anlegen*
-Vorbedingung: Modul Produktverwaltung geöffnet; höchste vergebene Produktnummer = `P-000041`.
-Aktion: Anwender:in erfasst ein Produkt mit Bezeichnung „Beratungsstunde", Einzelpreis
-`80.00`, Steuersatz `0.19` und speichert.
+**AC-B-01 (zu F-01–F-04)** — *Produkt anlegen*\
+Vorbedingung: Modul Produktverwaltung geöffnet; höchste vergebene Produktnummer = `P-000041`.\
+Aktion: Anwender:in erfasst ein Produkt mit Bezeichnung „Beratungsstunde“, Einzelpreis
+`80.00`, Steuersatz `0.19` und speichert.\
 Erwartet: Das Produkt ist persistent gespeichert und trägt die Produktnummer `P-000042`;
 die Nummer wird angezeigt.
 
-**AC-B-02 (zu F-04, NF-USE-01)** — *Pflichtfeldprüfung*
-Vorbedingung: Formular „Produkt anlegen" geöffnet.
-Aktion: Anwender:in lässt den Einzelpreis leer und versucht zu speichern.
-Erwartet: Das Speichern wird abgelehnt; das Feld „Einzelpreis (netto)" wird als fehlendes
+**AC-B-02 (zu F-04, NF-USE-01)** — *Pflichtfeldprüfung*\
+Vorbedingung: Formular „Produkt anlegen“ geöffnet.\
+Aktion: Anwender:in lässt den Einzelpreis leer und versucht zu speichern.\
+Erwartet: Das Speichern wird abgelehnt; das Feld „Einzelpreis (netto)“ wird als fehlendes
 Pflichtfeld markiert und benannt.
 
-**AC-B-03 (zu F-05, F-06, GR-02/GR-03)** — *Produkt ändern, Snapshot-Verhalten*
-Vorbedingung: Ein Produkt (`50.00` €) ist in einer früheren Rechnung (Komponente A) erfasst.
+**AC-B-03 (zu F-05, F-06, GR-02/GR-03)** — *Produkt ändern, Snapshot-Verhalten*\
+Vorbedingung: Ein Produkt (`50.00` €) ist in einer früheren Rechnung (Komponente A) erfasst.\
 Aktion: Anwender:in ändert den Einzelpreis auf `80.00` € und erstellt anschließend eine
-neue Rechnung mit diesem Produkt.
+neue Rechnung mit diesem Produkt.\
 Erwartet: Die Änderung ist gespeichert; die alte Rechnung behält den ursprünglichen Preis
 (Snapshot bei Komponente A), die neue Rechnung übernimmt `80.00` €.
 
-**AC-B-04 (zu F-08–F-10)** — *Löschsperre für referenzierte Produkte*
+**AC-B-04 (zu F-08–F-10)** — *Löschsperre für referenzierte Produkte*\
 Vorbedingung: Produkt `P-000010` wird in einer Dokumentposition referenziert; Produkt
-`P-000011` ist unverknüpft.
+`P-000011` ist unverknüpft.\
 Aktion: Anwender:in versucht, `P-000010` zu löschen; anschließend löscht sie `P-000011`
-nach Bestätigung.
+nach Bestätigung.\
 Erwartet: Das Löschen von `P-000010` wird mit Hinweis abgelehnt; `P-000011` ist dauerhaft
 entfernt und erscheint nicht mehr in der Liste.
 
-**AC-B-05 (zu F-11–F-13, NF-PERF-01)** — *Produkt suchen und auflisten*
-Vorbedingung: Mindestens 100 Produkte sind im System.
-Aktion: Anwender:in sucht ein Produkt anhand eines Teils der Bezeichnung.
+**AC-B-05 (zu F-11–F-13, NF-PERF-01)** — *Produkt suchen und auflisten*\
+Vorbedingung: Mindestens 100 Produkte sind im System.\
+Aktion: Anwender:in sucht ein Produkt anhand eines Teils der Bezeichnung.\
 Erwartet: Die sortierte Trefferliste erscheint in ≤ 1 Sekunde (Q-02); die Suche findet das
 Produkt auch bei abweichender Groß-/Kleinschreibung.
 
-**AC-B-06 (zu F-15, NF-EXP-01)** — *Produktstammdaten exportieren*
-Vorbedingung: Mindestens 100 Produkte sind im System.
-Aktion: Anwender:in exportiert die Produktstammdaten.
+**AC-B-06 (zu F-15, NF-EXP-01)** — *Produktstammdaten exportieren*\
+Vorbedingung: Mindestens 100 Produkte sind im System.\
+Aktion: Anwender:in exportiert die Produktstammdaten.\
 Erwartet: Eine CSV-Datei (UTF-8, Semikolon-getrennt, mit Kopfzeile) mit allen Produkten
 und allen Attributen liegt im gewählten Zielordner; der Export dauert ≤ 30 Sekunden.
 
@@ -810,17 +888,17 @@ umsetzbar. Geldbeträge werden als `BigDecimal` mit Scale 2 erwartet
 
 | TC    | Abgedeckte PH-Anf. | Vorbedingung | Eingabe | Erwartetes Ergebnis |
 |-------|--------------------|--------------|---------|---------------------|
-| TC-01 | F-01, F-02         | Höchste Produktnummer `P-000041` | Produkt („Beratungsstunde", 80.00, 0.19) speichern | Produkt persistiert; Produktnummer = `P-000042` |
+| TC-01 | F-01, F-02         | Höchste Produktnummer `P-000041` | Produkt („Beratungsstunde“, 80.00, 0.19) speichern | Produkt persistiert; Produktnummer = `P-000042` |
 | TC-02 | F-02 (Format)      | Zähler = 7   | `naechsteNummer()` | liefert `P-000007` (führende Nullen, `String`) |
-| TC-03 | F-03               | gültiges Produkt | Einzelpreis `-1.00` | Speichern abgelehnt (Validierungsfehler „Einzelpreis") |
+| TC-03 | F-03               | gültiges Produkt | Einzelpreis `-1.00` | Speichern abgelehnt (Validierungsfehler „Einzelpreis“) |
 | TC-04 | F-03               | gültiges Produkt | Steuersatz `0.15` | Speichern abgelehnt (unzulässiger Steuersatz) |
-| TC-05 | F-04, NF-USE-01    | Produkt ohne Bezeichnung | `speichere()` | Speichern abgelehnt; Validierungsfehler benennt „Bezeichnung" |
+| TC-05 | F-04, NF-USE-01    | Produkt ohne Bezeichnung | `speichere()` | Speichern abgelehnt; Validierungsfehler benennt „Bezeichnung“ |
 | TC-06 | F-05               | Produkt `P-000042` mit Preis 80.00 | Preis auf 95.00 ändern, speichern | gespeichertes Produkt hat einzelpreisNetto = 95.00 |
 | TC-07 | F-07               | Produkt `P-000042` | Änderungsversuch der Produktnummer auf `P-999999` | wirft `IllegalArgumentException` / Änderung abgelehnt |
 | TC-08 | F-08               | Produkt unverknüpft (Stub: `istProduktReferenziert` → `false`) | `loescheProdukt("P-000011")` mit Bestätigung | Produkt entfernt; nicht mehr in `alleSortiertNachBezeichnung()` |
 | TC-09 | F-09, F-10         | Stub: `istProduktReferenziert("P-000010")` → `true` | `loescheProdukt("P-000010")` | Löschen abgelehnt; Produkt weiterhin vorhanden; Hinweis erzeugt |
-| TC-10 | F-11               | Produkte „Zaun", „Anker", „Mast" | `alleSortiertNachBezeichnung()` | Reihenfolge: „Anker", „Mast", „Zaun" |
-| TC-11 | F-12               | Produkt „Beratungsstunde" | `suche("BERATUNG")` | Trefferliste enthält „Beratungsstunde" (case-insensitive, Teilstring) |
+| TC-10 | F-11               | Produkte „Zaun“, „Anker“, „Mast“ | `alleSortiertNachBezeichnung()` | Reihenfolge: „Anker“, „Mast“, „Zaun“ |
+| TC-11 | F-12               | Produkt „Beratungsstunde“ | `suche("BERATUNG")` | Trefferliste enthält „Beratungsstunde“ (case-insensitive, Teilstring) |
 | TC-12 | F-12               | Produkt `P-000042` | `suche("P-000042")` | Trefferliste enthält genau dieses Produkt |
 | TC-13 | F-14               | Kein Produkt `P-999999` vorhanden | `findeProdukt("P-999999")` | liefert `null` |
 | TC-14 | F-15               | 3 Produkte im Bestand | `exportiereCsv(ziel)` | CSV-Datei mit Kopfzeile + 3 Datenzeilen, Semikolon-getrennt, UTF-8 |
@@ -832,7 +910,6 @@ Qualitätsvorgaben (GR-02-Abgrenzung, Q-02, Q-08, Q-09) abdecken.
 ---
 
 
-\newpage
 
 # Teil C — Verwaltung von Kunden
 
@@ -925,26 +1002,38 @@ Semikolon-getrennt, mit Kopfzeile) in das lokale Dateisystem zu exportieren.
 ### 4.6 Erweiterte Formatvalidierung (Weiterentwicklung, ab v2.1)
 
 Die folgenden Anforderungen verschärfen die Eingabevalidierung über den Stand der
-Version 1.0 hinaus (Roadmap „Qualität"); die zentralen Formatregeln sind in der
+Version 1.0 hinaus (Roadmap „Qualität“); die zentralen Formatregeln sind in der
 Klasse `Validierung` (Paket `gemeinsam`) implementiert und durch die Testfälle
-VAL-01 bis VAL-10 sowie TC-15 bis TC-17 abgedeckt.
+VAL-01 bis VAL-15, FP-05, FP-08 sowie TC-15 bis TC-18 abgedeckt.
 
 **F-16 (PLZ):** WENN ein Kunde gespeichert wird, DANN MUSS das System prüfen, dass die
 PLZ aus genau 5 Ziffern besteht (führende Nullen zulässig, z. B. `01067`); andernfalls
-MUSS das Speichern abgelehnt und das Feld „PLZ" benannt werden (Q-09).
+MUSS das Speichern abgelehnt und das Feld „PLZ“ benannt werden (Q-09).
 
 **F-17 (USt-IdNr.):** WENN eine USt-IdNr. angegeben wird, DANN MUSS das System prüfen,
-dass sie — nach Entfernen von Leerzeichen — dem Format `DE` gefolgt von 9 Ziffern
-entspricht; andernfalls MUSS das Speichern abgelehnt und das Feld „USt-IdNr." benannt
-werden.
+dass sie — nach Entfernen von Leerzeichen und unabhängig von Groß-/Kleinschreibung — dem
+Format eines EU-Mitgliedstaats entspricht (Länderkennung plus landesspezifische Nummer,
+z. B. `DE` + 9 Ziffern, `ATU` + 8 Ziffern); andernfalls MUSS das Speichern abgelehnt und
+das Feld „USt-IdNr.“ benannt werden. *(Ab v2.4: zuvor nur deutsche Nummern.)*
 
 **F-18 (Telefon):** WENN eine Telefonnummer angegeben wird, DANN MUSS das System
 prüfen, dass sie ausschließlich Ziffern, Leerzeichen und die Zeichen `+ ( ) / -`
 enthält und mindestens 6 Ziffern umfasst; andernfalls MUSS das Speichern abgelehnt und
-das Feld „Telefon" benannt werden.
+das Feld „Telefon“ benannt werden.
+
+**F-19 (Einheitliche Schreibweise, ab v2.4):** WENN Stammdaten gespeichert werden, DANN
+MUSS das System führende und folgende Leerzeichen entfernen, leere optionale Felder als
+„nicht angegeben“ speichern und die USt-IdNr. ohne Leerzeichen in Großschrift ablegen —
+in der Form, in der sie auf Belegen und in der E-Rechnung erscheint. Dasselbe gilt für
+das Firmenprofil (IBAN in Vierergruppen, BIC in Großschrift).
+
+**F-20 (Bank- und Steuerdaten, ab v2.4):** WENN im Firmenprofil eine IBAN, eine BIC oder
+eine Steuernummer angegeben wird, DANN MUSS das System die IBAN einschließlich ihrer
+Prüfziffern (ISO 13616, Modulo 97), die BIC auf 8 oder 11 Zeichen und die Steuernummer auf
+10 bis 13 Ziffern prüfen und bei Ablehnung das Feld benennen.
 
 > **Hinweis zu F-04:** Die E-Mail-Prüfung wurde gegenüber v1.0 verschärft: statt
-> „mindestens ein `@` mit Zeichen davor und dahinter" gilt nun das Format
+> „mindestens ein `@` mit Zeichen davor und dahinter“ gilt nun das Format
 > Lokalteil`@`Domain mit mindestens einer Top-Level-Domain (z. B. `name@domain.de`).
 
 ## 5. Nicht-funktionale Anforderungen
@@ -958,7 +1047,7 @@ Kundenstammdaten (F-15) INNERHALB VON 30 SEKUNDEN abschließen, bei einem Datenb
 gemäß Q-01.
 
 **NF-USE-01 (aus Q-09):** Das System MUSS fehlende Pflichtangaben im Formular „Kunde
-anlegen/ändern" so markieren und benennen, dass mindestens 80 % der Testpersonen die
+anlegen/ändern“ so markieren und benennen, dass mindestens 80 % der Testpersonen die
 fehlende Eingabe ohne externe Hilfe im ersten Korrekturversuch ergänzen können (Nachweis
 durch Usability-Test mit mind. 5 Testpersonen).
 
@@ -1030,16 +1119,17 @@ Komponentenentwurf bzw. dem Modultestplan (Kapitel 10) vorbehalten.
 | Kundenzugriff (lesend) | Komponente A, D | C → A, C → D | Kunde per Kundennummer abrufen (F-14); Kundensuche über Name oder Kundennummer (F-12) |
 
 > Liefert die Kundenabfrage keinen Treffer, wird dies dem Aufrufer eindeutig signalisiert
-> (die Abfrage per Kundennummer liefert „kein Treffer").
+> (die Abfrage per Kundennummer liefert „kein Treffer“).
 
 **Komponenteninterne Dienste (rein C-intern, fachlich beschrieben):**
 
 - **Kundennummernvergabe (F-02):** liefert die nächste fortlaufende Kundennummer im festen
   Format mit Präfix und führenden Nullen (z. B. `K-000017`) auf Basis der höchsten bisher
-  vergebenen Nummer; ohne Lückenlosigkeits-Pflicht. (Realisierung: `EinfacherKundennummernGenerator`)
+  vergebenen Nummer; ohne Lückenlosigkeits-Pflicht. (Realisierung: `JdbcKundennummernGenerator`
+  über den Nummernkreis in der Datenbank)
 - **Kundenpersistenz (IF-01):** speichert Kunden im lokalen Dateisystem und liefert einen
   Kunden zur Kundennummer, alle Kunden sortiert nach Name sowie Suchergebnisse (Name/Nr.).
-  (Realisierung: `JsonKundenRepository`, JSON-Ablage)
+  (Realisierung: `JdbcKundenRepository`, SQLite-Datenbank)
 - **Datenexport (IF-04):** exportiert alle Kundenstammdaten als CSV in das lokale Dateisystem
   (F-15). (Realisierung: `KundenCsvExport`)
 - **Ereignisbenachrichtigung (Observer, Paket `gemeinsam`):** meldet Datenänderungen am
@@ -1052,13 +1142,13 @@ Die Komponente folgt einer einfachen Schichtung: die GUI (Komponente D) ruft den
 Löschsperre GR-04) kapselt und die Dienste `KundennummernGenerator`, `KundenRepository`
 und `KundenReferenzPruefung` (Komponente A) nutzt. Gegenüber Komponente A implementiert die Klasse
 `KundenVerwaltungsService` das Interface `KundenService`. Kunden werden über das
-`KundenRepository` (konkrete Implementierung `JsonKundenRepository`) im lokalen Dateisystem
-persistiert (JSON-Ablage); die fortlaufenden Kundennummern erzeugt der
-`EinfacherKundennummernGenerator` (Implementierung von `KundennummernGenerator`). Nach jeder schreibenden
-Operation (Anlegen, Ändern, Löschen) meldet der `KundenVerwaltungsService` die Änderung
-über einen **`EreignisBus`** (Observer-Muster, Paket `gemeinsam`;
-`melde(DatenBereich.KUNDEN)`), den die Kundenansicht der Komponente D abonniert und sich
-daraufhin automatisch aktualisiert.
+`KundenRepository` (konkrete Implementierung `JdbcKundenRepository`) in der lokalen
+SQLite-Datenbank persistiert; die fortlaufenden Kundennummern erzeugt der
+`JdbcKundennummernGenerator` (Implementierung von `KundennummernGenerator`) über den
+Nummernkreis in der Datenbank. Nach jeder schreibenden Operation (Anlegen, Ändern,
+Löschen) veröffentlicht der `KundenVerwaltungsService` ein `DatenGeaendertEreignis`, das
+der **`EreignisBus`** (Observer-Muster, Paket `gemeinsam`) nach dem Commit an die
+Kundenansicht der Komponente D weitergibt; diese aktualisiert sich daraufhin automatisch.
 
 ### 7.1 Klassendiagramm
 
@@ -1066,8 +1156,8 @@ daraufhin automatisch aktualisiert.
 mit ihren Attributen (Kapitel 6.1). Die Klasse `KundenVerwaltungsService` orchestriert
 Anlegen, Ändern, Löschen und Suche und **realisiert** das Interface `KundenService`
 (lesender Zugriff für Komponente A und D, F-14). Die komponenteninternen Interfaces besitzen
-jeweils eine **konkrete Implementierung**: `JsonKundenRepository` realisiert
-`KundenRepository` (Persistenz, IF-01) und `EinfacherKundennummernGenerator` realisiert
+jeweils eine **konkrete Implementierung**: `JdbcKundenRepository` realisiert
+`KundenRepository` (Persistenz, IF-01) und `JdbcKundennummernGenerator` realisiert
 `KundennummernGenerator` (Vergabe eindeutiger Kundennummern, F-02). Die Schnittstelle
 `KundenReferenzPruefung` (Löschsperre GR-04, F-09/F-10) wird **von Komponente A bereitgestellt**
 und ist daher als extern dargestellt (ihre Implementierung liegt in Komponente A). Der
@@ -1075,7 +1165,7 @@ und ist daher als extern dargestellt (ihre Implementierung liegt in Komponente A
 und meldet Datenänderungen an die abonnierte Kundenansicht der Komponente D. Der Zugriff auf
 `Kunde` ist eine **Nutzungs-/Abhängigkeitsbeziehung** — das `KundenRepository` liefert und
 speichert `Kunde`-Objekte —, **keine** 1:n-Aggregation oder -Komposition; ein Interface
-hält somit keinen „Container" von Entitäten. Dokumente (Komponente A) referenzieren einen
+hält somit keinen „Container“ von Entitäten. Dokumente (Komponente A) referenzieren einen
 `Kunde` ausschließlich über die Kundennummer (lose Kopplung).
 
 ![UML-Klassendiagramm Kundenverwaltung](../diagramme/klassendiagramm_kundenverwaltung.png)
@@ -1093,52 +1183,51 @@ Bestätigung der Anwender:in (F-08) über `KundenRepository.loesche(kundennummer
 aus dem lokalen Datenbestand und meldet die Änderung über den `EreignisBus`
 (`melde(DatenBereich.KUNDEN)`) an die abonnierte Kundenansicht der Komponente D.
 
-![UML-Sequenzdiagramm „Kunde löschen mit Löschsperre (GR-04)"](../diagramme/sequenz_kunde_loeschen.png)
+![UML-Sequenzdiagramm „Kunde löschen mit Löschsperre (GR-04)“](../diagramme/sequenz_kunde_loeschen.png)
 
-\newpage
 
 ## 8. Testbare Abnahmekriterien
 
-**AC-C-01 (zu F-01–F-03, NF-PERF-01)** — *Kunde anlegen und auffinden*
+**AC-C-01 (zu F-01–F-03, NF-PERF-01)** — *Kunde anlegen und auffinden*\
 Vorbedingung: Anwendung gestartet, Modul Kundenverwaltung geöffnet; höchste vergebene
-Kundennummer = `K-000016`.
+Kundennummer = `K-000016`.\
 Aktion: Anwender:in erfasst einen neuen Kunden mit Pflichtfeldern (Name, Straße, PLZ,
-Ort) und speichert.
+Ort) und speichert.\
 Erwartet: Das System vergibt die Kundennummer `K-000017` und zeigt sie an; der Kunde
 erscheint in der Suchergebnisliste innerhalb von ≤ 1 Sekunde (Q-02).
 
-**AC-C-02 (zu F-03, F-04, NF-USE-01)** — *Pflichtfeld- und Formatprüfung*
-Vorbedingung: Formular „Kunde anlegen" geöffnet.
+**AC-C-02 (zu F-03, F-04, NF-USE-01)** — *Pflichtfeld- und Formatprüfung*\
+Vorbedingung: Formular „Kunde anlegen“ geöffnet.\
 Aktion: Anwender:in lässt den Ort leer und versucht zu speichern; anschließend trägt sie
-eine ungültige E-Mail-Adresse („max.mustermann") ein und versucht erneut zu speichern.
-Erwartet: Beide Speicherversuche werden abgelehnt; das fehlende Pflichtfeld „Ort" bzw.
+eine ungültige E-Mail-Adresse („max.mustermann“) ein und versucht erneut zu speichern.\
+Erwartet: Beide Speicherversuche werden abgelehnt; das fehlende Pflichtfeld „Ort“ bzw.
 das ungültige E-Mail-Format wird benannt.
 
-**AC-C-03 (zu F-05–F-07)** — *Kundendaten ändern*
-Vorbedingung: Ein Kunde mit mindestens einer verknüpften, versendeten Rechnung existiert.
-Aktion: Anwender:in ändert einen Adressbestandteil und speichert.
+**AC-C-03 (zu F-05–F-07)** — *Kundendaten ändern*\
+Vorbedingung: Ein Kunde mit mindestens einer verknüpften, versendeten Rechnung existiert.\
+Aktion: Anwender:in ändert einen Adressbestandteil und speichert.\
 Erwartet: Die Änderung ist persistent gespeichert; die bereits versendete Rechnung
 (Komponente A) zeigt weiterhin die ursprüngliche Anschrift; die Kundennummer ist unverändert.
 
-**AC-C-04 (zu F-08–F-10, GR-04)** — *Löschsperre für verknüpfte Kunden*
-Vorbedingung: Kunde `K-000010` referenziert 3 Dokumente; Kunde `K-000011` ist unverknüpft.
+**AC-C-04 (zu F-08–F-10, GR-04)** — *Löschsperre für verknüpfte Kunden*\
+Vorbedingung: Kunde `K-000010` referenziert 3 Dokumente; Kunde `K-000011` ist unverknüpft.\
 Aktion: Anwender:in versucht, `K-000010` zu löschen; anschließend löscht sie `K-000011`
-nach Bestätigung.
-Erwartet: Das Löschen von `K-000010` wird abgelehnt, der Hinweis nennt die Anzahl „3"
+nach Bestätigung.\
+Erwartet: Das Löschen von `K-000010` wird abgelehnt, der Hinweis nennt die Anzahl „3“
 verknüpfter Dokumente; `K-000011` ist dauerhaft entfernt und erscheint nicht mehr in der
 Liste.
 
-**AC-C-05 (zu F-11–F-13, NF-PERF-01)** — *Kunden suchen und auflisten*
-Vorbedingung: Mindestens 100 Kunden sind im System.
+**AC-C-05 (zu F-11–F-13, NF-PERF-01)** — *Kunden suchen und auflisten*\
+Vorbedingung: Mindestens 100 Kunden sind im System.\
 Aktion: Anwender:in sucht einen Kunden anhand eines Teils des Namens und anschließend
-anhand der Kundennummer.
+anhand der Kundennummer.\
 Erwartet: Beide Trefferlisten erscheinen in ≤ 1 Sekunde (Q-02), sind nach Name sortiert
 und enthalten den gesuchten Kunden (auch bei abweichender Groß-/Kleinschreibung).
 
-**AC-C-06 (zu F-15, NF-EXP-01, NF-SEC-01)** — *Kundenstammdaten exportieren*
-Vorbedingung: Mindestens 100 Kunden sind im System.
+**AC-C-06 (zu F-15, NF-EXP-01, NF-SEC-01)** — *Kundenstammdaten exportieren*\
+Vorbedingung: Mindestens 100 Kunden sind im System.\
 Aktion: Anwender:in exportiert die Kundenstammdaten; während des Nutzungslaufs läuft ein
-Netzwerk-Monitoring.
+Netzwerk-Monitoring.\
 Erwartet: Eine CSV-Datei (UTF-8, Semikolon-getrennt, mit Kopfzeile) mit allen Kunden und
 allen Attributen liegt im gewählten Zielordner; der Export dauert ≤ 30 Sekunden; das
 Monitoring zeigt keine Datenübertragung an externe Dienste.
@@ -1175,18 +1264,18 @@ einen Stub/Mock ersetzt.
 
 | TC    | Abgedeckte PH-Anf. | Vorbedingung | Eingabe | Erwartetes Ergebnis |
 |---------|------------|------------------------|----------------------|----------------------------|
-| TC-01 | F-01, F-02         | Höchste Kundennummer `K-000016` | Kunde („Muster GmbH", „Hauptstr. 1", „68163", „Mannheim") speichern | Kunde persistiert; Kundennummer = `K-000017` |
+| TC-01 | F-01, F-02         | Höchste Kundennummer `K-000016` | Kunde („Muster GmbH“, „Hauptstr. 1“, „68163“, „Mannheim“) speichern | Kunde persistiert; Kundennummer = `K-000017` |
 | TC-02 | F-02 (Format)      | Zähler = 7   | `naechsteNummer()` | liefert `K-000007` (führende Nullen, `String`) |
-| TC-03 | F-03, NF-USE-01    | Kunde ohne Ort | `speichere()` | Speichern abgelehnt; Validierungsfehler benennt „Ort" |
-| TC-04 | F-03               | Kunde mit leerem Namen (`""`) | `speichere()` | Speichern abgelehnt; Validierungsfehler benennt „Name" |
+| TC-03 | F-03, NF-USE-01    | Kunde ohne Ort | `speichere()` | Speichern abgelehnt; Validierungsfehler benennt „Ort“ |
+| TC-04 | F-03               | Kunde mit leerem Namen (`""`) | `speichere()` | Speichern abgelehnt; Validierungsfehler benennt „Name“ |
 | TC-05 | F-04               | Kunde mit E-Mail `"max.mustermann"` | `speichere()` | Speichern abgelehnt (ungültiges E-Mail-Format) |
 | TC-06 | F-04               | Kunde mit E-Mail `"max@beispiel.de"` | `speichere()` | Kunde gespeichert (gültiges Format) |
-| TC-07 | F-05               | Kunde `K-000017` mit Ort „Mannheim" | Ort auf „Heidelberg" ändern, speichern | gespeicherter Kunde hat ort = „Heidelberg" |
+| TC-07 | F-05               | Kunde `K-000017` mit Ort „Mannheim“ | Ort auf „Heidelberg“ ändern, speichern | gespeicherter Kunde hat ort = „Heidelberg“ |
 | TC-08 | F-07               | Kunde `K-000017` | Änderungsversuch der Kundennummer auf `K-999999` | wirft `IllegalArgumentException` / Änderung abgelehnt |
 | TC-09 | F-08               | Stub: `anzahlVerknuepfterDokumente` → `0` | `loescheKunde("K-000011")` mit Bestätigung | Kunde entfernt; nicht mehr in `alleSortiertNachName()` |
 | TC-10 | F-09, F-10, GR-04  | Stub: `anzahlVerknuepfterDokumente("K-000010")` → `3` | `loescheKunde("K-000010")` | Löschen abgelehnt; Kunde weiterhin vorhanden; Hinweis enthält Anzahl `3` |
-| TC-11 | F-11               | Kunden „Zimmer", „Albrecht", „Maier" | `alleSortiertNachName()` | Reihenfolge: „Albrecht", „Maier", „Zimmer" |
-| TC-12 | F-12               | Kunde „Muster GmbH" | `suche("MUSTER")` | Trefferliste enthält „Muster GmbH" (case-insensitive, Teilstring) |
+| TC-11 | F-11               | Kunden „Zimmer“, „Albrecht“, „Maier“ | `alleSortiertNachName()` | Reihenfolge: „Albrecht“, „Maier“, „Zimmer“ |
+| TC-12 | F-12               | Kunde „Muster GmbH“ | `suche("MUSTER")` | Trefferliste enthält „Muster GmbH“ (case-insensitive, Teilstring) |
 | TC-13 | F-12, F-14         | Kunde `K-000017` vorhanden; `K-999999` nicht | `suche("K-000017")`; `findeKunde("K-999999")` | Treffer enthält `K-000017`; `findeKunde` liefert `null` |
 | TC-14 | F-15               | 3 Kunden im Bestand | `exportiereCsv(ziel)` | CSV-Datei mit Kopfzeile + 3 Datenzeilen, Semikolon-getrennt, UTF-8 |
 
@@ -1195,7 +1284,6 @@ F-03, F-04, F-07, F-09, F-12, F-14, F-15) sowie die zentrale Geschäftsregel GR-
 die Qualitätsvorgaben (Q-02, Q-08, Q-09) abdecken.
 
 
-\newpage
 
 # Teil D — Programmoberfläche
 
@@ -1246,7 +1334,8 @@ sichtbar anzeigen und das betroffene Eingabefeld markieren (Q-09).
 ### 4.3 Dokumenten-Ansichten
 
 **F-06:** Das System MUSS eine Belegliste anzeigen, die je Beleg Belegnummer, Datum,
-Kunde, Bruttosumme und Status (`ENTWURF`, `OFFEN`, `VERSENDET`, `STORNIERT`) darstellt.
+Kunde, Bruttosumme und Status (`ENTWURF`, `OFFEN`, `VERSENDET`, `STORNIERT`; für bezahlte
+Rechnungen der Anzeigestatus „Bezahlt“, A-F-28) darstellt, die jüngsten Belege zuerst.
 Der Belegtyp MUSS erkennbar sein; er ergibt sich aus dem Präfix der Belegnummer
 (`AN`, `AB`, `LS`, `R`) und wird im Detailbereich (F-19) ausgeschrieben. Die Liste MUSS
 nach Status filterbar und nach Belegnummer oder Kundenname durchsuchbar sein.
@@ -1264,9 +1353,10 @@ Komponente A delegiert und erfolgt gemäß F-20 außerhalb des Bedienfadens. Die
 MÜSSEN gebündelt angeboten werden, damit sie die Statuswechsel-Aktionen (F-08, F-14)
 nicht optisch überlagern.
 
-> *Anmerkung:* Die E-Rechnung nach EN 16931 wurde in Version 2.0 ergänzt, ohne dass in
-> Teil A eine Anforderung dafür aufgenommen wurde. Diese Lücke besteht weiterhin und ist
-> getrennt nachzuziehen; F-07 beschreibt hier nur die Sicht der Oberfläche.
+> *Anmerkung:* Die E-Rechnung nach EN 16931 wurde in Version 2.0 ergänzt; die fachliche
+> Anforderung ist seit v2.4 in Teil A als A-F-30 spezifiziert. F-07 beschreibt hier nur die
+> Sicht der Oberfläche. Der CSV-Export aller Belege ist unabhängig von einer Auswahl
+> verfügbar.
 
 **F-08:** WENN ein Beleg den Status `VERSENDET` oder `STORNIERT` hat, DANN MUSS das System
 alle inhaltlichen Änderungsaktionen für diesen Beleg deaktivieren (GR-02; Logik bei
@@ -1298,12 +1388,15 @@ Erfolgsmeldung mit der vergebenen Rechnungsnummer anzeigen.
 ### 4.5 Rechnung stornieren (aus BA-14, UI-Sicht)
 
 **F-14:** Das System MUSS die Aktion *Stornieren* ausschließlich für Rechnungen im Status
-`OFFEN` anbieten.
+`OFFEN` oder `VERSENDET` anbieten, die weder bezahlt noch selbst Stornorechnung sind
+(A-F-19, A-F-29). Kontextmenü und Werkzeugleiste MÜSSEN dieselben Freigaberegeln anwenden.
 
 **F-15:** WENN die Anwender:in die Stornierung auslöst, DANN MUSS das System einen
 Bestätigungsdialog mit Rechnungsnummer und Bruttosumme anzeigen; erst nach Bestätigung
 wird die Stornierung an den `DokumentService` (Komponente A) delegiert und das Ergebnis
-(neuer Status `STORNIERT`) in der Dokumentliste dargestellt.
+(neuer Status `STORNIERT`) in der Dokumentliste dargestellt. Bei einer versendeten Rechnung
+MUSS der Dialog ankündigen, dass eine Stornorechnung entsteht, und die Erfolgsmeldung
+deren Nummer nennen.
 
 ### 4.6 Meldungen und Eingabehilfen (übergreifend)
 
@@ -1330,8 +1423,10 @@ Belege auflisten.
 
 **F-19:** WENN in der Belegliste ein Beleg ausgewählt ist, DANN MUSS das System seine
 Einzelheiten anzeigen: Belegart und -nummer, Status, Datum, Kunde mit Anschrift,
-gegebenenfalls Vorgängerbeleg und Zahlungsziel, die Positionen sowie Netto-, Steuer- und
-Bruttosumme.
+gegebenenfalls Vorgängerbeleg bzw. stornierte Rechnung, Leistungsdatum, Zahlungsziel,
+Zahlungs- und Stornodatum, die Positionen sowie Nettosumme, Umsatzsteuer je Steuersatz
+(A-F-25) und Bruttosumme. Lange Angaben MÜSSEN umbrochen, der Bereich bei Bedarf
+rollbar sein.
 
 **F-20:** Vorgänge, die länger dauern können (PDF- und E-Rechnungs-Export, CSV-Ausgabe,
 Datensicherung, Druck, Mailversand), MÜSSEN außerhalb des Bedienfadens ausgeführt werden.
@@ -1345,10 +1440,25 @@ außerhalb aller angeschlossenen Bildschirme MUSS verworfen werden.
 
 **F-22:** Das System MUSS die häufigen Aktionen über Tastenkürzel anbieten: Wechsel
 zwischen den Bereichen (`Strg+1` bis `Strg+5`), Neuanlage (`Strg+N`), Suche (`Strg+F`),
-Aktualisieren (`F5`), Löschen (`Entf`) und Erscheinungsbild wechseln (`Strg+D`).
+Aktualisieren (`F5`), Löschen (`Entf`) und Erscheinungsbild wechseln (`Strg+D`). Die
+ansichtsbezogenen Kürzel (`Strg+N`, `Strg+F`, `F5`) MÜSSEN nur in der jeweils angezeigten
+Ansicht wirken; die Eingabetaste in einem Suchfeld DARF KEINE Neuanlage auslösen.
 
 **F-23:** WENN eine Liste leer ist, DANN MUSS das System an ihrer Stelle einen Hinweis
 anzeigen, der den Zustand benennt und die nächste sinnvolle Handlung nennt.
+
+### 4.8 Zahlungseingang und Eingabehilfen (ab v2.4)
+
+**F-24:** Das System MUSS für offene und versendete, unbezahlte Rechnungen die Aktion
+*Als bezahlt markieren* anbieten (Werkzeugleiste und Kontextmenü); ein Dialog fragt das
+Zahlungsdatum ab (vorbelegt mit dem aktuellen Tag) und delegiert an Komponente A (A-F-28).
+
+**F-25:** Datumsfelder MÜSSEN übliche deutsche Schreibweisen annehmen (`1.11.26`,
+`01.11.2026`) und einen unlesbaren Eintrag als Fehler mit Feldnamen melden, statt ihn
+stillschweigend als leer zu behandeln. Betragsfelder MÜSSEN das deutsche Zahlenformat
+eindeutig lesen: `1.500` sind 1.500 € (Tausenderpunkt), mehrdeutige Eingaben werden
+abgelehnt. Der Rechnungswizard MUSS im Datumsschritt zusätzlich das Leistungsdatum
+anbieten (A-F-31).
 
 ---
 
@@ -1469,8 +1579,8 @@ FXML-Dateien mit Ansicht-Controllern `KundenAnsichtController`/`ProduktAnsichtCo
 Darstellung; die GUI-freien Controller (`StammdatenController`,
 `RechnungsWizardController`, `DokumentListenController`) kapseln Dialogführung und
 Vollständigkeitsprüfungen und rufen die Service-Schnittstellen der Komponenten A–C auf.
-Das Hauptfenster (`haupt_ansicht.fxml`, `TabPane`) hält die Navigation zu den drei
-Modulansichten; die Verdrahtung erfolgt über den Spring-IoC-Container — die
+Das Hauptfenster (`haupt_ansicht.fxml`) hält die Seitennavigation zu den fünf Bereichen
+Übersicht, Kunden, Produkte, Belege und Einstellungen; die Verdrahtung erfolgt über den Spring-IoC-Container — die
 Ansicht-Controller werden beim FXML-Laden von einer Spring-Controller-Factory erzeugt
 und per Konstruktor injiziert (`FxmlLader`). Nach jeder schreibenden Operation
 veröffentlichen die Services ein `DatenGeaendertEreignis` (Spring Application Events);
@@ -1484,9 +1594,8 @@ prüfbar.
 ![UML-Klassendiagramm Programmoberfläche (Komponente D)](../diagramme/klassendiagramm_programmoberflaeche.png)
 
 **Beschreibung zu Abbildung 1:** Das Klassendiagramm zeigt die View- und Controller-Schicht
-der Oberfläche (Stand v1.0 mit Swing-Bezeichnern; die Struktur — Hauptfenster mit genau
-einer Kunden-, Produkt- und Dokumentansicht und umschaltbarer Navigation (F-01, F-02) —
-gilt in der JavaFX-Fassung unverändert).
+der JavaFX-Oberfläche: den `HauptAnsichtController` mit der Seitennavigation (F-01, F-02)
+und die Ansicht-Controller der fünf Bereiche.
 Der `StammdatenController` bedient die Ansichten für Kunden und Produkte und nutzt die
 Schnittstellen `KundenService` und `ProduktService`. Der `RechnungsWizardController` führt
 die Schrittfolge des Enums `WizardSchritt` über das `RechnungsWizardModel` und delegiert
@@ -1519,78 +1628,78 @@ vergebenen Rechnungsnummer an und schließt den Wizard.
 
 ## 8. Testbare Abnahmekriterien
 
-**AC-D-01 (zu F-01, F-02, NF-PERF-01)** — *Programmstart und Navigation*
-Vorbedingung: Datenbestand mit 5.000 Kunden und 5.000 Produkten (Q-01).
-Aktion: Anwender:in startet die Anwendung und wechselt nacheinander in alle drei Module.
+**AC-D-01 (zu F-01, F-02, NF-PERF-01)** — *Programmstart und Navigation*\
+Vorbedingung: Datenbestand mit 5.000 Kunden und 5.000 Produkten (Q-01).\
+Aktion: Anwender:in startet die Anwendung und wechselt nacheinander in alle drei Module.\
 Erwartet: Das Hauptfenster ist in ≤ 5 Sekunden bedienbereit (Q-04); jede Modulansicht
 wird angezeigt; bei ungespeicherten Formulareingaben erscheint eine Nachfrage.
 
-**AC-D-02 (zu F-03, NF-PERF-02)** — *Stammdaten suchen über die Oberfläche*
-Vorbedingung: Mindestens 100 Kunden und 100 Produkte sind im System.
+**AC-D-02 (zu F-03, NF-PERF-02)** — *Stammdaten suchen über die Oberfläche*\
+Vorbedingung: Mindestens 100 Kunden und 100 Produkte sind im System.\
 Aktion: Anwender:in gibt in der Kunden- und der Produktansicht jeweils einen Suchbegriff
-ein.
+ein.\
 Erwartet: Die gefilterte, sortierte Trefferliste erscheint jeweils in ≤ 1 Sekunde (Q-02).
 
-**AC-D-03 (zu F-09–F-13, NF-USE-01)** — *Geführte Rechnungserstellung (Wizard)*
-Vorbedingung: Mindestens ein Kunde und ein Produkt sind im System vorhanden.
+**AC-D-03 (zu F-09–F-13, NF-USE-01)** — *Geführte Rechnungserstellung (Wizard)*\
+Vorbedingung: Mindestens ein Kunde und ein Produkt sind im System vorhanden.\
 Aktion: Eine erstmalige Anwender:in durchläuft den Wizard (Kunde → Position+Menge →
-Datum/Zahlungsziel → Zusammenfassung → speichern).
+Datum/Zahlungsziel → Zusammenfassung → speichern).\
 Erwartet: Die Zusammenfassung zeigt Kunde, Position, Menge, Summen, Rechnungsdatum und
 Zahlungsziel; nach dem Speichern erscheint die Erfolgsmeldung mit Rechnungsnummer; die
 Durchführung gelingt ohne externe Hilfe in < 10 Minuten (Usability-Test, ≥ 5 Personen).
 
-**AC-D-04 (zu F-10, F-16, NF-USE-02)** — *Pflichtfeldhinweis im Wizard und in Formularen*
-Vorbedingung: Wizard-Schritt 1 geöffnet bzw. Formulare „Kunde anlegen" und „Produkt
-anlegen" erreichbar.
+**AC-D-04 (zu F-10, F-16, NF-USE-02)** — *Pflichtfeldhinweis im Wizard und in Formularen*\
+Vorbedingung: Wizard-Schritt 1 geöffnet bzw. Formulare „Kunde anlegen“ und „Produkt
+anlegen“ erreichbar.\
 Aktion: Testpersonen versuchen ohne Kundenauswahl in Schritt 2 zu wechseln bzw. ohne ein
-Pflichtfeld zu speichern; anschließend ergänzen sie die fehlende Angabe.
+Pflichtfeld zu speichern; anschließend ergänzen sie die fehlende Angabe.\
 Erwartet: Der Wechsel bzw. das Speichern wird zuerst verhindert, das fehlende Feld wird
 markiert und benannt; in ≥ 80 % der Testdurchläufe gelingt die Korrektur ohne externe
 Hilfe im ersten Versuch.
 
-**AC-D-05 (zu F-14, F-15)** — *Stornierung mit Bestätigungsdialog*
-Vorbedingung: Eine Rechnung im Status `OFFEN` und eine im Status `VERSENDET` existieren.
+**AC-D-05 (zu F-14, F-15)** — *Stornierung mit Bestätigungsdialog*\
+Vorbedingung: Eine Rechnung im Status `OFFEN` und eine im Status `VERSENDET` existieren.\
 Aktion: Anwender:in öffnet die Dokumentliste, prüft die angebotenen Aktionen und
-storniert die offene Rechnung nach Bestätigung.
+storniert die offene Rechnung nach Bestätigung.\
 Erwartet: *Stornieren* wird nur für die offene Rechnung angeboten; der
 Bestätigungsdialog zeigt Rechnungsnummer und Bruttosumme; nach Bestätigung erscheint die
 Rechnung mit Status `STORNIERT` in der Liste.
 
-**AC-D-06 (zu F-06–F-08)** — *Dokumentliste, Statusfilter, deaktivierte Aktionen*
-Vorbedingung: Belege in den Status `ENTWURF`, `OFFEN`, `VERSENDET`, `STORNIERT` existieren.
+**AC-D-06 (zu F-06–F-08)** — *Dokumentliste, Statusfilter, deaktivierte Aktionen*\
+Vorbedingung: Belege in den Status `ENTWURF`, `OFFEN`, `VERSENDET`, `STORNIERT` existieren.\
 Aktion: Anwender:in filtert die Dokumentliste nach Status und öffnet einen versendeten
-Beleg.
+Beleg.\
 Erwartet: Der Filter zeigt ausschließlich Belege des gewählten Status; für den
 versendeten Beleg sind alle inhaltlichen Änderungsaktionen deaktiviert, PDF-Export bleibt
 verfügbar.
 
-**AC-D-07 (zu F-18)** — *Kennzahlen der Übersicht*
+**AC-D-07 (zu F-18)** — *Kennzahlen der Übersicht*\
 Vorbedingung: Es existieren eine offene Rechnung mit Zahlungsziel in der Zukunft, eine
-versendete Rechnung mit überschrittenem Zahlungsziel und eine stornierte Rechnung.
-Aktion: Anwender:in öffnet die Übersicht.
+versendete Rechnung mit überschrittenem Zahlungsziel und eine stornierte Rechnung.\
+Aktion: Anwender:in öffnet die Übersicht.\
 Erwartet: Der offene Betrag enthält die offene und die versendete Rechnung, nicht die
 stornierte; die überfällige Rechnung ist mit Anzahl 1 und ihrem Bruttobetrag hervorgehoben
 ausgewiesen; der Jahresumsatz enthält keine stornierte Rechnung.
 
-**AC-D-08 (zu F-19)** — *Einzelheiten des gewählten Belegs*
-Vorbedingung: Eine Rechnung mit mindestens einer Position existiert.
-Aktion: Anwender:in wählt die Rechnung in der Belegliste aus.
+**AC-D-08 (zu F-19)** — *Einzelheiten des gewählten Belegs*\
+Vorbedingung: Eine Rechnung mit mindestens einer Position existiert.\
+Aktion: Anwender:in wählt die Rechnung in der Belegliste aus.\
 Erwartet: Der Detailbereich nennt Belegart und -nummer, den Status, Datum, Kunde mit
 Anschrift, das Zahlungsziel, jede Position mit Menge und Betrag sowie Netto-, Steuer- und
 Bruttosumme; die Bruttosumme stimmt mit der Spalte der Liste überein.
 
-**AC-D-09 (zu F-20)** — *Ausgabe blockiert die Bedienung nicht*
-Vorbedingung: Ein Beleg ist ausgewählt.
-Aktion: Anwender:in löst den PDF-Export aus und bedient währenddessen die Navigation.
+**AC-D-09 (zu F-20)** — *Ausgabe blockiert die Bedienung nicht*\
+Vorbedingung: Ein Beleg ist ausgewählt.\
+Aktion: Anwender:in löst den PDF-Export aus und bedient währenddessen die Navigation.\
 Erwartet: Das Fenster bleibt bedienbar, der laufende Vorgang wird in der Statuszeile
 benannt, das auslösende Bedienelement ist bis zum Abschluss gesperrt; anschließend liegt
 die Datei am gewählten Ort und eine Erfolgsmeldung erscheint, ohne die Bedienung zu
 blockieren (F-17).
 
-**AC-D-10 (zu F-21)** — *Erscheinungsbild und Fensterzustand bleiben erhalten*
-Vorbedingung: Die Anwendung läuft im hellen Erscheinungsbild.
+**AC-D-10 (zu F-21)** — *Erscheinungsbild und Fensterzustand bleiben erhalten*\
+Vorbedingung: Die Anwendung läuft im hellen Erscheinungsbild.\
 Aktion: Anwender:in schaltet auf das dunkle Erscheinungsbild, ändert die Fenstergröße,
-beendet die Anwendung und startet sie erneut.
+beendet die Anwendung und startet sie erneut.\
 Erwartet: Die Anwendung startet im dunklen Erscheinungsbild mit der zuletzt gewählten
 Fenstergröße und -position; alle Ansichten sind lesbar dargestellt.
 
@@ -1631,94 +1740,94 @@ Usability-Nachweise (NF-USE-01/02) erfolgen ergänzend durch manuelle Usability-
 (Kapitel 8) und sind nicht Teil des automatisierten Modultests.
 
 **TC-01 — Wizard startet im ersten Schritt**
-Abgedeckte PH-Anforderung: F-09.
-Vorbedingung: Wizard neu gestartet.
+Abgedeckte PH-Anforderung: F-09.\
+Vorbedingung: Wizard neu gestartet.\
 Eingabe: `aktuellerSchritt` lesen.
 Erwartetes Ergebnis: `KUNDE_WAEHLEN` ist der erste Schritt.
 
 **TC-02 — Vollständige Schrittfolge**
-Abgedeckte PH-Anforderung: F-09.
-Vorbedingung: Schritt 1 mit gewähltem Kunden.
+Abgedeckte PH-Anforderung: F-09.\
+Vorbedingung: Schritt 1 mit gewähltem Kunden.\
 Eingabe: `weiter()` viermal mit gültigen Eingaben.
 Erwartetes Ergebnis: Schrittfolge `POSITIONEN_ERFASSEN` -> `DATEN_BESTAETIGEN` ->
 `ZUSAMMENFASSUNG` -> `SPEICHERN`.
 
 **TC-03 — Wechsel ohne Kundenauswahl**
-Abgedeckte PH-Anforderung: F-10.
-Vorbedingung: Schritt 1, kein Kunde gewählt (`kundenNr = null`).
+Abgedeckte PH-Anforderung: F-10.\
+Vorbedingung: Schritt 1, kein Kunde gewählt (`kundenNr = null`).\
 Eingabe: `weiter()`.
 Erwartetes Ergebnis: Wechsel verhindert; `Meldung(FEHLER, "Kunde", ...)` erzeugt.
 
 **TC-04 — Wechsel ohne Position**
-Abgedeckte PH-Anforderung: F-10.
-Vorbedingung: Schritt 2, leere Positionsliste.
+Abgedeckte PH-Anforderung: F-10.\
+Vorbedingung: Schritt 2, leere Positionsliste.\
 Eingabe: `weiter()`.
-Erwartetes Ergebnis: Wechsel verhindert; Meldung benennt „Position".
+Erwartetes Ergebnis: Wechsel verhindert; Meldung benennt „Position“.
 
 **TC-05 — Ungültige Positionsmenge**
-Abgedeckte PH-Anforderung: F-10.
-Vorbedingung: Schritt 2, Position mit `menge = 0`.
+Abgedeckte PH-Anforderung: F-10.\
+Vorbedingung: Schritt 2, Position mit `menge = 0`.\
 Eingabe: `weiter()`.
-Erwartetes Ergebnis: Wechsel verhindert; Meldung benennt „Menge".
+Erwartetes Ergebnis: Wechsel verhindert; Meldung benennt „Menge“.
 
 **TC-06 — Zurück ohne Datenverlust**
-Abgedeckte PH-Anforderung: F-11.
-Vorbedingung: Schritt 3 erreicht; Kunde `K-000017`, eine Position erfasst.
+Abgedeckte PH-Anforderung: F-11.\
+Vorbedingung: Schritt 3 erreicht; Kunde `K-000017`, eine Position erfasst.\
 Eingabe: `zurueck()` bis Schritt 1.
 Erwartetes Ergebnis: `kundenNr` und `positionen` bleiben unverändert erhalten.
 
 **TC-07 — Zusammenfassung mit Summen**
-Abgedeckte PH-Anforderung: F-12.
+Abgedeckte PH-Anforderung: F-12.\
 Vorbedingung: Schritt 4; Stub `DokumentService` liefert Summen
-200.00/38.00/238.00.
+200.00/38.00/238.00.\
 Eingabe: Zusammenfassung erzeugen.
 Erwartetes Ergebnis: Zusammenfassung enthält Kunde, Positionen, Mengen,
 200.00/38.00/238.00, Rechnungsdatum und Zahlungsziel.
 
 **TC-08 — Rechnung speichern**
-Abgedeckte PH-Anforderung: F-13.
-Vorbedingung: Schritt 5; gültiges Modell.
+Abgedeckte PH-Anforderung: F-13.\
+Vorbedingung: Schritt 5; gültiges Modell.\
 Eingabe: `speichern()`.
 Erwartetes Ergebnis: genau ein Aufruf `erstelleRechnung(...)` am Mock;
 Erfolgsmeldung enthält die gelieferte Rechnungsnummer.
 
 **TC-09 — Fachlicher Fehler beim Speichern**
-Abgedeckte PH-Anforderung: F-13 (Fehlerfall).
-Vorbedingung: Stub `erstelleRechnung` wirft Validierungsfehler „Rechnungsdatum".
+Abgedeckte PH-Anforderung: F-13 (Fehlerfall).\
+Vorbedingung: Stub `erstelleRechnung` wirft Validierungsfehler „Rechnungsdatum“.\
 Eingabe: `speichern()`.
 Erwartetes Ergebnis: keine Erfolgsmeldung; `Meldung(FEHLER, "Rechnungsdatum", ...)`
 wird dargestellt (F-05/F-16).
 
 **TC-10 — Storno-Aktion nur für offene Rechnungen**
-Abgedeckte PH-Anforderung: F-14.
-Vorbedingung: Dokumentliste mit Rechnungen in `OFFEN`, `VERSENDET`, `STORNIERT`.
+Abgedeckte PH-Anforderung: F-14.\
+Vorbedingung: Dokumentliste mit Rechnungen in `OFFEN`, `VERSENDET`, `STORNIERT`.\
 Eingabe: verfügbare Aktionen je Rechnung ermitteln.
 Erwartetes Ergebnis: *Stornieren* ist nur bei Status `OFFEN` aktiviert.
 
 **TC-11 — Stornierung nur nach Bestätigung**
-Abgedeckte PH-Anforderung: F-15.
-Vorbedingung: Rechnung `R-2026-000124` im Status `OFFEN`.
+Abgedeckte PH-Anforderung: F-15.\
+Vorbedingung: Rechnung `R-2026-000124` im Status `OFFEN`.\
 Eingabe: `storniere()` ohne Bestätigung; danach mit Bestätigung.
 Erwartetes Ergebnis: ohne Bestätigung kein Service-Aufruf; mit Bestätigung genau ein
 Aufruf `storniere("R-2026-000124")`.
 
 **TC-12 — Änderungsaktionen deaktivieren**
-Abgedeckte PH-Anforderung: F-08.
-Vorbedingung: Beleg im Status `VERSENDET`.
+Abgedeckte PH-Anforderung: F-08.\
+Vorbedingung: Beleg im Status `VERSENDET`.\
 Eingabe: Änderungsaktionen ermitteln.
 Erwartetes Ergebnis: alle inhaltlichen Änderungsaktionen deaktiviert; PDF-Export
 aktiviert.
 
 **TC-13 — Statusfilter der Dokumentliste**
-Abgedeckte PH-Anforderung: F-06.
-Vorbedingung: Belege mit Status `OFFEN` (2x) und `STORNIERT` (1x).
+Abgedeckte PH-Anforderung: F-06.\
+Vorbedingung: Belege mit Status `OFFEN` (2x) und `STORNIERT` (1x).\
 Eingabe: Statusfilter `OFFEN` anwenden.
 Erwartetes Ergebnis: Liste enthält genau die zwei offenen Belege.
 
 **TC-14 — Stammdatensuche delegieren**
-Abgedeckte PH-Anforderung: F-03.
-Vorbedingung: Stub `KundenService.suche("Muster")` liefert einen Treffer.
-Eingabe: Suchbegriff „Muster" eingeben.
+Abgedeckte PH-Anforderung: F-03.\
+Vorbedingung: Stub `KundenService.suche("Muster")` liefert einen Treffer.\
+Eingabe: Suchbegriff „Muster“ eingeben.
 Erwartetes Ergebnis: Controller delegiert an `KundenService.suche(...)`;
 Trefferliste enthält genau diesen Kunden.
 
@@ -1729,7 +1838,6 @@ F-16) abdecken.
 ---
 
 
-\newpage
 
 # Anhang
 

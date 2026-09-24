@@ -1,51 +1,16 @@
 ---
 title: "Modultestbericht"
-subtitle: "Desktop-Fakturierungsanwendung — Gesamtsystem (alle Komponenten)"
-author:
-  - Lucas Strubel
-version: "1.0"
+subtitle: "Faktura — Desktop-Fakturierungsanwendung"
+author: "Lucas Strubel"
+date: "24.09.2026"
+version: "1.1"
 lang: de-DE
-toc: true
-toc-depth: 3
-numbersections: false
-papersize: a4
-geometry: "margin=3cm"
-fontsize: 12pt
-linestretch: 1.5
-mainfont: "Times New Roman"
-sansfont: "Arial"
-monofont: "DejaVu Sans Mono"
-header-includes: |
-  \usepackage{fancyhdr}
-  \usepackage{lastpage}
-  \pagestyle{fancy}
-  \fancyhf{}
-  \fancyhead[L]{Faktura}
-  \fancyhead[C]{Modultestbericht}
-  \fancyhead[R]{Version 1.0}
-  \fancyfoot[C]{\thepage\ /\ \pageref{LastPage}}
-  \renewcommand{\headrulewidth}{0.4pt}
-  \renewcommand{\footrulewidth}{0pt}
-  \makeatletter
-  \def\brk@scan#1{\ifx\brk@end#1\else#1\allowbreak\expandafter\brk@scan\fi}
-  \newcommand{\brk}[1]{\brk@scan#1\brk@end}
-  \let\origtexttt\texttt
-  \renewcommand{\texttt}[1]{\origtexttt{\brk{#1}}}
-  \makeatother
-  \AtBeginEnvironment{longtable}{\small}
 ---
 
-\newpage
 
-+-------------------------+-------------------------+-------------------------+
-| Autor                   | Prüfer                  | Freigebender            |
-+=========================+=========================+=========================+
-| Strubel, Lucas          |
-+-------------------------+-------------------------+-------------------------+
-| Entwickler (Gesamtsystem) |
-+-------------------------+-------------------------+-------------------------+
-| 24.06.2026              | 24.06.2026              | 24.06.2026              |
-+-------------------------+-------------------------+-------------------------+
+| Autor | Rolle | Stand |
+|-------|-------|-------|
+| Lucas Strubel | Verfasser für das SE1-Projektteam (Gesamtsystem) | 24.06.2026 (Abnahme v1.0), 24.09.2026 (Nachtest v3.0) |
 
 **Freigabevermerk:** Dieses Dokument dokumentiert die Durchführung und die Ergebnisse des
 Modultests des Gesamtsystems *Desktop-Fakturierungsanwendung* (Komponenten A–D, gemeinsame
@@ -55,10 +20,10 @@ Freigabe durch den Modulverantwortlichen verbindlicher Nachweis des durchgeführ
 ## Dokumentenhistorie
 
 | Version | Datum      | Autor                       | Grund der Änderung  |
-|---------|------------|-----------------------------|---------------------|
+|----|------|--------|------------------------------|
 | 1.0     | 24.06.2026 | Lucas Strubel  | Initiale Erstellung; Dokumentation der Modultest-Durchführung auf Basis des Modultestplans v2.0 |
+| 1.1     | 24.09.2026 | Lucas Strubel  | Kapitel 5: Nachtest Version 3.0 (201 Ausführungen, 0 Fehlschläge, Abdeckung und SpotBugs); Kapitel 1–4 unverändert |
 
-\newpage
 
 ## 1. Einleitung
 
@@ -76,10 +41,10 @@ ausgewiesen. Quelle der Wahrheit sind die Testklassen unter
 
 > **Stand:** Dieses Dokument ist der Nachweis des Modultestlaufs zur Abnahme der
 > **Version 1.0** (Stand 24.06.2026) und wird als historischer Beleg unverändert geführt.
-> Alle Ergebnisse, Laufzeiten und Aussagen zur Oberfläche beziehen sich auf diesen Stand —
-> insbesondere die Angabe „ohne Swing-Rendering“ in Kapitel 5 — und geben nicht den aktuellen
-> Stand der Anwendung wieder. Die Testsuite umfasst inzwischen 135 Tests; die
-> Abdeckungsschwelle wird seit Version 3.0 im Build erzwungen. Vgl. `Fallstudie.md`.
+> Alle Ergebnisse, Laufzeiten und Aussagen zur Oberfläche in den Kapiteln 1–4 und 6
+> beziehen sich auf diesen Stand — insbesondere die Angabe „ohne Swing-Rendering“ in
+> Kapitel 6 — und geben nicht den aktuellen Stand der Anwendung wieder. Den Nachtest der
+> Version 3.0 dokumentiert Kapitel 5.
 
 ### 1.2 Testgegenstand und Referenzdokumente
 Prüfgegenstand ist die Anwendung `fakturierung` in Version 1.0.0. Grundlage der Testfälle
@@ -172,14 +137,14 @@ Anforderungs-Nummern beziehen sich auf Teil B des Pflichtenhefts; `ProduktRefere
 |-------|-----------------|-------------------|---------------------|--------|
 | TC-01 | F-01, F-02      | `tc01NummernVergabe` | Produkt persistiert; Produktnummer = `P-000042` | Bestanden |
 | TC-02 | F-02 (Format)   | `tc02NummernFormat` | `P-000007` (führende Nullen, `String`) | Bestanden |
-| TC-03 | F-03            | `tc03NegativerPreis` | Speichern abgelehnt (Validierungsfehler „Einzelpreis") | Bestanden |
+| TC-03 | F-03            | `tc03NegativerPreis` | Speichern abgelehnt (Validierungsfehler „Einzelpreis“) | Bestanden |
 | TC-04 | F-03            | `tc04UnzulaessigerSteuersatz` | Steuersatz `0.15` abgelehnt | Bestanden |
-| TC-05 | F-04, NF-USE-01 | `tc05FehlendeBezeichnung` | abgelehnt; Validierungsfehler benennt „Bezeichnung" | Bestanden |
+| TC-05 | F-04, NF-USE-01 | `tc05FehlendeBezeichnung` | abgelehnt; Validierungsfehler benennt „Bezeichnung“ | Bestanden |
 | TC-06 | F-05            | `tc06PreisAendern` | einzelpreisNetto = 95.00 nach Änderung | Bestanden |
 | TC-07 | F-07            | `tc07ProduktnummerUnveraenderlich` | Änderung der Produktnummer wirft `IllegalArgumentException` | Bestanden |
 | TC-08 | F-08            | `tc08LoeschenUnverknuepft` | unverknüpftes Produkt entfernt | Bestanden |
 | TC-09 | F-09, F-10      | `tc09Loeschsperre` | referenziertes Produkt nicht gelöscht (Löschsperre) | Bestanden |
-| TC-10 | F-11            | `tc10Sortierung` | Reihenfolge „Anker", „Mast", „Zaun" | Bestanden |
+| TC-10 | F-11            | `tc10Sortierung` | Reihenfolge „Anker“, „Mast“, „Zaun“ | Bestanden |
 | TC-11 | F-12            | `tc11SucheBezeichnung` | case-insensitive Teilstring-Treffer | Bestanden |
 | TC-12 | F-12            | `tc12SucheNummer` | Suche nach Produktnummer trifft genau dieses Produkt | Bestanden |
 | TC-13 | F-14            | `tc13FindeProduktNull` | `findeProdukt("P-999999")` liefert `null` | Bestanden |
@@ -194,15 +159,15 @@ Anforderungs-Nummern beziehen sich auf Teil C des Pflichtenhefts; `KundenReferen
 |-------|-----------------|-------------------|---------------------|--------|
 | TC-01 | F-01, F-02      | `tc01NummernVergabe` | Kunde persistiert; Kundennummer = `K-000017` | Bestanden |
 | TC-02 | F-02 (Format)   | `tc02NummernFormat` | `K-000007` (führende Nullen, `String`) | Bestanden |
-| TC-03 | F-03, NF-USE-01 | `tc03FehlenderOrt` | abgelehnt; Validierungsfehler benennt „Ort" | Bestanden |
-| TC-04 | F-03            | `tc04LeererName` | leerer Name abgelehnt; benennt „Name" | Bestanden |
+| TC-03 | F-03, NF-USE-01 | `tc03FehlenderOrt` | abgelehnt; Validierungsfehler benennt „Ort“ | Bestanden |
+| TC-04 | F-03            | `tc04LeererName` | leerer Name abgelehnt; benennt „Name“ | Bestanden |
 | TC-05 | F-04            | `tc05UngueltigeEMail` | E-Mail `"max.mustermann"` abgelehnt | Bestanden |
 | TC-06 | F-04            | `tc06GueltigeEMail` | E-Mail `"max@beispiel.de"` gespeichert | Bestanden |
-| TC-07 | F-05            | `tc07OrtAendern` | Ort „Mannheim" → „Heidelberg" gespeichert | Bestanden |
+| TC-07 | F-05            | `tc07OrtAendern` | Ort „Mannheim“ → „Heidelberg“ gespeichert | Bestanden |
 | TC-08 | F-07            | `tc08KundennummerUnveraenderlich` | Änderung der Kundennummer wirft `IllegalArgumentException` | Bestanden |
 | TC-09 | F-08            | `tc09LoeschenUnverknuepft` | unverknüpfter Kunde entfernt | Bestanden |
 | TC-10 | F-09, F-10, GR-04| `tc10Loeschsperre` | Löschen abgelehnt; Hinweis enthält Anzahl `3` | Bestanden |
-| TC-11 | F-11            | `tc11Sortierung` | Reihenfolge „Albrecht", „Maier", „Zimmer" | Bestanden |
+| TC-11 | F-11            | `tc11Sortierung` | Reihenfolge „Albrecht“, „Maier“, „Zimmer“ | Bestanden |
 | TC-12 | F-12            | `tc12SucheName` | case-insensitive Teilstring-Treffer | Bestanden |
 | TC-13 | F-12, F-14      | `tc13SucheNummerUndFindeKunde` | Treffer `K-000017`; `findeKunde` liefert `null` für Unbekannte | Bestanden |
 | TC-14 | F-15            | `tc14CsvExport` | CSV mit Kopfzeile + 3 Datenzeilen, `;`-getrennt, UTF-8 | Bestanden |
@@ -216,9 +181,9 @@ Komponenten A–C sind durch Stubs/Mocks ersetzt.
 |-------|-----------------|-------------------|---------------------|--------|
 | TC-01 | F-09            | `tc01ErsterSchritt` | erster Schritt = `KUNDE_WAEHLEN` | Bestanden |
 | TC-02 | F-09            | `tc02Schrittfolge` | Schrittfolge bis `SPEICHERN` durchlaufen | Bestanden |
-| TC-03 | F-10            | `tc03KeinKunde` | Wechsel verhindert; Meldung benennt „Kunde" | Bestanden |
-| TC-04 | F-10            | `tc04KeinePosition` | Wechsel verhindert; Meldung benennt „Position" | Bestanden |
-| TC-05 | F-10            | `tc05MengeNull` | Menge 0 verhindert Wechsel; Meldung benennt „Menge" | Bestanden |
+| TC-03 | F-10            | `tc03KeinKunde` | Wechsel verhindert; Meldung benennt „Kunde“ | Bestanden |
+| TC-04 | F-10            | `tc04KeinePosition` | Wechsel verhindert; Meldung benennt „Position“ | Bestanden |
+| TC-05 | F-10            | `tc05MengeNull` | Menge 0 verhindert Wechsel; Meldung benennt „Menge“ | Bestanden |
 | TC-06 | F-11            | `tc06ZurueckOhneDatenverlust` | `kundenNr` und `positionen` bleiben erhalten | Bestanden |
 | TC-07 | F-12            | `tc07Zusammenfassung` | enthält Kunde, Positionen, Summen, Datum, Zahlungsziel | Bestanden |
 | TC-08 | F-13            | `tc08GenauEinSpeicheraufruf` | genau ein `erstelleRechnung(...)`; Erfolgsmeldung mit Nummer | Bestanden |
@@ -284,7 +249,71 @@ dem Ergebnis die gemessene Ausführungszeit (Surefire) gegen die jeweilige Zeits
 Reine Testausführung (Surefire): ≈ 1,4 s; Maven-Gesamtlauf: ≈ 3,1 s. Die **Bestehensquote
 beträgt 100 %** (71 von 71 Testfällen bestanden).
 
-## 5. Bewertung und Abweichungen
+## 5. Nachtest Version 3.0 (24.09.2026)
+
+Zum Abschluss der Version 3.0 wurde die gesamte Testsuite erneut ausgeführt —
+diesmal über `./mvnw verify`, also einschließlich der Abdeckungsschwelle (JaCoCo)
+und der statischen Analyse (SpotBugs), die seit Version 2.0 bzw. 3.0 Teil des Builds
+sind. Die Testfälle der Version 1.0 (Kapitel 3) sind darin vollständig enthalten;
+die ergänzten Testfälle sind im Modultestplan, Kapitel 3, spezifiziert.
+
+### 5.1 Testumgebung
+
+| Merkmal | Wert |
+|---------|------|
+| Prüfgegenstand | `faktura` 3.0.0 |
+| Build-/Testwerkzeug | Apache Maven 3.9.9 (Maven-Wrapper), maven-surefire-plugin 3.2.5 |
+| Laufzeit | JDK 26.0.1 lokal (übersetzt mit `--release 21`); CI: Temurin 21 unter Ubuntu und Windows |
+| Testframework | JUnit Jupiter (über die Spring-Boot-Stückliste) |
+| Qualitätsschranken | JaCoCo 0.8.15 (≥ 85 % Anweisungen, ≥ 70 % Zweige), SpotBugs 4.10.3 |
+
+### 5.2 Ergebnisse je Testklasse
+
+| Testklasse | Bereich | Ausführungen | Fehlgeschlagen | Dauer (s) |
+|------------|---------|-------------:|---------------:|----------:|
+| `dokumente/DokumentCsvExportTest` | A – Dokumentenzyklus | 1 | 0 | 0.53 |
+| `dokumente/DokumentzyklusTest` | A – Dokumentenzyklus | 23 | 0 | 0.28 |
+| `dokumente/ERechnungExportTest` | A – Dokumentenzyklus | 8 | 0 | 0.42 |
+| `dokumente/JdbcDokumentRepositoryTest` | A – Dokumentenzyklus | 7 | 0 | 1.34 |
+| `dokumente/JsonDokumentRepositoryTest` | A – Dokumentenzyklus | 1 | 0 | 0.07 |
+| `dokumente/KennzahlenDienstTest` | A – Dokumentenzyklus | 6 | 0 | 0.01 |
+| `dokumente/NummernkreisIntegritaetTest` | A – Dokumentenzyklus | 3 | 0 | 2.61 |
+| `dokumente/PdfBoxPdfExporterTest` | A – Dokumentenzyklus | 9 | 0 | 0.50 |
+| `produkte/ProduktVerwaltungTest` | B – Produktverwaltung | 16 | 0 | 0.08 |
+| `kunden/KundenVerwaltungTest` | C – Kundenverwaltung | 20 | 0 | 0.11 |
+| `gui/DokumentListenControllerTest` | D – Programmoberfläche | 6 | 0 | 0.01 |
+| `gui/OberflaechenControllerTest` | D – Programmoberfläche | 17 | 0 | 0.03 |
+| `gui/TabellenFormatTest` | D – Programmoberfläche | 16 | 0 | 0.03 |
+| `gemeinsam/CsvTest` | Gemeinsame Infrastruktur | 3 | 0 | 0.01 |
+| `gemeinsam/DatensicherungTest` | Gemeinsame Infrastruktur | 2 | 0 | 0.40 |
+| `gemeinsam/EreignisBusTest` | Gemeinsame Infrastruktur | 3 | 0 | 0.00 |
+| `gemeinsam/JsonPersistenzTest` | Gemeinsame Infrastruktur | 3 | 0 | 0.04 |
+| `gemeinsam/ValidierungTest` | Gemeinsame Infrastruktur | 38 | 0 | 0.11 |
+| `firma/FirmenprofilServiceTest` | Firmenprofil | 9 | 0 | 1.37 |
+| `FakturaApplicationTest` | Anwendung/Querschnitt | 6 | 0 | 1.52 |
+| `PerformanceTest` | Anwendung/Querschnitt | 4 | 0 | 0.62 |
+| **Summe** | | **201** | **0** | |
+
+### 5.3 Qualitätsschranken
+
+| Prüfung | Schranke | Ergebnis |
+|---------|----------|----------|
+| Anweisungsabdeckung (nicht-grafischer Code) | ≥ 85 % | 87 % — eingehalten |
+| Zweigabdeckung (nicht-grafischer Code) | ≥ 70 % | 73 % — eingehalten |
+| SpotBugs | 0 Befunde | 0 Befunde |
+
+### 5.4 Ergänzende Prüfung der Oberfläche
+
+Die Oberfläche selbst ist nicht Gegenstand automatisierter Tests (Kapitel 6). Zum Abschluss
+der Version 3.0 wurde sie mit einem fiktiven Demodatenbestand (8 Kunden, 8 Produkte,
+17 Belege) manuell durchlaufen: Übersicht und Kennzahlen, Statusfilter, Zahlungseingang,
+Storno einer versendeten Rechnung mit Stornorechnung, Firmenprofil, Tastenkürzel nach
+Ansichtswechsel und der vollständige Rechnungswizard mit 7 %/19 %-Positionen. Die dabei
+gefundenen Darstellungsfehler (abgeschnittene Detailangaben, fehlender Bezahlt-Status in
+der Übersicht, Sortierung von Namen mit „Ł“) wurden behoben; die erzeugten PDF- und
+E-Rechnungsdateien wurden gegeneinander geprüft (identische Summen).
+
+## 6. Bewertung und Abweichungen
 
 **Abweichungen:** keine. Alle **71** im Modultestplan v2.0 spezifizierten Testfälle wurden
 ausgeführt und sind bestanden; es traten weder Fehlschläge (*Failures*) noch Fehler (*Errors*)
@@ -303,7 +332,7 @@ Service-Schnittstellen der Nachbarkomponenten wurden durch Stubs/Mocks ersetzt.
 Geschäftsregeln (GR-01…GR-06) sowie die Qualitäts-/Performanceanforderungen (Q-02, Q-03, Q-04,
 Q-08, Q-09) sind nachgewiesen.
 
-## 6. Abkürzungen
+## 7. Abkürzungen
 | Abkürzung | Bedeutung |
 |-----------|-----------|
 | TC  | Testfall (Test Case) |

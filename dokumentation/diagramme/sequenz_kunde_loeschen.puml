@@ -6,7 +6,7 @@ skinparam shadowing false
 skinparam sequenceMessageAlign center
 hide footbox
 
-title UML-Sequenzdiagramm — „Kunde löschen mit Löschsperre (GR-04)" (Komponente C)
+title UML-Sequenzdiagramm — „Kunde löschen mit Löschsperre (GR-04)“ (Komponente C), Stand 3.0
 
 participant "GUI\n(Komponente D)" as GUI
 participant "kundenService :\nKundenVerwaltungsService" as KVS
@@ -30,11 +30,8 @@ else anzahl == 0
   activate REPO
   REPO --> KVS
   deactivate REPO
-  KVS -> EB : melde(DatenBereich.KUNDEN)
-  activate EB
-  note right of EB : benachrichtigt die abonnierte\nKundenansicht (Observer-Muster)
-  EB --> KVS
-  deactivate EB
+  KVS ->> EB : DatenGeaendertEreignis(KUNDEN)
+  note right of EB : Zustellung an die Ansicht\nerst nach dem Commit (AFTER_COMMIT)
   KVS --> GUI : Kunde gelöscht
 end
 

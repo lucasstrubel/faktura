@@ -1,41 +1,20 @@
 ---
 title: "Projektübersicht"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
-author:
-  - Lucas Strubel
-version: "2.0"
+author: "Lucas Strubel"
+date: "24.09.2026"
+version: "3.0"
 lang: de-DE
-toc: true
-toc-depth: 3
 numbersections: true
-papersize: a4
-geometry: "margin=3cm"
-fontsize: 12pt
-linestretch: 1.5
-mainfont: "Times New Roman"
-sansfont: "Arial"
-monofont: "DejaVu Sans Mono"
-header-includes: |
-  \usepackage{fancyhdr}
-  \usepackage{lastpage}
-  \pagestyle{fancy}
-  \fancyhf{}
-  \fancyhead[L]{Faktura}
-  \fancyhead[C]{Projektübersicht}
-  \fancyhead[R]{Version 2.0}
-  \fancyfoot[C]{\thepage\ /\ \pageref{LastPage}}
-  \renewcommand{\headrulewidth}{0.4pt}
-  \renewcommand{\footrulewidth}{0pt}
 ---
-
-\newpage
 
 # Dokumentenhistorie
 
 | Version | Datum      | Grund der Änderung  |
-|---------|------------|---------------------|
+|----|------|------------------------------|
 | 1.0–1.3 | 04–05/2026 | Project Charter des Hochschulprojekts (Software Engineering 1, TH Mannheim) |
 | 2.0     | 18.07.2026 | Überarbeitung zur Projektübersicht des weitergeführten Einzelprojekts |
+| 3.0     | 24.09.2026 | Abschluss der Version 3.0 (Phase 12), offene Punkte, Teamzusammensetzung ergänzt |
 
 # Projektübersicht
 
@@ -54,12 +33,19 @@ Die fortschreitende Digitalisierung des Rechnungswesens sowie die gesetzliche
 E-Rechnungspflicht im B2B-Bereich (ab 01.01.2025) stellen insbesondere
 Kleinstunternehmen vor erhebliche Herausforderungen.
 
-Das Projekt entstand im Sommersemester 2026 als Lehrprojekt im Modul *Software
-Engineering 1* (TH Mannheim) und durchlief dort den vollständigen
+Das Projekt ist im Rahmen des Moduls *Software Engineering 1* an der TH Mannheim
+gestartet (Sommersemester 2026) und durchlief dort den vollständigen
 Software-Engineering-Prozess nach V-Modell — von Project Charter, Lastenheft und
 Pflichtenheft über Implementierung und Modultest bis zur Abschlusspräsentation.
-Seit Projektabschluss wird es von Lucas Strubel als Einzelprojekt weiterentwickelt
-mit dem Ziel, die Anwendung auf Produktqualität zu heben (siehe Roadmap, Kapitel 5).
+
+Das Projektteam bestand aus 12 Studierenden in vier Gruppen zu je drei Personen; jede
+Gruppe verantwortete eine der Komponenten A–D (Dokumentenzyklus, Produkte, Kunden,
+Programmoberfläche). Lucas Strubel verwaltete das gemeinsame Repository und verfasste
+sämtliche Projektdokumente — Lastenheft, die Pflichtenheft-Teile A–D, Modultestplan und
+Modultestbericht.
+
+Seit Projektabschluss wird Faktura von Lucas Strubel als Einzelprojekt weiterentwickelt
+mit dem Ziel, die Anwendung auf Produktqualität zu heben (siehe Roadmap).
 
 # Projektziele
 
@@ -74,13 +60,13 @@ mit dem Ziel, die Anwendung auf Produktqualität zu heben (siehe Roadmap, Kapite
 ## Nicht-Ziele (Version 1.0)
 
 Die folgenden Punkte waren **explizit nicht** Teil der Version 1.0; einzelne davon
-sind Gegenstand der Weiterentwicklung (Kapitel 5):
+sind Gegenstand der Weiterentwicklung (Kapitel „Roadmap der Weiterentwicklung“):
 
 - Mehrbenutzer- oder Netzwerkfähigkeit (gleichzeitiger Zugriff mehrerer Nutzer)
 - Vollständiges Buchhaltungsmodul (keine Bilanzierung)
 - Webshop-Anbindung (z. B. WooCommerce, Gambio Connectoren)
 - Mobile Clients oder Web-Applikation
-- Unterstützung von E-Rechnungsformaten (ZUGFeRD / XRechnung) → *jetzt Roadmap*
+- Unterstützung von E-Rechnungsformaten (ZUGFeRD / XRechnung) → *in Version 2.0 umgesetzt*
 - Mahnwesen und automatisiertes Forderungsmanagement
 - Garantierter kommerzieller Support oder Service Level Agreements (SLAs)
 
@@ -102,10 +88,12 @@ relevant:
 - **GoBD** (Grundsätze zur ordnungsmäßigen Führung und Aufbewahrung von Büchern):
   Erstellte Rechnungen dürfen nach Versand nicht mehr verändert werden; alle
   Geschäftsvorfälle müssen lückenlos erfasst werden. *In Version 1.0 umgesetzt
-  (unveränderliche versendete Belege, lückenlose Rechnungsnummern).*
+  (unveränderliche versendete Belege, lückenlose Rechnungsnummern), seit Version 3.0
+  transaktional abgesichert und um Stornorechnung und Aussteller-Snapshot ergänzt.*
 - **E-Rechnungspflicht ab 01.01.2025**: Im B2B-Bereich sind strukturierte elektronische
   Rechnungsformate (ZUGFeRD, XRechnung) gesetzlich vorgeschrieben. *In Version 1.0
-  bewusst ausgeklammert; zentraler Bestandteil der Roadmap.*
+  bewusst ausgeklammert; seit Version 2.0 umgesetzt (EN 16931, CII-XML), seit 3.0 mit
+  Stornorechnung als korrigierter Rechnung.*
 - **DSGVO**: Kundendaten werden ausschließlich lokal gespeichert; es erfolgt keine
   Übertragung an Dritte.
 
@@ -118,7 +106,7 @@ relevant:
 | **3** | Komponentenentwurf | UI/UX-Mockups, Datenmodell, Pflichtenheft |
 | **4** | Implementierung | Produkt- und Kundenverwaltung, Dokumentenzyklus, UI |
 | **5** | Integrationstest | Schnittstellentests, modulübergreifende Tests |
-| **6** | Systemtest | Integrationstests, Systemvalidierung |
+| **6** | Systemtest | Systemvalidierung gegen das Pflichtenheft |
 | **7** | Abnahmetest | Abnahme, Abschlusspräsentation |
 
 Jede Entwicklungsphase korrespondiert mit ihrer jeweiligen Testphase im Rahmen des
@@ -166,6 +154,31 @@ und die Bedienung bestand aus vier Reitern mit ungruppierten Knopfreihen.
 10. **Prüfbarkeit (Phase 11):** Mindestabdeckung als Abbruchkriterium im Build,
     Integritätstests des Nummernkreises, Tests für Kennzahlen, Datensicherung,
     Firmenprofil und Belegfilterung.
+
+## Abgeschlossen: Version 3.0 — Abschluss (Phase 12)
+
+Vor der Veröffentlichung wurde die gesamte Codebasis systematisch auf Fehler durchsucht
+und die Anwendung mit realistischen Demodaten durchgespielt. Ergebnis:
+
+11. **Fachliche Lücken geschlossen:** Umsatzsteuer je Steuersatz (PDF und E-Rechnung
+    stimmen auf den Cent überein), Steuernummer im Firmenprofil und Pflichtprofil für
+    Belege, Aussteller-Snapshot je Beleg, Zahlungseingang, Stornorechnung für versendete
+    Rechnungen, Leistungsdatum aus dem Lieferschein (Pflichtenheft v2.4, A-F-25 bis
+    A-F-32).
+12. **Fehler behoben:** PDF-Export mit eingebetteter Schrift (Namen wie „Łukasz“ brachen
+    ihn ab), Umbruch statt Abschneiden, atomare JSON-Übernahme, Datenverzeichnis im
+    Benutzerverzeichnis, EU-USt-IdNr./IBAN-Prüfsumme, CSV mit BOM und Formelschutz,
+    Tastenkürzel, Datums- und Betragseingabe, Hintergrundaufgaben.
+13. **Auslieferung:** plattformübergreifendes JAR (Windows, Linux, macOS auf Apple
+    Silicon), Versionsprüfung im Release-Workflow, Dokumentation vollständig auf Deutsch
+    und als PDF.
+
+## Offene Punkte
+
+- Usability-Test mit fünf Personen (Q-05, AC-11) — nicht durch Code belegbar
+- Steuerbefreiungen und Kleinunternehmerregelung (§ 19 UStG) mit Pflichthinweis
+- Mahnwesen
+- Installationspakete für Linux und macOS
 
 # Risikomanagement
 
