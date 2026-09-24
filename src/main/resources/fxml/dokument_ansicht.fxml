@@ -5,6 +5,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.SeparatorMenuItem?>
 <?import javafx.scene.control.SplitPane?>
@@ -100,7 +101,11 @@
                 <Label fx:id="trefferAnzeige" styleClass="treffer-anzeige"/>
             </VBox>
 
-            <VBox fx:id="detailBereich" spacing="10" styleClass="detail-bereich"/>
+            <!-- Rollbar: Lange Anschriften und viele Positionen dürfen den
+                 Bereich nicht über seine Grenzen hinaus schieben -->
+            <ScrollPane fitToWidth="true" fitToHeight="true" hbarPolicy="NEVER" styleClass="detail-rahmen">
+                <VBox fx:id="detailBereich" spacing="6" styleClass="detail-bereich"/>
+            </ScrollPane>
         </SplitPane>
     </center>
 </BorderPane>

@@ -248,6 +248,14 @@
     -fx-pref-width: 290px;
 }
 
+/* Rollrahmen um den Detailbereich: unsichtbar, die Karte trägt die Optik */
+.detail-rahmen,
+.detail-rahmen > .viewport {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-min-width: 250px;
+}
+
 .detail-titel {
     -fx-font-size: 1.15em;
     -fx-font-weight: bold;
