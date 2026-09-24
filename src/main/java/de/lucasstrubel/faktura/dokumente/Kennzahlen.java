@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * Kennzahlen der Übersichtsansicht (D-F-18).
  *
- * @param offeneAnzahl       Anzahl offener und versendeter Rechnungen
+ * @param offeneAnzahl       Anzahl offener und versendeter, noch nicht bezahlter Rechnungen
  * @param offenerBetrag      Bruttosumme dieser Rechnungen
  * @param ueberfaelligAnzahl davon mit überschrittenem Zahlungsziel
  * @param ueberfaelligBetrag Bruttosumme der überfälligen Rechnungen

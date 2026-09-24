@@ -36,7 +36,7 @@ class DokumentCsvExportTest {
 
         List<String> zeilen = Files.readAllLines(ziel, StandardCharsets.UTF_8);
         assertEquals(3, zeilen.size()); // Kopfzeile + 2 Rechnungen mit je 1 Position
-        assertTrue(zeilen.get(0).startsWith("belegnummer;belegtyp;datum;status"));
+        assertTrue(zeilen.get(0).startsWith("\uFEFFbelegnummer;belegtyp;datum;status"));
         assertTrue(zeilen.stream().anyMatch(z -> z.contains("R-2026-000001")));
         assertTrue(zeilen.stream().anyMatch(z -> z.contains("STORNIERT") && z.contains("Anwender")));
     }

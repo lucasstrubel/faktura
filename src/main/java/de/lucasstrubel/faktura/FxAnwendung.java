@@ -67,7 +67,10 @@ public class FxAnwendung extends Application {
     private static void setzeFehlerbehandlung() {
         Thread.setDefaultUncaughtExceptionHandler((faden, fehler) -> {
             LOG.error("Unbehandelter Fehler im Faden {}", faden.getName(), fehler);
-            FxMeldung.zeigeAufFxThread(FxMeldung.zuMeldung(fehler));
+            // Immer nachgelagert anzeigen: Ein showAndWait() mitten in einem
+            // Layout- oder Animationsdurchlauf würde selbst scheitern
+            javafx.application.Platform.runLater(
+                    () -> FxMeldung.zeige(FxMeldung.zuMeldung(fehler), null));
         });
     }
 

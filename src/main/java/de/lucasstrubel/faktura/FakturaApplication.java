@@ -17,22 +17,33 @@ import java.nio.file.Path;
 @SpringBootApplication
 public class FakturaApplication {
 
+    /** Name der Eigenschaft für das Datenverzeichnis (application.yml, Startargument). */
+    static final String DATENVERZEICHNIS = "faktura.daten-verzeichnis";
+
     public static void main(String[] args) {
-        setzeDatenverzeichnisFuerInstallierteAnwendung();
+        setzeDatenverzeichnis(args);
         Application.launch(FxAnwendung.class, args);
     }
 
     /**
-     * Die installierte Anwendung (jpackage setzt {@code jpackage.app-path})
-     * darf nicht in ihr Programmverzeichnis schreiben; ohne ausdrückliche
-     * Konfiguration liegen die Daten dann unter {@code <Benutzer>/Faktura/daten}.
-     * Muss vor dem ersten Logger-Zugriff laufen, da auch Logback die
-     * Property auswertet.
+     * Legt das Datenverzeichnis als System-Property fest, bevor der erste
+     * Logger entsteht — Logback wertet die Property für den Ort der Logdatei
+     * aus, sieht aber keine Spring-Startargumente. Vorrang: Startargument
+     * {@code --faktura.daten-verzeichnis=…}, dann eine bereits gesetzte
+     * System-Property, sonst {@code <Benutzer>/Faktura/daten} (wie in
+     * {@code application.yml}). Die installierte Anwendung schreibt damit
+     * nie in ihr Programmverzeichnis.
      */
-    private static void setzeDatenverzeichnisFuerInstallierteAnwendung() {
-        if (System.getProperty("jpackage.app-path") != null
-                && System.getProperty("faktura.daten-verzeichnis") == null) {
-            System.setProperty("faktura.daten-verzeichnis",
+    static void setzeDatenverzeichnis(String[] args) {
+        String praefix = "--" + DATENVERZEICHNIS + "=";
+        for (String arg : args) {
+            if (arg.startsWith(praefix)) {
+                System.setProperty(DATENVERZEICHNIS, arg.substring(praefix.length()));
+                return;
+            }
+        }
+        if (System.getProperty(DATENVERZEICHNIS) == null) {
+            System.setProperty(DATENVERZEICHNIS,
                     Path.of(System.getProperty("user.home"), "Faktura", "daten").toString());
         }
     }

@@ -8,9 +8,10 @@
         </encoder>
     </appender>
 
-    <!-- Logverzeichnis folgt dem Datenverzeichnis; die installierte Anwendung
-         setzt faktura.daten-verzeichnis als System-Property (jpackage). -->
-    <property name="DATEN" value="${faktura.daten-verzeichnis:-daten}"/>
+    <!-- Logverzeichnis folgt dem Datenverzeichnis: FakturaApplication.main()
+         setzt faktura.daten-verzeichnis als System-Property, bevor Logback
+         startet (auch wenn es als Startargument übergeben wurde). -->
+    <property name="DATEN" value="${faktura.daten-verzeichnis:-${user.home}/Faktura/daten}"/>
 
     <appender name="DATEI" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${DATEN}/faktura.log</file>

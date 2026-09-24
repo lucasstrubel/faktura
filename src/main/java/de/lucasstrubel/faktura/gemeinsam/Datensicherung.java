@@ -33,6 +33,9 @@ public class Datensicherung {
     /** Zusätzlich gesicherte Dateien des Datenverzeichnisses (JSON-Bestände). */
     private static final String JSON_ENDUNG = ".json";
 
+    /** Nach der Übernahme in die Datenbank umbenannte JSON-Altbestände (JsonDatenUebernahme). */
+    private static final String JSON_UEBERNOMMEN_ENDUNG = ".json.uebernommen";
+
     /** Name der Datenbank innerhalb der Sicherung. */
     private static final String DATENBANK_EINTRAG = "faktura.db";
 
@@ -85,7 +88,8 @@ public class Datensicherung {
         try (var eintraege = Files.list(datenVerzeichnis)) {
             for (Path datei : eintraege.toList()) {
                 Path dateiname = datei.getFileName();
-                if (dateiname != null && dateiname.toString().endsWith(JSON_ENDUNG)) {
+                if (dateiname != null && (dateiname.toString().endsWith(JSON_ENDUNG)
+                        || dateiname.toString().endsWith(JSON_UEBERNOMMEN_ENDUNG))) {
                     bestaende.put(dateiname.toString(), datei);
                 }
             }

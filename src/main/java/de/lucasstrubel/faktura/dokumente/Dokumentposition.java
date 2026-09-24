@@ -56,9 +56,21 @@ public class Dokumentposition {
         return positionssummeNetto.multiply(steuersatz).setScale(2, RoundingMode.HALF_UP);
     }
 
-    /** Bruttobetrag der Position: Netto + Steuer (TC-01). */
+    /**
+     * Bruttobetrag der Position: Netto + Steuer (TC-01). Informativ je Zeile;
+     * die Belegsumme rechnet die Steuer je Steuersatz (A-F-25).
+     */
     public BigDecimal getPositionssummeBrutto() {
-        return positionssummeNetto.add(getSteuerbetrag());
+        BigDecimal netto = positionssummeNetto == null
+                ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP) : positionssummeNetto;
+        return netto.add(getSteuerbetrag());
+    }
+
+    /** Dieselbe Position mit negierter Menge — Baustein der Stornorechnung (A-F-29). */
+    Dokumentposition negiert() {
+        return new Dokumentposition(produktReferenz, bezeichnung, -menge,
+                einzelpreisNetto == null ? BigDecimal.ZERO : einzelpreisNetto,
+                steuersatz == null ? BigDecimal.ZERO : steuersatz);
     }
 
     public String getProduktReferenz() {

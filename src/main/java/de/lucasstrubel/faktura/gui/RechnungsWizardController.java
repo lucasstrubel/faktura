@@ -88,11 +88,22 @@ public class RechnungsWizardController {
                     ? Meldung.fehler("Kunde", "Bitte zuerst einen Kunden auswählen.")
                     : null;
             case POSITIONEN_ERFASSEN -> pruefePositionen();
-            case DATEN_BESTAETIGEN -> model.getRechnungsdatum() == null
-                    ? Meldung.fehler("Rechnungsdatum", "Bitte ein Rechnungsdatum angeben.")
-                    : null;
+            case DATEN_BESTAETIGEN -> pruefeDaten();
             case ZUSAMMENFASSUNG, SPEICHERN -> null;
         };
+    }
+
+    /** Rechnungsdatum Pflicht; das Zahlungsziel darf nicht davor liegen (F-10, A-F-32). */
+    private Meldung pruefeDaten() {
+        if (model.getRechnungsdatum() == null) {
+            return Meldung.fehler("Rechnungsdatum", "Bitte ein Rechnungsdatum angeben.");
+        }
+        if (model.getZahlungsziel() != null
+                && model.getZahlungsziel().isBefore(model.getRechnungsdatum())) {
+            return Meldung.fehler("Zahlungsziel",
+                    "Das Zahlungsziel darf nicht vor dem Rechnungsdatum liegen (A-F-32).");
+        }
+        return null;
     }
 
     private Meldung pruefePositionen() {
@@ -129,11 +140,13 @@ public class RechnungsWizardController {
         }
 
         Summen summen = dokumentService.berechneSummen(positionsangaben());
-        text.append("Summe netto: ").append(summen.netto().toPlainString()).append(" EUR\n");
-        text.append("Umsatzsteuer: ").append(summen.steuer().toPlainString()).append(" EUR\n");
-        text.append("Summe brutto: ").append(summen.brutto().toPlainString()).append(" EUR\n");
+        text.append("Summe netto: ").append(TabellenFormat.betrag(summen.netto())).append('\n');
+        text.append("Umsatzsteuer: ").append(TabellenFormat.betrag(summen.steuer())).append('\n');
+        text.append("Summe brutto: ").append(TabellenFormat.betrag(summen.brutto())).append('\n');
 
         text.append("Rechnungsdatum: ").append(DATUM.format(model.getRechnungsdatum())).append('\n');
+        text.append("Leistungsdatum: ").append(DATUM.format(model.getLeistungsdatum() != null
+                ? model.getLeistungsdatum() : model.getRechnungsdatum())).append('\n');
         LocalDate zahlungsziel = model.getZahlungsziel() != null
                 ? model.getZahlungsziel()
                 : model.getRechnungsdatum().plusDays(StandardDokumentService.STANDARD_ZAHLUNGSZIEL_TAGE);
@@ -152,12 +165,13 @@ public class RechnungsWizardController {
     public Meldung speichern() {
         try {
             gespeicherteRechnung = dokumentService.erstelleRechnung(
-                    model.getKundenNr(), positionsangaben(),
-                    model.getRechnungsdatum(), model.getZahlungsziel());
+                    model.getKundenNr(), positionsangaben(), model.getRechnungsdatum(),
+                    model.getLeistungsdatum(), model.getZahlungsziel());
             letzteMeldung = Meldung.erfolg("Die Rechnung " + gespeicherteRechnung.getBelegnummer()
                     + " wurde gespeichert.");
-        } catch (ValidierungsException e) {
-            letzteMeldung = Meldung.fehler(e.getFeldname(), e.getMessage());
+        } catch (RuntimeException e) {
+            // Dieselbe Zuordnung wie überall: Validierung mit Feld, sonst Klartext
+            letzteMeldung = FxMeldung.zuMeldung(e);
         }
         return letzteMeldung;
     }

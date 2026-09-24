@@ -1,5 +1,7 @@
 package de.lucasstrubel.faktura.dokumente;
 
+import de.lucasstrubel.faktura.firma.Firmenprofil;
+import de.lucasstrubel.faktura.firma.FirmenprofilService;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 import de.lucasstrubel.faktura.kunden.Kunde;
 import de.lucasstrubel.faktura.kunden.KundenService;
@@ -16,15 +18,20 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Modultestplan Komponente A (separates Dokument Modultestplan_GruppeA.md): TC-01 bis TC-13.
+ * Modultestplan Komponente A (Dokument Modultestplan.md): TC-01 bis TC-13,
+ * dazu die Weiterentwicklung 3.0 (DZ-01 bis DZ-10: Stornorechnung,
+ * Zahlungseingang, Leistungsdatum, Datumsprüfung, Aussteller-Snapshot,
+ * Pflichtprofil, Nummernschutz, Umsatzsteuer je Satz).
  * Die Schnittstellen der Komponenten B und C werden durch Stubs ersetzt,
  * der PDF-Export durch einen No-Op-Stub.
  */
@@ -40,6 +47,8 @@ class DokumentzyklusTest {
     private EinfacherBelegnummernGenerator nummernGenerator;
     private Map<String, Produkt> produkte;
     private StandardDokumentService service;
+    /** Aktuelles Firmenprofil des Stubs; {@code null} = noch keines gespeichert. */
+    private Firmenprofil firmenprofil;
 
     @BeforeEach
     void setUp() {
@@ -74,9 +83,17 @@ class DokumentzyklusTest {
             }
         };
 
+        firmenprofil = TestBelege.FIRMA;
+        FirmenprofilService firmenStub = new FirmenprofilService(null) {
+            @Override
+            public Optional<Firmenprofil> lade() {
+                return Optional.ofNullable(firmenprofil);
+            }
+        };
+
         PdfExporter pdfStub = (dokument, ziel) -> { };
         service = new StandardDokumentService(repository, nummernGenerator,
-                kundenStub, produktStub, pdfStub, ereignis -> { });
+                kundenStub, produktStub, firmenStub, pdfStub, ereignis -> { });
     }
 
     private static Produkt produkt(String nummer, String bezeichnung, String preis, String steuersatz) {
@@ -238,5 +255,175 @@ class DokumentzyklusTest {
         assertEquals(new BigDecimal("119.00"), gespeichert.getSummeBrutto());
         assertNotNull(gespeichert.getZahlungsziel());
         assertFalse(service.offeneRechnungen().isEmpty());
+    }
+
+    private Rechnung versendeteRechnung() {
+        Rechnung rechnung = service.erstelleRechnung(KUNDE_NR,
+                List.of(new Positionsangabe(PRODUKT_NR, 2)), LocalDate.now(), null);
+        service.versende(rechnung.getBelegnummer());
+        return rechnung;
+    }
+
+    @Test
+    @DisplayName("DZ-01: Storno einer versendeten Rechnung erzeugt eine Stornorechnung mit negativen Mengen (A-F-29)")
+    void dz01StornorechnungFuerVersendeteRechnung() {
+        Rechnung original = versendeteRechnung();
+
+        Rechnung storno = service.storniere(original.getBelegnummer());
+
+        assertTrue(storno.istStornorechnung());
+        assertEquals(original.getBelegnummer(), storno.getStornoZu());
+        assertEquals(original.getBelegnummer(), storno.getVorgaengerNr());
+        assertTrue(storno.getBelegnummer().startsWith("R-"), "eigene Nummer aus dem Rechnungskreis");
+        assertFalse(storno.getBelegnummer().equals(original.getBelegnummer()));
+        assertEquals(-2, storno.getPositionen().get(0).getMenge());
+        assertEquals(new BigDecimal("-119.00"), storno.getSummeBrutto());
+        assertEquals(original.getKundeName(), storno.getKundeName());
+        assertNull(storno.getZahlungsziel(), "eine Stornorechnung wird nicht bezahlt");
+
+        Rechnung gelesen = (Rechnung) repository.findeNachNummer(original.getBelegnummer());
+        assertEquals(DokumentStatus.STORNIERT, gelesen.getStatus());
+        assertEquals(new BigDecimal("119.00"), gelesen.getSummeBrutto(), "Original bleibt unverändert");
+    }
+
+    @Test
+    @DisplayName("DZ-02: Eine offene Rechnung wird ohne Stornorechnung storniert; Stornorechnungen sind weder stornier- noch bezahlbar")
+    void dz02StornoregelnOffenUndStornorechnung() {
+        Rechnung offen = service.erstelleRechnung(KUNDE_NR,
+                List.of(new Positionsangabe(PRODUKT_NR, 1)), LocalDate.now(), null);
+        Rechnung ergebnis = service.storniere(offen.getBelegnummer());
+        assertFalse(ergebnis.istStornorechnung());
+        assertEquals(1, repository.alle().size(), "keine zusätzliche Stornorechnung");
+
+        Rechnung storno = service.storniere(versendeteRechnung().getBelegnummer());
+        assertThrows(IllegalStateException.class, () -> service.storniere(storno.getBelegnummer()));
+        assertThrows(IllegalStateException.class,
+                () -> service.markiereBezahlt(storno.getBelegnummer(), LocalDate.now()));
+    }
+
+    @Test
+    @DisplayName("DZ-03: Zahlungseingang einer versendeten Rechnung wird erfasst, der Inhalt bleibt gesperrt (A-F-28)")
+    void dz03Zahlungseingang() {
+        Rechnung rechnung = versendeteRechnung();
+        LocalDate heute = LocalDate.now();
+
+        service.markiereBezahlt(rechnung.getBelegnummer(), heute);
+
+        Rechnung gelesen = (Rechnung) repository.findeNachNummer(rechnung.getBelegnummer());
+        assertTrue(gelesen.istBezahlt());
+        assertEquals(heute, gelesen.getBezahltAm());
+        assertEquals(DokumentStatus.VERSENDET, gelesen.getStatus());
+        assertThrows(IllegalStateException.class, () -> gelesen.setZahlungsziel(heute));
+        assertThrows(IllegalStateException.class,
+                () -> service.markiereBezahlt(rechnung.getBelegnummer(), heute), "nur einmal");
+        assertThrows(IllegalStateException.class,
+                () -> service.storniere(rechnung.getBelegnummer()), "bezahlt = nicht stornierbar");
+    }
+
+    @Test
+    @DisplayName("DZ-04: Zahlungsdatum ist Pflicht und darf nicht vor dem Rechnungsdatum liegen (A-F-28)")
+    void dz04Zahlungsdatum() {
+        Rechnung rechnung = service.erstelleRechnung(KUNDE_NR,
+                List.of(new Positionsangabe(PRODUKT_NR, 1)), LocalDate.of(2026, 6, 9), null);
+        assertEquals("Zahlungsdatum", assertThrows(ValidierungsException.class,
+                () -> service.markiereBezahlt(rechnung.getBelegnummer(), null)).getFeldname());
+        assertEquals("Zahlungsdatum", assertThrows(ValidierungsException.class,
+                () -> service.markiereBezahlt(rechnung.getBelegnummer(), LocalDate.of(2026, 6, 1)))
+                .getFeldname());
+    }
+
+    @Test
+    @DisplayName("DZ-05: Rechnung aus Lieferschein übernimmt das Lieferdatum als Leistungsdatum (A-F-31)")
+    void dz05LeistungsdatumAusLieferschein() {
+        LocalDate lieferdatum = LocalDate.now().minusDays(20);
+        Lieferschein lieferschein = service.erstelleLieferschein(KUNDE_NR,
+                List.of(new Positionsangabe(PRODUKT_NR, 1)), lieferdatum);
+
+        Rechnung rechnung = (Rechnung) service.erzeugeFolgebeleg(lieferschein.getBelegnummer());
+
+        assertEquals(lieferdatum, rechnung.getLeistungsdatum());
+        assertEquals(LocalDate.now(), rechnung.getDatum());
+    }
+
+    @Test
+    @DisplayName("DZ-06: Abweichendes Leistungsdatum wird übernommen; Zahlungsziel/Gültigkeit vor dem Belegdatum abgelehnt (A-F-31, A-F-32)")
+    void dz06DatumsangabenWerdenGeprueft() {
+        Rechnung rechnung = service.erstelleRechnung(KUNDE_NR,
+                List.of(new Positionsangabe(PRODUKT_NR, 1)), LocalDate.of(2026, 6, 9),
+                LocalDate.of(2026, 5, 31), null);
+        assertEquals(LocalDate.of(2026, 5, 31), rechnung.getLeistungsdatum());
+
+        assertEquals("Zahlungsziel", assertThrows(ValidierungsException.class,
+                () -> service.erstelleRechnung(KUNDE_NR, List.of(new Positionsangabe(PRODUKT_NR, 1)),
+                        LocalDate.of(2026, 6, 9), LocalDate.of(2026, 6, 1))).getFeldname());
+        assertEquals("Gültig bis", assertThrows(ValidierungsException.class,
+                () -> service.erstelleAngebot(KUNDE_NR, List.of(new Positionsangabe(PRODUKT_NR, 1)),
+                        LocalDate.now().minusDays(1))).getFeldname());
+    }
+
+    @Test
+    @DisplayName("DZ-07: Belege speichern das Firmenprofil als Snapshot; spätere Änderungen wirken nicht zurück (A-F-27)")
+    void dz07AusstellerSnapshot() {
+        Rechnung rechnung = service.erstelleRechnung(KUNDE_NR,
+                List.of(new Positionsangabe(PRODUKT_NR, 1)), LocalDate.now(), null);
+
+        firmenprofil = new Firmenprofil("Umbenannt GmbH", "Neuweg 9", "69115", "Heidelberg",
+                "DE123456789", null, null, null, null, null, null);
+
+        Rechnung gelesen = (Rechnung) repository.findeNachNummer(rechnung.getBelegnummer());
+        assertEquals(TestBelege.FIRMA, gelesen.getAussteller());
+    }
+
+    @Test
+    @DisplayName("DZ-08: Ohne Firmenprofil bzw. ohne Steuerkennung kein Beleg — und keine verbrauchte Nummer (A-F-26, GR-01)")
+    void dz08PflichtprofilOhneNummernverbrauch() {
+        firmenprofil = null;
+        assertEquals("Firmenprofil", assertThrows(ValidierungsException.class,
+                () -> service.erstelleAngebot(KUNDE_NR, List.of(new Positionsangabe(PRODUKT_NR, 1)), null))
+                .getFeldname());
+
+        firmenprofil = new Firmenprofil("Ohne Steuer", "Weg 1", "68163", "Mannheim",
+                null, null, null, null, null, null, null);
+        assertEquals("Steuernummer", assertThrows(ValidierungsException.class,
+                () -> service.erstelleRechnung(KUNDE_NR, List.of(new Positionsangabe(PRODUKT_NR, 1)),
+                        LocalDate.of(2026, 6, 9), null)).getFeldname());
+
+        firmenprofil = TestBelege.FIRMA;
+        Rechnung rechnung = service.erstelleRechnung(KUNDE_NR,
+                List.of(new Positionsangabe(PRODUKT_NR, 1)), LocalDate.of(2026, 6, 9), null);
+        assertEquals("R-2026-000001", rechnung.getBelegnummer());
+    }
+
+    @Test
+    @DisplayName("DZ-09: Liefert der Nummernkreis eine vergebene Nummer, wird nichts überschrieben (GR-01, GR-02)")
+    void dz09VergebeneNummerWirdNichtUeberschrieben() {
+        Rechnung erste = service.erstelleRechnung(KUNDE_NR,
+                List.of(new Positionsangabe(PRODUKT_NR, 1)), LocalDate.of(2026, 6, 9), null);
+        nummernGenerator.setzeZaehler(Belegtyp.RECHNUNG, 2026, 1);
+
+        assertThrows(IllegalStateException.class, () -> service.erstelleRechnung(KUNDE_NR,
+                List.of(new Positionsangabe(PRODUKT_NR, 5)), LocalDate.of(2026, 6, 9), null));
+        Rechnung gelesen = (Rechnung) repository.findeNachNummer(erste.getBelegnummer());
+        assertEquals(1, gelesen.getPositionen().get(0).getMenge());
+    }
+
+    @Test
+    @DisplayName("DZ-10: Umsatzsteuer je Steuersatz — 7 % und 19 % getrennt ausgewiesen (A-F-25)")
+    void dz10SteueraufschluesselungJeSatz() {
+        Rechnung rechnung = new Rechnung();
+        rechnung.setzePositionen(List.of(
+                new Dokumentposition("P-1", "A", 3, new BigDecimal("0.35"), new BigDecimal("0.19")),
+                new Dokumentposition("P-2", "B", 1, new BigDecimal("0.35"), new BigDecimal("0.19")),
+                new Dokumentposition("P-3", "C", 1, new BigDecimal("50.00"), new BigDecimal("0.07"))));
+
+        List<Steuerzeile> zeilen = rechnung.steueraufschluesselung();
+        assertEquals(2, zeilen.size());
+        assertEquals(new BigDecimal("50.00"), zeilen.get(0).netto());
+        assertEquals(new BigDecimal("3.50"), zeilen.get(0).steuer());
+        assertEquals(new BigDecimal("1.40"), zeilen.get(1).netto());
+        // 1,40 × 0,19 = 0,266 → 0,27, einmal je Satz gerundet
+        assertEquals(new BigDecimal("0.27"), zeilen.get(1).steuer());
+        assertEquals(new BigDecimal("3.77"), rechnung.getSummeSteuer());
+        assertEquals(new BigDecimal("55.17"), rechnung.getSummeBrutto());
     }
 }

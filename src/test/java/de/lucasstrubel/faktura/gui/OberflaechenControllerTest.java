@@ -163,9 +163,10 @@ class OberflaechenControllerTest {
 
         assertTrue(text.contains("Muster GmbH"));
         assertTrue(text.contains("2 x Beratungsstunde"));
-        assertTrue(text.contains("200.00"));
-        assertTrue(text.contains("38.00"));
-        assertTrue(text.contains("238.00"));
+        // Beträge im deutschen Format wie in den Listen
+        assertTrue(text.contains("200,00"), text);
+        assertTrue(text.contains("38,00"), text);
+        assertTrue(text.contains("238,00"), text);
         assertTrue(text.contains("10.06.2026"));
         assertTrue(text.contains("Zahlungsziel"));
     }
@@ -196,16 +197,25 @@ class OberflaechenControllerTest {
     }
 
     @Test
-    @DisplayName("TC-10: Stornieren ist nur bei Rechnungen im Status OFFEN aktiviert (F-14)")
+    @DisplayName("TC-10: Stornieren und Bezahlt-Markieren nur bei offenen oder versendeten, unbezahlten Rechnungen (F-14, A-F-28, A-F-29)")
     void tc10StornierenNurOffen() {
         DokumentListenController controller = new DokumentListenController(dokumentService);
         Rechnung offen = TestBelege.rechnung("R-2026-000001", DokumentStatus.OFFEN);
         Rechnung versendet = TestBelege.rechnung("R-2026-000002", DokumentStatus.VERSENDET);
         Rechnung storniert = TestBelege.rechnung("R-2026-000003", DokumentStatus.STORNIERT);
+        Rechnung bezahlt = TestBelege.rechnung("R-2026-000004", DokumentStatus.VERSENDET);
+        bezahlt.markiereBezahlt(java.time.LocalDate.of(2026, 7, 1));
 
         assertTrue(controller.aktionenFuer(offen).stornierbar());
-        assertFalse(controller.aktionenFuer(versendet).stornierbar());
+        assertTrue(controller.aktionenFuer(versendet).stornierbar(), "über eine Stornorechnung");
         assertFalse(controller.aktionenFuer(storniert).stornierbar());
+        assertFalse(controller.aktionenFuer(bezahlt).stornierbar());
+
+        assertTrue(controller.aktionenFuer(versendet).bezahltMarkierbar());
+        assertFalse(controller.aktionenFuer(bezahlt).bezahltMarkierbar());
+        assertFalse(controller.aktionenFuer(storniert).bezahltMarkierbar());
+        assertFalse(controller.aktionenFuer(TestBelege.angebot("AN-2026-000001", DokumentStatus.OFFEN))
+                .bezahltMarkierbar());
     }
 
     @Test
@@ -284,7 +294,8 @@ class OberflaechenControllerTest {
 
         @Override
         public Rechnung erstelleRechnung(String kundenNr, List<Positionsangabe> positionen,
-                                         LocalDate rechnungsdatum, LocalDate zahlungsziel) {
+                                         LocalDate rechnungsdatum, LocalDate leistungsdatum,
+                                         LocalDate zahlungsziel) {
             erstelleRechnungAufrufe++;
             if (erstelleRechnungFehler != null) {
                 throw erstelleRechnungFehler;
@@ -295,9 +306,14 @@ class OberflaechenControllerTest {
         }
 
         @Override
-        public void storniere(String rechnungsnummer) {
+        public Rechnung storniere(String rechnungsnummer) {
             storniereAufrufe++;
             letzteStornierteNummer = rechnungsnummer;
+            return null;
+        }
+
+        @Override
+        public void markiereBezahlt(String rechnungsnummer, LocalDate bezahltAm) {
         }
 
         @Override
@@ -345,5 +361,27 @@ class OberflaechenControllerTest {
         @Override
         public void exportierePdf(String belegnummer, Path zielDatei) {
         }
+    }
+
+    @Test
+    @DisplayName("ZE-01: Zahlungseingang wird an die Fachlogik gegeben und als Erfolg gemeldet (A-F-28)")
+    void zahlungseingangWirdGemeldet() {
+        DokumentListenController controller = new DokumentListenController(dokumentService);
+
+        Meldung meldung = controller.markiereBezahlt("R-2026-000124", java.time.LocalDate.of(2026, 7, 1));
+
+        assertEquals(MeldungsTyp.ERFOLG, meldung.typ());
+        assertTrue(meldung.text().contains("R-2026-000124"));
+    }
+
+    @Test
+    @DisplayName("ZE-02: Datumsprüfung im Wizard — Zahlungsziel vor dem Rechnungsdatum wird abgelehnt (A-F-32)")
+    void zahlungszielVorRechnungsdatum() {
+        fuelleGueltigesModell();
+        wizard.getModel().setAktuellerSchritt(WizardSchritt.DATEN_BESTAETIGEN);
+        wizard.getModel().setZahlungsziel(wizard.getModel().getRechnungsdatum().minusDays(1));
+
+        assertFalse(wizard.weiter());
+        assertEquals("Zahlungsziel", wizard.getLetzteMeldung().feldname());
     }
 }

@@ -16,6 +16,7 @@ public class RechnungsWizardModel {
     private final List<PositionsEingabe> positionen = new ArrayList<>();
     private LocalDate rechnungsdatum = LocalDate.now();
     private LocalDate zahlungsziel;
+    private LocalDate leistungsdatum;
 
     public WizardSchritt getAktuellerSchritt() {
         return aktuellerSchritt;
@@ -60,5 +61,14 @@ public class RechnungsWizardModel {
 
     public void setZahlungsziel(LocalDate zahlungsziel) {
         this.zahlungsziel = zahlungsziel;
+    }
+
+    /** {@code null} = Leistungsdatum gleich Rechnungsdatum (A-F-31). */
+    public LocalDate getLeistungsdatum() {
+        return leistungsdatum;
+    }
+
+    public void setLeistungsdatum(LocalDate leistungsdatum) {
+        this.leistungsdatum = leistungsdatum;
     }
 }

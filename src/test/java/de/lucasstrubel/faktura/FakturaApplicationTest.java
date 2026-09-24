@@ -1,4 +1,6 @@
 package de.lucasstrubel.faktura;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import de.lucasstrubel.faktura.dokumente.DokumentService;
 import de.lucasstrubel.faktura.gemeinsam.EreignisBus;
@@ -88,5 +90,58 @@ class FakturaApplicationTest {
         return new SpringApplicationBuilder(FakturaApplication.class)
                 .headless(true)
                 .run("--faktura.daten-verzeichnis=" + tempDir);
+    }
+
+    @Test
+    @DisplayName("KTX-04: Übernommene JSON-Dateien werden umbenannt und nie erneut eingelesen (GR-01)")
+    void uebernommeneJsonDateienWerdenUmbenannt() throws Exception {
+        Kunde bestand = new Kunde("Alt GmbH", "Altweg 2", "01067", "Dresden");
+        bestand.setKundennummer("K-000009");
+        new JsonKundenRepository(tempDir.resolve("kunden.json")).speichere(bestand);
+
+        try (ConfigurableApplicationContext kontext = neuerKontext()) {
+            assertNotNull(kontext.getBean(KundenVerwaltungsService.class).findeKunde("K-000009"));
+        }
+        assertFalse(Files.exists(tempDir.resolve("kunden.json")));
+        assertTrue(Files.exists(tempDir.resolve("kunden.json" + JsonDatenUebernahme.ENDUNG_UEBERNOMMEN)));
+    }
+
+    @Test
+    @DisplayName("KTX-05: Eine fehlerhafte JSON-Datei bricht die Übernahme vollständig ab; der nächste Start holt sie nach")
+    void fehlerhafteUebernahmeIstAllesOderNichts() throws Exception {
+        Kunde bestand = new Kunde("Alt GmbH", "Altweg 2", "01067", "Dresden");
+        bestand.setKundennummer("K-000009");
+        new JsonKundenRepository(tempDir.resolve("kunden.json")).speichere(bestand);
+        Files.writeString(tempDir.resolve("dokumente.json"), "{ kaputt");
+
+        assertThrows(RuntimeException.class, this::neuerKontext);
+
+        Files.writeString(tempDir.resolve("dokumente.json"), "[]");
+        try (ConfigurableApplicationContext kontext = neuerKontext()) {
+            assertNotNull(kontext.getBean(KundenVerwaltungsService.class).findeKunde("K-000009"),
+                    "nach dem Abbruch muss die Übernahme vollständig nachgeholt werden");
+        }
+    }
+
+    @Test
+    @DisplayName("KTX-06: Das Datenverzeichnis kommt aus dem Startargument, sonst aus dem Benutzerverzeichnis")
+    void datenverzeichnisVorrang() {
+        String vorher = System.getProperty(FakturaApplication.DATENVERZEICHNIS);
+        try {
+            System.clearProperty(FakturaApplication.DATENVERZEICHNIS);
+            FakturaApplication.setzeDatenverzeichnis(new String[] {"--faktura.daten-verzeichnis=/tmp/x"});
+            assertEquals("/tmp/x", System.getProperty(FakturaApplication.DATENVERZEICHNIS));
+
+            System.clearProperty(FakturaApplication.DATENVERZEICHNIS);
+            FakturaApplication.setzeDatenverzeichnis(new String[0]);
+            assertEquals(Path.of(System.getProperty("user.home"), "Faktura", "daten").toString(),
+                    System.getProperty(FakturaApplication.DATENVERZEICHNIS));
+        } finally {
+            if (vorher == null) {
+                System.clearProperty(FakturaApplication.DATENVERZEICHNIS);
+            } else {
+                System.setProperty(FakturaApplication.DATENVERZEICHNIS, vorher);
+            }
+        }
     }
 }

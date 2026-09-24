@@ -25,7 +25,7 @@
             </VBox>
             <HBox styleClass="werkzeugleiste" alignment="CENTER_LEFT">
                 <Button fx:id="neueRechnungKnopf" text="Neue Rechnung" onAction="#neueRechnung"
-                        defaultButton="true"/>
+                        styleClass="accent"/>
                 <Button fx:id="neuerBelegKnopf" text="Neuer Beleg" onAction="#neuerBeleg"/>
                 <Button fx:id="neuerKundeKnopf" text="Neuer Kunde" onAction="#neuerKunde"/>
             </HBox>

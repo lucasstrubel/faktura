@@ -9,6 +9,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteDataSource;
 
@@ -70,11 +71,12 @@ public class PersistenzKonfiguration {
     @Bean
     public JsonDatenUebernahme jsonDatenUebernahme(FakturaEigenschaften eigenschaften,
                                                    JdbcTemplate jdbc,
+                                                   PlatformTransactionManager transaktionsManager,
                                                    KundenRepository kundenRepository,
                                                    ProduktRepository produktRepository,
                                                    DokumentRepository dokumentRepository) {
         JsonDatenUebernahme uebernahme = new JsonDatenUebernahme(
-                eigenschaften.datenVerzeichnis(), jdbc,
+                eigenschaften.datenVerzeichnis(), jdbc, transaktionsManager,
                 kundenRepository, produktRepository, dokumentRepository);
         uebernahme.fuehreAusFallsNoetig();
         return uebernahme;

@@ -8,6 +8,7 @@ import de.lucasstrubel.faktura.dokumente.Dokumentposition;
 import de.lucasstrubel.faktura.dokumente.JsonDokumentRepository;
 import de.lucasstrubel.faktura.dokumente.PdfBoxPdfExporter;
 import de.lucasstrubel.faktura.dokumente.Rechnung;
+import de.lucasstrubel.faktura.dokumente.TestBelege;
 import de.lucasstrubel.faktura.gemeinsam.JsonPersistenz;
 import de.lucasstrubel.faktura.kunden.JsonKundenRepository;
 import de.lucasstrubel.faktura.kunden.Kunde;
@@ -131,6 +132,7 @@ class PerformanceTest {
     private static Rechnung rechnungMitPositionen(String belegnummer, int anzahlPositionen) {
         Rechnung rechnung = new Rechnung();
         rechnung.setBelegnummer(belegnummer);
+        rechnung.setzeAussteller(TestBelege.FIRMA);
         rechnung.setDatum(LocalDate.of(2026, 6, 10));
         rechnung.setLeistungsdatum(LocalDate.of(2026, 6, 10));
         rechnung.setZahlungsziel(LocalDate.of(2026, 6, 24));

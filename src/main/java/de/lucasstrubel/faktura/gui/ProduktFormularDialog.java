@@ -19,7 +19,6 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -157,12 +156,11 @@ public class ProduktFormularDialog extends Stage {
     private void pruefeLive() {
         preisFeld.getStyleClass().remove(FxMeldung.FEHLER_STIL);
         liveMeldung.setText("");
-        String wert = preisFeld.getText().strip().replace(',', '.');
-        if (wert.isEmpty()) {
+        if (preisFeld.getText().isBlank()) {
             return;
         }
         try {
-            new BigDecimal(wert);
+            TabellenFormat.parseBetrag(preisFeld.getText());
         } catch (NumberFormatException e) {
             preisFeld.getStyleClass().add(FxMeldung.FEHLER_STIL);
             liveMeldung.setText("Der 'Einzelpreis (netto)' ist keine gültige Zahl: "
@@ -193,18 +191,17 @@ public class ProduktFormularDialog extends Stage {
         }
     }
 
-    /** Komma oder Punkt als Dezimaltrennzeichen; kaufmännische Rundung auf Scale 2. */
+    /** Deutsches Betragsformat (siehe {@link TabellenFormat#parseBetrag}). */
     private static BigDecimal parsePreis(String text) {
-        String wert = text.strip().replace(',', '.');
-        if (wert.isEmpty()) {
+        if (text.isBlank()) {
             throw new ValidierungsException("Einzelpreis",
                     "Das Pflichtfeld 'Einzelpreis (netto)' fehlt.");
         }
         try {
-            return new BigDecimal(wert).setScale(2, RoundingMode.HALF_UP);
+            return TabellenFormat.parseBetrag(text);
         } catch (NumberFormatException e) {
             throw new ValidierungsException("Einzelpreis",
-                    "Der 'Einzelpreis (netto)' ist keine gültige Zahl: " + text);
+                    "Der 'Einzelpreis (netto)' ist keine gültige Zahl (z. B. 1.500,00): " + text);
         }
     }
 

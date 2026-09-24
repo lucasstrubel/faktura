@@ -72,7 +72,9 @@ class DatensicherungTest {
         }
 
         List<String> eintraege = entpackeEintraege(ziel);
-        assertTrue(eintraege.contains("kunden.json"), "JSON-Bestände gehören in die Sicherung");
+        // Beim Start in die Datenbank übernommen und umbenannt — gesichert wird sie trotzdem
+        assertTrue(eintraege.contains("kunden.json.uebernommen"),
+                "JSON-Bestände gehören in die Sicherung: " + eintraege);
         assertTrue(eintraege.stream().noneMatch(name -> name.endsWith(".log")),
                 "Logdateien gehören nicht in die Sicherung");
     }

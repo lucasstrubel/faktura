@@ -197,7 +197,8 @@ class KundenVerwaltungTest {
 
         List<String> zeilen = Files.readAllLines(ziel, StandardCharsets.UTF_8);
         assertEquals(4, zeilen.size());
-        assertEquals("kundennummer;name;strasse;plz;ort;eMail;telefon;ustIdNr", zeilen.get(0));
+        // Byte-Order-Mark, damit Excel die Datei als UTF-8 erkennt (IF-04)
+        assertEquals("\uFEFFkundennummer;name;strasse;plz;ort;eMail;telefon;ustIdNr", zeilen.get(0));
         assertTrue(zeilen.get(1).startsWith("K-000001;Albrecht;"));
     }
 
@@ -227,5 +228,42 @@ class KundenVerwaltungTest {
         ValidierungsException fehler = assertThrows(ValidierungsException.class,
                 () -> serviceAusRepository().aendere(kunde));
         assertEquals("Telefon", fehler.getFeldname());
+    }
+
+    @Test
+    @DisplayName("TC-18: Eingaben werden getrimmt, leere optionale Felder null, USt-IdNr. normalisiert (C-F-19)")
+    void tc18Normalisierung() {
+        Kunde kunde = kunde("  Muster GmbH ", "Hauptstr. 1 ", " 68163", "Mannheim");
+        kunde.setEMail("  ");
+        kunde.setUstIdNr("de 123 456 789");
+
+        Kunde gespeichert = serviceAusRepository().legeAn(kunde);
+
+        assertEquals("Muster GmbH", gespeichert.getName());
+        assertEquals("68163", gespeichert.getPlz());
+        assertNull(gespeichert.getEMail());
+        assertEquals("DE123456789", gespeichert.getUstIdNr());
+    }
+
+    @Test
+    @DisplayName("TC-19: Ändern eines nicht existierenden Kunden wird abgelehnt statt ihn anzulegen")
+    void tc19AendernUnbekannterKunde() {
+        Kunde kunde = kunde("Muster GmbH", "Hauptstr. 1", "68163", "Mannheim");
+        kunde.setKundennummer("K-000404");
+
+        ValidierungsException fehler = assertThrows(ValidierungsException.class,
+                () -> serviceAusRepository().aendere(kunde));
+        assertEquals("Kundennummer", fehler.getFeldname());
+        assertNull(repository.findeNachNummer("K-000404"));
+    }
+
+    @Test
+    @DisplayName("TC-20: Liefert der Nummernkreis eine vergebene Nummer, wird kein Bestandskunde überschrieben")
+    void tc20VergebeneNummerWirdNichtUeberschrieben() {
+        lege("K-000001", "Bestand");
+
+        assertThrows(IllegalStateException.class, () -> service(new EinfacherKundennummernGenerator(1))
+                .legeAn(kunde("Neu GmbH", "Neuweg 1", "68163", "Mannheim")));
+        assertEquals("Bestand", repository.findeNachNummer("K-000001").getName());
     }
 }

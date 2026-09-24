@@ -198,11 +198,11 @@ public class BelegDialog extends Stage {
     private void erstelle() {
         Kunde kunde = kundenWahl.getValue();
         String kundenNr = kunde == null ? null : kunde.getKundennummer();
-        // Der DatePicker liefert entweder ein gültiges Datum oder null;
-        // eine Formatprüfung ist deshalb nicht mehr nötig.
-        LocalDate datum = datumFeld.getValue();
         try {
             Belegtyp typ = typWahl.getValue();
+            // Getippten Text mit übernehmen; unlesbarer Text wird gemeldet
+            LocalDate datum = Dialoge.datum(datumFeld,
+                    typ == Belegtyp.LIEFERSCHEIN ? "Lieferdatum" : "Gültig bis");
             Dokument beleg = switch (typ) {
                 case ANGEBOT -> dokumentService.erstelleAngebot(kundenNr, positionen, datum);
                 case AUFTRAGSBESTAETIGUNG -> dokumentService.erstelleAuftragsbestaetigung(kundenNr, positionen);
@@ -213,8 +213,9 @@ public class BelegDialog extends Stage {
                     + beleg.getBelegnummer() + " wurde erstellt."), null);
             positionen.clear();
             close();
-        } catch (ValidierungsException e) {
-            FxMeldung.zeige(Meldung.fehler(e.getFeldname(), e.getMessage()), null);
+        } catch (RuntimeException e) {
+            // Validierung mit Feldnamen, übrige Fehler im Klartext (FxMeldung)
+            FxMeldung.zeige(FxMeldung.zuMeldung(e), null);
         }
     }
 }

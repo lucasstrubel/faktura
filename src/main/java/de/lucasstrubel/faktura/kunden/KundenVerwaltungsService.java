@@ -42,8 +42,15 @@ public class KundenVerwaltungsService implements KundenService {
      */
     @Transactional
     public Kunde legeAn(Kunde kunde) {
+        bereinige(kunde);
         validiere(kunde);
         kunde.setKundennummer(nummernGenerator.naechsteNummer());
+        if (repository.findeNachNummer(kunde.getKundennummer()) != null) {
+            // Ein Nummernkreis, der eine vergebene Nummer liefert, darf nie
+            // stillschweigend einen Bestandskunden überschreiben (C-F-02)
+            throw new IllegalStateException("Die Kundennummer " + kunde.getKundennummer()
+                    + " ist bereits vergeben; der Nummernkreis ist inkonsistent.");
+        }
         Kunde gespeichert = repository.speichere(kunde);
         ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.KUNDEN));
         return gespeichert;
@@ -55,6 +62,11 @@ public class KundenVerwaltungsService implements KundenService {
         if (kunde.getKundennummer() == null) {
             throw new ValidierungsException("Kundennummer", "Der Kunde wurde noch nicht angelegt.");
         }
+        if (repository.findeNachNummer(kunde.getKundennummer()) == null) {
+            throw new ValidierungsException("Kundennummer",
+                    "Der Kunde " + kunde.getKundennummer() + " existiert nicht.");
+        }
+        bereinige(kunde);
         validiere(kunde);
         Kunde gespeichert = repository.speichere(kunde);
         ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.KUNDEN));
@@ -89,6 +101,22 @@ public class KundenVerwaltungsService implements KundenService {
     @Override
     public Kunde findeKunde(String kundennummer) {
         return repository.findeNachNummer(kundennummer);
+    }
+
+    /**
+     * Speichert Eingaben in einheitlicher Form (C-F-19): ohne führende oder
+     * folgende Leerzeichen, leere optionale Felder als {@code null}, die
+     * USt-IdNr. kompakt in Großschrift — so, wie sie auch auf Belegen und in
+     * der E-Rechnung erscheinen soll.
+     */
+    private static void bereinige(Kunde kunde) {
+        kunde.setName(Validierung.bereinige(kunde.getName()));
+        kunde.setStrasse(Validierung.bereinige(kunde.getStrasse()));
+        kunde.setPlz(Validierung.bereinige(kunde.getPlz()));
+        kunde.setOrt(Validierung.bereinige(kunde.getOrt()));
+        kunde.setEMail(Validierung.bereinige(kunde.getEMail()));
+        kunde.setTelefon(Validierung.bereinige(kunde.getTelefon()));
+        kunde.setUstIdNr(Validierung.normalisiereUstIdNr(kunde.getUstIdNr()));
     }
 
     /**

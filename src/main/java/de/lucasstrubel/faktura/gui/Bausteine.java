@@ -1,6 +1,8 @@
 package de.lucasstrubel.faktura.gui;
 
+import de.lucasstrubel.faktura.dokumente.Dokument;
 import de.lucasstrubel.faktura.dokumente.DokumentStatus;
+import de.lucasstrubel.faktura.dokumente.Rechnung;
 
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
@@ -37,7 +39,7 @@ public final class Bausteine {
                     setText(null);
                     return;
                 }
-                Label abzeichen = new Label(anzeigename(status));
+                Label abzeichen = new Label(statusText(status));
                 abzeichen.getStyleClass().addAll("status-abzeichen", "status-" + status);
                 setGraphic(abzeichen);
                 setText(null);
@@ -45,14 +47,39 @@ public final class Bausteine {
         };
     }
 
-    /** Lesbare Bezeichnung statt {@code AUFTRAGSBESTAETIGUNG} in Großbuchstaben. */
-    private static String anzeigename(String status) {
-        return switch (DokumentStatus.valueOf(status)) {
+    /** Anzeigestatus für bezahlte Rechnungen (A-F-28); kein eigener {@link DokumentStatus}. */
+    public static final String BEZAHLT = "BEZAHLT";
+
+    /**
+     * Lesbare Bezeichnung eines Status statt des Enum-Namens in
+     * Großbuchstaben; versteht zusätzlich den Anzeigestatus {@link #BEZAHLT}.
+     */
+    public static String statusText(String status) {
+        if (BEZAHLT.equals(status)) {
+            return "Bezahlt";
+        }
+        return statusText(DokumentStatus.valueOf(status));
+    }
+
+    public static String statusText(DokumentStatus status) {
+        return switch (status) {
             case ENTWURF -> "Entwurf";
             case OFFEN -> "Offen";
             case VERSENDET -> "Versendet";
             case STORNIERT -> "Storniert";
         };
+    }
+
+    /**
+     * Status, wie er in Listen erscheint: eine bezahlte Rechnung zeigt
+     * „Bezahlt“ statt „Versendet“ — die Frage „ist das Geld da?“ ist in der
+     * Liste wichtiger als der Versandstatus.
+     */
+    public static String anzeigestatus(Dokument dokument) {
+        if (dokument instanceof Rechnung rechnung && rechnung.istBezahlt()) {
+            return BEZAHLT;
+        }
+        return dokument.getStatus().name();
     }
 
     /**

@@ -47,8 +47,15 @@ public class ProduktVerwaltungsService implements ProduktService {
      */
     @Transactional
     public Produkt legeAn(Produkt produkt) {
+        bereinige(produkt);
         validiere(produkt);
         produkt.setProduktnummer(nummernGenerator.naechsteNummer());
+        if (repository.findeNachNummer(produkt.getProduktnummer()) != null) {
+            // Ein Nummernkreis, der eine vergebene Nummer liefert, darf nie
+            // stillschweigend einen Bestandsdatensatz überschreiben (B-F-02)
+            throw new IllegalStateException("Die Produktnummer " + produkt.getProduktnummer()
+                    + " ist bereits vergeben; der Nummernkreis ist inkonsistent.");
+        }
         Produkt gespeichert = repository.speichere(produkt);
         ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.PRODUKTE));
         return gespeichert;
@@ -63,6 +70,11 @@ public class ProduktVerwaltungsService implements ProduktService {
         if (produkt.getProduktnummer() == null) {
             throw new ValidierungsException("Produktnummer", "Das Produkt wurde noch nicht angelegt.");
         }
+        if (repository.findeNachNummer(produkt.getProduktnummer()) == null) {
+            throw new ValidierungsException("Produktnummer",
+                    "Das Produkt " + produkt.getProduktnummer() + " existiert nicht.");
+        }
+        bereinige(produkt);
         validiere(produkt);
         Produkt gespeichert = repository.speichere(produkt);
         ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.PRODUKTE));
@@ -98,6 +110,13 @@ public class ProduktVerwaltungsService implements ProduktService {
         return repository.findeNachNummer(produktnummer);
     }
 
+    /** Textfelder ohne führende/folgende Leerzeichen, leere optionale Felder als {@code null}. */
+    private static void bereinige(Produkt produkt) {
+        produkt.setBezeichnung(Validierung.bereinige(produkt.getBezeichnung()));
+        produkt.setBeschreibung(Validierung.bereinige(produkt.getBeschreibung()));
+        produkt.setEinheit(Validierung.bereinige(produkt.getEinheit()));
+    }
+
     /** Pflichtfeld- und Wertebereichsprüfung (F-03, F-04); benennt das betroffene Feld (Q-09). */
     private void validiere(Produkt produkt) {
         Validierung.pruefePflichtfeld(produkt.getBezeichnung(), "Bezeichnung");
@@ -109,6 +128,12 @@ public class ProduktVerwaltungsService implements ProduktService {
         if (preis.compareTo(BigDecimal.ZERO) < 0) {
             throw new ValidierungsException("Einzelpreis",
                     "Der 'Einzelpreis (netto)' muss größer oder gleich 0,00 sein.");
+        }
+        if (preis.stripTrailingZeros().scale() > 2) {
+            // Belege rechnen mit Scale 2; ein Preis wie 10,005 würde im Beleg
+            // still zu 10,01 gerundet und wiche vom Stammdatum ab (B-F-03)
+            throw new ValidierungsException("Einzelpreis",
+                    "Der 'Einzelpreis (netto)' darf höchstens 2 Nachkommastellen haben.");
         }
         BigDecimal steuersatz = produkt.getSteuersatz();
         if (steuersatz == null) {

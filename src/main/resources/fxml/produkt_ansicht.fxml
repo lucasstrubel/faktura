@@ -25,7 +25,7 @@
                        styleClass="ansicht-untertitel"/>
             </VBox>
             <HBox styleClass="werkzeugleiste" alignment="CENTER_LEFT">
-                <Button text="Neues Produkt" onAction="#legeNeuAn" defaultButton="true">
+                <Button text="Neues Produkt" onAction="#legeNeuAn" styleClass="accent">
                     <tooltip><Tooltip text="Neues Produkt anlegen (Strg+N)"/></tooltip>
                 </Button>
                 <Button fx:id="bearbeitenKnopf" text="Bearbeiten" onAction="#bearbeite">

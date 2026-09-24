@@ -113,7 +113,8 @@
     -fx-min-width: 190px;
 }
 
-.kennzahl-karte > .kennzahl-titel {
+/* Der Titel sitzt mit dem Symbol in einer HBox, daher Nachfahre statt Kind */
+.kennzahl-karte .kennzahl-titel {
     -fx-font-size: 0.85em;
     -fx-text-fill: -color-fg-muted;
 }
@@ -180,6 +181,13 @@
 .status-abzeichen.status-STORNIERT {
     -fx-background-color: -color-danger-subtle;
     -fx-text-fill: -color-danger-fg;
+}
+
+/* Zahlungseingang erfasst (A-F-28): kräftiger als "Offen", damit erledigte
+   Forderungen in der Liste sofort erkennbar sind */
+.status-abzeichen.status-BEZAHLT {
+    -fx-background-color: -color-success-emphasis;
+    -fx-text-fill: -color-fg-emphasis;
 }
 
 /* ------------------------------------------------------------------ *

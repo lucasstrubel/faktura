@@ -2,16 +2,18 @@ package de.lucasstrubel.faktura.dokumente;
 
 import de.lucasstrubel.faktura.firma.Firmenprofil;
 import de.lucasstrubel.faktura.firma.FirmenprofilService;
+import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+import org.apache.pdfbox.pdmodel.font.PDType0Font;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -19,8 +21,13 @@ import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -31,15 +38,20 @@ import org.springframework.stereotype.Component;
  * Summenblock.
  *
  * <p>Rechnungen enthalten die Pflichtangaben gemäß § 14 UStG (F-13):
- * Name und Anschrift von Aussteller und Kunde, Belegnummer, Rechnungs- und
- * Leistungsdatum, Positionen mit Mengen und Einzelbeträgen, Steuersatz und
- * Steuerbetrag sowie Netto-/Bruttosummen.
+ * Name und Anschrift von Aussteller und Kunde, Steuernummer bzw. USt-IdNr.
+ * des Ausstellers, Belegnummer, Rechnungs- und Leistungsdatum, Positionen mit
+ * Mengen und Einzelbeträgen sowie Entgelt und Steuerbetrag je Steuersatz
+ * (A-F-25).
+ *
+ * <p>Die Schrift (Liberation Sans, SIL Open Font License) wird eingebettet:
+ * Die PDF-Standardschriften kennen nur den Zeichenvorrat WinAnsi, und ein
+ * Kunde namens "Łukasz" ließ den Export sonst scheitern. Zeichen, die auch
+ * die eingebettete Schrift nicht darstellen kann (etwa Emoji), werden durch
+ * "?" ersetzt statt den Export abzubrechen. Lange Texte werden nach ihrer
+ * gemessenen Breite umbrochen, nicht abgeschnitten.
  */
 @Component
 public class PdfBoxPdfExporter implements PdfExporter {
-
-    /** Aussteller-Stammdaten (§ 14 UStG) aus dem konfigurierbaren Firmenprofil. */
-    private final FirmenprofilService firmenprofilService;
 
     private static final DateTimeFormatter DATUM = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
@@ -48,6 +60,7 @@ public class PdfBoxPdfExporter implements PdfExporter {
     private static final float ZEILENHOEHE = 14;
     private static final float SEITENBREITE = PDRectangle.A4.getWidth();
     private static final float RECHTS = SEITENBREITE - RAND;
+    private static final float SATZBREITE = RECHTS - RAND;
 
     /** Spaltenraster der Positionstabelle: Textspalten linksbündig ... */
     private static final float SPALTE_POS = RAND;
@@ -58,30 +71,56 @@ public class PdfBoxPdfExporter implements PdfExporter {
     private static final float SPALTE_EINZELPREIS = 460;
     private static final float SPALTE_UST = 497;
     private static final float SPALTE_SUMME = RECHTS;
+    /** Die Bezeichnung endet mit Abstand vor der (rechtsbündigen) Mengenspalte. */
+    private static final float BREITE_BEZEICHNUNG = SPALTE_MENGE - 45 - SPALTE_BEZEICHNUNG;
 
-    private final PDFont normal = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
-    private final PDFont fett = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+    private static final String SCHRIFT_NORMAL = "/schrift/LiberationSans-Regular.ttf";
+    private static final String SCHRIFT_FETT = "/schrift/LiberationSans-Bold.ttf";
 
-    /** Ohne Service (Tests): Voreinstellung {@link Firmenprofil#standard()}. */
+    /** Aussteller-Stammdaten für Belege ohne Snapshot (Altbestand vor v3.0). */
+    private final FirmenprofilService firmenprofilService;
+
+    private final byte[] schriftNormal = ladeSchrift(SCHRIFT_NORMAL);
+    private final byte[] schriftFett = ladeSchrift(SCHRIFT_FETT);
+
+    /** Ohne Service (Tests): Belege müssen einen Aussteller-Snapshot tragen. */
     public PdfBoxPdfExporter() {
         this(null);
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
+    @Autowired
     public PdfBoxPdfExporter(FirmenprofilService firmenprofilService) {
         this.firmenprofilService = firmenprofilService;
     }
 
-    private Firmenprofil firma() {
-        return firmenprofilService == null ? Firmenprofil.standard() : firmenprofilService.lade();
+    /**
+     * Aussteller des Belegs: der beim Erstellen gespeicherte Snapshot
+     * (A-F-27); nur Belege aus der Zeit vor dem Snapshot fallen auf das
+     * aktuelle Firmenprofil zurück.
+     */
+    private Firmenprofil aussteller(Dokument dokument) {
+        if (dokument.getAussteller() != null) {
+            return dokument.getAussteller();
+        }
+        if (firmenprofilService != null) {
+            return firmenprofilService.lade().orElseThrow(PdfBoxPdfExporter::keinProfil);
+        }
+        throw keinProfil();
+    }
+
+    private static ValidierungsException keinProfil() {
+        return new ValidierungsException("Firmenprofil",
+                "Für den PDF-Export fehlt das Firmenprofil — bitte unter 'Einstellungen' hinterlegen.");
     }
 
     @Override
     public void exportiere(Dokument dokument, Path zielDatei) {
+        Firmenprofil firma = aussteller(dokument);
         try (PDDocument pdf = new PDDocument()) {
-            Schreiber schreiber = new Schreiber(pdf);
+            Schreiber schreiber = new Schreiber(pdf,
+                    PDType0Font.load(pdf, new ByteArrayInputStream(schriftNormal)),
+                    PDType0Font.load(pdf, new ByteArrayInputStream(schriftFett)));
 
-            Firmenprofil firma = firma();
             schreibeBriefkopf(schreiber, dokument, firma);
             schreibeBelegkopf(schreiber, dokument);
             schreibePositionstabelle(schreiber, dokument);
@@ -102,53 +141,72 @@ public class PdfBoxPdfExporter implements PdfExporter {
     /** Absenderblock rechts oben, Rücksendezeile und Empfängerblock links. */
     private void schreibeBriefkopf(Schreiber schreiber, Dokument dokument, Firmenprofil firma)
             throws IOException {
-        schreiber.rechtsbuendig(fett, 11, firma.name(), RECHTS);
-        schreiber.rechtsbuendig(normal, 9, firma.strasse(), RECHTS);
-        schreiber.rechtsbuendig(normal, 9, firma.plzOrt(), RECHTS);
-        if (firma.ustIdNr() != null && !firma.ustIdNr().isBlank()) {
-            schreiber.rechtsbuendig(normal, 9, "USt-IdNr. " + firma.ustIdNr(), RECHTS);
+        schreiber.rechtsbuendig(schreiber.fett, 11, firma.name(), RECHTS);
+        schreiber.rechtsbuendig(schreiber.normal, 9, firma.strasse(), RECHTS);
+        schreiber.rechtsbuendig(schreiber.normal, 9, firma.plzOrt(), RECHTS);
+        if (istGesetzt(firma.steuernummer())) {
+            schreiber.rechtsbuendig(schreiber.normal, 9, "Steuernummer " + firma.steuernummer(), RECHTS);
+        }
+        if (istGesetzt(firma.ustIdNr())) {
+            schreiber.rechtsbuendig(schreiber.normal, 9, "USt-IdNr. " + firma.ustIdNr(), RECHTS);
         }
         schreiber.leer();
 
-        schreiber.zeile(normal, 7, firma.name() + " · " + firma.strasse()
+        schreiber.absatz(schreiber.normal, 7, firma.name() + " · " + firma.strasse()
                 + " · " + firma.plzOrt());
         schreiber.linie();
-        schreiber.zeile(normal, 10, dokument.getKundeName()
+        schreiber.absatz(schreiber.normal, 10, dokument.getKundeName()
                 + "  (Kundennr. " + dokument.getKundenReferenz() + ")");
-        // anschrift() liefert "Straße, PLZ Ort" einzeilig; für den
-        // Empfängerblock wird sie an der ersten Trennstelle umbrochen
-        String anschrift = dokument.getKundeAnschrift();
-        int trenner = anschrift == null ? -1 : anschrift.indexOf(", ");
-        if (trenner >= 0) {
-            schreiber.zeile(normal, 10, anschrift.substring(0, trenner));
-            schreiber.zeile(normal, 10, anschrift.substring(trenner + 2));
-        } else if (anschrift != null) {
-            schreiber.zeile(normal, 10, anschrift);
+        for (String zeile : anschriftZeilen(dokument.getKundeAnschrift())) {
+            schreiber.absatz(schreiber.normal, 10, zeile);
         }
         schreiber.leer();
         schreiber.leer();
     }
 
+    /**
+     * Die Anschrift liegt als {@code "Straße, PLZ Ort"} vor (C-F-06); getrennt
+     * wird an der <em>letzten</em> Trennstelle, damit eine Straßenangabe mit
+     * Komma ("Hauptstr. 5, Hinterhaus") vollständig in der ersten Zeile bleibt.
+     */
+    static List<String> anschriftZeilen(String anschrift) {
+        if (anschrift == null || anschrift.isBlank()) {
+            return List.of();
+        }
+        int trenner = anschrift.lastIndexOf(", ");
+        if (trenner < 0) {
+            return List.of(anschrift);
+        }
+        return List.of(anschrift.substring(0, trenner), anschrift.substring(trenner + 2));
+    }
+
     /** Belegtitel, Stornokennzeichen und Datums-/Referenzangaben. */
     private void schreibeBelegkopf(Schreiber schreiber, Dokument dokument) throws IOException {
-        schreiber.zeile(fett, 16, dokument.belegtyp().anzeigename() + " " + dokument.getBelegnummer());
+        Rechnung rechnung = dokument instanceof Rechnung r ? r : null;
+        String titel = rechnung != null && rechnung.istStornorechnung()
+                ? "Stornorechnung" : dokument.belegtyp().anzeigename();
+        schreiber.absatz(schreiber.fett, 16, titel + " " + dokument.getBelegnummer());
         if (dokument.getStatus() == DokumentStatus.STORNIERT) {
-            schreiber.zeile(fett, 12, "*** STORNIERT ***");
+            schreiber.absatz(schreiber.fett, 12, "*** STORNIERT ***");
         }
         schreiber.leer();
-        schreiber.zeile(normal, 10, "Datum: " + format(dokument.getDatum()));
+        schreiber.absatz(schreiber.normal, 10, "Datum: " + format(dokument.getDatum()));
         if (dokument instanceof Angebot angebot) {
-            schreiber.zeile(normal, 10, "Gültig bis: " + format(angebot.getGueltigBis()));
+            schreiber.absatz(schreiber.normal, 10, "Gültig bis: " + format(angebot.getGueltigBis()));
         }
         if (dokument instanceof Lieferschein lieferschein) {
-            schreiber.zeile(normal, 10, "Lieferdatum: " + format(lieferschein.getLieferdatum()));
+            schreiber.absatz(schreiber.normal, 10, "Lieferdatum: " + format(lieferschein.getLieferdatum()));
         }
-        if (dokument instanceof Rechnung rechnung) {
-            schreiber.zeile(normal, 10, "Leistungsdatum: " + format(rechnung.getLeistungsdatum()));
-            schreiber.zeile(normal, 10, "Zahlbar bis: " + format(rechnung.getZahlungsziel()));
+        if (rechnung != null) {
+            schreiber.absatz(schreiber.normal, 10, "Leistungsdatum: " + format(rechnung.getLeistungsdatum()));
+            if (rechnung.getZahlungsziel() != null) {
+                schreiber.absatz(schreiber.normal, 10, "Zahlbar bis: " + format(rechnung.getZahlungsziel()));
+            }
         }
-        if (dokument.getVorgaengerNr() != null) {
-            schreiber.zeile(normal, 10, "Referenzbeleg: " + dokument.getVorgaengerNr());
+        if (rechnung != null && rechnung.istStornorechnung()) {
+            schreiber.absatz(schreiber.normal, 10, "Storniert Rechnung: " + rechnung.getStornoZu());
+        } else if (dokument.getVorgaengerNr() != null) {
+            schreiber.absatz(schreiber.normal, 10, "Referenzbeleg: " + dokument.getVorgaengerNr());
         }
         schreiber.leer();
     }
@@ -158,41 +216,56 @@ public class PdfBoxPdfExporter implements PdfExporter {
         schreibeTabellenkopf(schreiber);
         int pos = 1;
         for (Dokumentposition position : dokument.getPositionen()) {
-            if (!schreiber.passtNochZeile()) {
+            List<String> bezeichnung = schreiber.umbreche(schreiber.normal, 10,
+                    position.getBezeichnung(), BREITE_BEZEICHNUNG);
+            // Eine Position wird nicht über einen Seitenwechsel zerrissen
+            if (!schreiber.passtNoch(Math.max(1, bezeichnung.size()))) {
                 schreiber.neueSeite();
                 schreibeTabellenkopf(schreiber);
             }
             schreiber.beginneZeile();
-            schreiber.text(normal, 10, String.valueOf(pos++), SPALTE_POS);
-            schreiber.text(normal, 10, position.getProduktReferenz(), SPALTE_PRODUKT);
-            schreiber.text(normal, 10, kuerze(position.getBezeichnung(), 40), SPALTE_BEZEICHNUNG);
-            schreiber.textRechts(normal, 10, String.valueOf(position.getMenge()), SPALTE_MENGE);
-            schreiber.textRechts(normal, 10, betrag(position.getEinzelpreisNetto()), SPALTE_EINZELPREIS);
-            schreiber.textRechts(normal, 10, prozent(position.getSteuersatz()) + " %", SPALTE_UST);
-            schreiber.textRechts(normal, 10, betrag(position.getPositionssummeNetto()), SPALTE_SUMME);
+            schreiber.text(schreiber.normal, 10, String.valueOf(pos++), SPALTE_POS);
+            schreiber.text(schreiber.normal, 10, position.getProduktReferenz(), SPALTE_PRODUKT);
+            schreiber.text(schreiber.normal, 10,
+                    bezeichnung.isEmpty() ? "" : bezeichnung.get(0), SPALTE_BEZEICHNUNG);
+            schreiber.textRechts(schreiber.normal, 10, String.valueOf(position.getMenge()), SPALTE_MENGE);
+            schreiber.textRechts(schreiber.normal, 10, betrag(position.getEinzelpreisNetto()), SPALTE_EINZELPREIS);
+            schreiber.textRechts(schreiber.normal, 10, prozent(position.getSteuersatz()) + " %", SPALTE_UST);
+            schreiber.textRechts(schreiber.normal, 10, betrag(position.getPositionssummeNetto()), SPALTE_SUMME);
             schreiber.beendeZeile();
+            for (String folgezeile : bezeichnung.subList(Math.min(1, bezeichnung.size()), bezeichnung.size())) {
+                schreiber.beginneZeile();
+                schreiber.text(schreiber.normal, 10, folgezeile, SPALTE_BEZEICHNUNG);
+                schreiber.beendeZeile();
+            }
         }
         schreiber.linie();
     }
 
     private void schreibeTabellenkopf(Schreiber schreiber) throws IOException {
         schreiber.beginneZeile();
-        schreiber.text(fett, 10, "Pos", SPALTE_POS);
-        schreiber.text(fett, 10, "Produkt", SPALTE_PRODUKT);
-        schreiber.text(fett, 10, "Bezeichnung", SPALTE_BEZEICHNUNG);
-        schreiber.textRechts(fett, 10, "Menge", SPALTE_MENGE);
-        schreiber.textRechts(fett, 10, "Einzelpreis", SPALTE_EINZELPREIS);
-        schreiber.textRechts(fett, 10, "USt", SPALTE_UST);
-        schreiber.textRechts(fett, 10, "Summe", SPALTE_SUMME);
+        schreiber.text(schreiber.fett, 10, "Pos", SPALTE_POS);
+        schreiber.text(schreiber.fett, 10, "Produkt", SPALTE_PRODUKT);
+        schreiber.text(schreiber.fett, 10, "Bezeichnung", SPALTE_BEZEICHNUNG);
+        schreiber.textRechts(schreiber.fett, 10, "Menge", SPALTE_MENGE);
+        schreiber.textRechts(schreiber.fett, 10, "Einzelpreis", SPALTE_EINZELPREIS);
+        schreiber.textRechts(schreiber.fett, 10, "USt", SPALTE_UST);
+        schreiber.textRechts(schreiber.fett, 10, "Summe", SPALTE_SUMME);
         schreiber.beendeZeile();
         schreiber.linie();
     }
 
-    /** Summen rechtsbündig unter der Tabelle; Bruttosumme hervorgehoben (F-03). */
+    /**
+     * Summen rechtsbündig unter der Tabelle (F-03): Entgelt, Steuerbetrag je
+     * Steuersatz (A-F-25, § 14 Abs. 4 Nr. 7/8 UStG), Bruttosumme hervorgehoben.
+     */
     private void schreibeSummenblock(Schreiber schreiber, Dokument dokument) throws IOException {
-        summenzeile(schreiber, normal, 10, "Summe netto:", dokument.getSummeNetto());
-        summenzeile(schreiber, normal, 10, "Umsatzsteuer:", dokument.getSummeSteuer());
-        summenzeile(schreiber, fett, 11, "Summe brutto:", dokument.getSummeBrutto());
+        summenzeile(schreiber, schreiber.normal, 10, "Summe netto:", dokument.getSummeNetto());
+        for (Steuerzeile zeile : dokument.steueraufschluesselung()) {
+            summenzeile(schreiber, schreiber.normal, 10, "Umsatzsteuer " + prozent(zeile.steuersatz())
+                    + " % auf " + betrag(zeile.netto()) + " EUR:", zeile.steuer());
+        }
+        summenzeile(schreiber, schreiber.fett, 11, "Summe brutto:", dokument.getSummeBrutto());
         schreiber.leer();
     }
 
@@ -207,23 +280,28 @@ public class PdfBoxPdfExporter implements PdfExporter {
     /** Belegtyp-spezifischer Hinweistext am Ende des Dokuments. */
     private void schreibeSchlusstext(Schreiber schreiber, Dokument dokument, Firmenprofil firma)
             throws IOException {
-        if (dokument instanceof Rechnung rechnung && rechnung.getZahlungsziel() != null
+        if (dokument instanceof Rechnung rechnung && rechnung.istStornorechnung()) {
+            schreiber.absatz(schreiber.normal, 10, "Mit dieser Stornorechnung wird die Rechnung "
+                    + rechnung.getStornoZu() + " vollständig storniert.");
+        } else if (dokument instanceof Rechnung rechnung && rechnung.getZahlungsziel() != null
                 && dokument.getStatus() != DokumentStatus.STORNIERT) {
-            schreiber.zeile(normal, 10, "Bitte überweisen Sie den Rechnungsbetrag bis zum "
+            schreiber.absatz(schreiber.normal, 10, "Bitte überweisen Sie den Rechnungsbetrag bis zum "
                     + format(rechnung.getZahlungsziel()) + ".");
-            if (firma.iban() != null && !firma.iban().isBlank()) {
-                String bank = firma.bank() == null || firma.bank().isBlank()
-                        ? "" : firma.bank() + " · ";
-                String bic = firma.bic() == null || firma.bic().isBlank()
-                        ? "" : " · BIC " + firma.bic();
-                schreiber.zeile(normal, 10, "Bankverbindung: " + bank
+            if (istGesetzt(firma.iban())) {
+                String bank = istGesetzt(firma.bank()) ? firma.bank() + " · " : "";
+                String bic = istGesetzt(firma.bic()) ? " · BIC " + firma.bic() : "";
+                schreiber.absatz(schreiber.normal, 10, "Bankverbindung: " + bank
                         + "IBAN " + firma.iban() + bic);
             }
         }
         if (dokument instanceof Angebot angebot && angebot.getGueltigBis() != null) {
-            schreiber.zeile(normal, 10, "Dieses Angebot ist gültig bis zum "
+            schreiber.absatz(schreiber.normal, 10, "Dieses Angebot ist gültig bis zum "
                     + format(angebot.getGueltigBis()) + ".");
         }
+    }
+
+    private static boolean istGesetzt(String wert) {
+        return wert != null && !wert.isBlank();
     }
 
     private static String format(LocalDate datum) {
@@ -248,27 +326,37 @@ public class PdfBoxPdfExporter implements PdfExporter {
         return steuersatz.multiply(new BigDecimal("100")).stripTrailingZeros().toPlainString();
     }
 
-    private static String kuerze(String text, int maxLaenge) {
-        if (text == null) {
-            return "";
+    private static byte[] ladeSchrift(String pfad) {
+        try (InputStream strom = PdfBoxPdfExporter.class.getResourceAsStream(pfad)) {
+            if (strom == null) {
+                throw new IllegalStateException("Schrift fehlt im Klassenpfad: " + pfad);
+            }
+            return strom.readAllBytes();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Schrift konnte nicht geladen werden: " + pfad, e);
         }
-        return text.length() <= maxLaenge ? text : text.substring(0, maxLaenge - 1) + "…";
     }
 
     /**
-     * Zeilenweiser Schreiber mit automatischem Seitenumbruch. Einfache
-     * Zeilen entstehen über {@link #zeile}; Tabellenzeilen mit mehreren
-     * Spalten über {@link #beginneZeile}, {@link #text}/{@link #textRechts}
-     * und {@link #beendeZeile}.
+     * Zeilenweiser Schreiber mit automatischem Seitenumbruch. Absätze
+     * entstehen über {@link #absatz} (mit Umbruch nach Breite);
+     * Tabellenzeilen mit mehreren Spalten über {@link #beginneZeile},
+     * {@link #text}/{@link #textRechts} und {@link #beendeZeile}.
      */
     private static final class Schreiber {
 
         private final PDDocument pdf;
+        private final PDFont normal;
+        private final PDFont fett;
+        /** Ob eine Schrift ein Zeichen darstellen kann; je Schrift und Zeichen einmal geprüft. */
+        private final Map<PDFont, Map<Integer, Boolean>> darstellbar = new HashMap<>();
         private PDPageContentStream inhalt;
         private float y;
 
-        Schreiber(PDDocument pdf) throws IOException {
+        Schreiber(PDDocument pdf, PDFont normal, PDFont fett) throws IOException {
             this.pdf = pdf;
+            this.normal = normal;
+            this.fett = fett;
             neueSeite();
         }
 
@@ -282,13 +370,13 @@ public class PdfBoxPdfExporter implements PdfExporter {
             y = PDRectangle.A4.getHeight() - RAND;
         }
 
-        boolean passtNochZeile() {
-            return y >= RAND + ZEILENHOEHE;
+        boolean passtNoch(int zeilen) {
+            return y - (zeilen - 1) * ZEILENHOEHE >= RAND + ZEILENHOEHE;
         }
 
         /** Beginnt eine Tabellenzeile; bricht bei Bedarf auf eine neue Seite um. */
         void beginneZeile() throws IOException {
-            if (!passtNochZeile()) {
+            if (!passtNoch(1)) {
                 neueSeite();
             }
         }
@@ -302,22 +390,23 @@ public class PdfBoxPdfExporter implements PdfExporter {
             inhalt.beginText();
             inhalt.setFont(font, groesse);
             inhalt.newLineAtOffset(x, y);
-            inhalt.showText(text == null ? "" : text);
+            inhalt.showText(bereinige(font, text));
             inhalt.endText();
         }
 
         /** Rechtsbündiger Text: {@code xRechts} ist die rechte Kante der Spalte. */
         void textRechts(PDFont font, float groesse, String text, float xRechts) throws IOException {
-            String sicher = text == null ? "" : text;
-            float breite = font.getStringWidth(sicher) / 1000 * groesse;
-            text(font, groesse, sicher, xRechts - breite);
+            String sicher = bereinige(font, text);
+            text(font, groesse, sicher, xRechts - breite(font, groesse, sicher));
         }
 
-        /** Einzelne linksbündige Zeile am linken Seitenrand. */
-        void zeile(PDFont font, float groesse, String text) throws IOException {
-            beginneZeile();
-            text(font, groesse, text, RAND);
-            beendeZeile();
+        /** Absatz am linken Rand, nach Breite auf die Satzspiegelbreite umbrochen. */
+        void absatz(PDFont font, float groesse, String text) throws IOException {
+            for (String zeile : umbreche(font, groesse, text, SATZBREITE)) {
+                beginneZeile();
+                text(font, groesse, zeile, RAND);
+                beendeZeile();
+            }
         }
 
         /** Einzelne rechtsbündige Zeile (z. B. Absenderblock). */
@@ -343,6 +432,85 @@ public class PdfBoxPdfExporter implements PdfExporter {
 
         void schliesse() throws IOException {
             inhalt.close();
+        }
+
+        /**
+         * Bricht den Text an Wortgrenzen so um, dass jede Zeile höchstens
+         * {@code maxBreite} breit ist; ein einzelnes überlanges Wort wird
+         * zeichenweise geteilt. Kein Zeichen geht verloren (§ 14 Abs. 4 Nr. 5
+         * UStG verlangt die vollständige Bezeichnung der Leistung).
+         */
+        List<String> umbreche(PDFont font, float groesse, String text, float maxBreite)
+                throws IOException {
+            String sicher = bereinige(font, text);
+            List<String> zeilen = new ArrayList<>();
+            if (sicher.isBlank()) {
+                return zeilen;
+            }
+            StringBuilder zeile = new StringBuilder();
+            for (String wort : sicher.split(" ")) {
+                String kandidat = zeile.isEmpty() ? wort : zeile + " " + wort;
+                if (breite(font, groesse, kandidat) <= maxBreite) {
+                    zeile.setLength(0);
+                    zeile.append(kandidat);
+                    continue;
+                }
+                if (!zeile.isEmpty()) {
+                    zeilen.add(zeile.toString());
+                    zeile.setLength(0);
+                }
+                String rest = wort;
+                while (breite(font, groesse, rest) > maxBreite && rest.length() > 1) {
+                    int teil = rest.length() - 1;
+                    while (teil > 1 && breite(font, groesse, rest.substring(0, teil)) > maxBreite) {
+                        teil--;
+                    }
+                    zeilen.add(rest.substring(0, teil));
+                    rest = rest.substring(teil);
+                }
+                zeile.append(rest);
+            }
+            if (!zeile.isEmpty()) {
+                zeilen.add(zeile.toString());
+            }
+            return zeilen;
+        }
+
+        private static float breite(PDFont font, float groesse, String text) throws IOException {
+            return font.getStringWidth(text) / 1000 * groesse;
+        }
+
+        /**
+         * Ersetzt Steuerzeichen (Tabulator, Zeilenumbruch) durch Leerzeichen
+         * und Zeichen ohne Glyphe in der Schrift durch "?".
+         */
+        private String bereinige(PDFont font, String text) {
+            if (text == null) {
+                return "";
+            }
+            StringBuilder ergebnis = new StringBuilder(text.length());
+            text.codePoints().forEach(zeichen -> {
+                if (Character.isISOControl(zeichen)) {
+                    ergebnis.append(' ');
+                } else if (kannDarstellen(font, zeichen)) {
+                    ergebnis.appendCodePoint(zeichen);
+                } else {
+                    ergebnis.append('?');
+                }
+            });
+            return ergebnis.toString();
+        }
+
+        private boolean kannDarstellen(PDFont font, int zeichen) {
+            return darstellbar.computeIfAbsent(font, f -> new HashMap<>())
+                    .computeIfAbsent(zeichen, z -> {
+                        try {
+                            font.encode(new String(Character.toChars(z)));
+                            return true;
+                        } catch (IllegalArgumentException | IOException e) {
+                            return false;
+                        }
+                    });
         }
     }
 }

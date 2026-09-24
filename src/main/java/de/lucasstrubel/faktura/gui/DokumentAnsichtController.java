@@ -9,6 +9,7 @@ import de.lucasstrubel.faktura.dokumente.DokumentStatus;
 import de.lucasstrubel.faktura.dokumente.Dokumentposition;
 import de.lucasstrubel.faktura.dokumente.ERechnungExport;
 import de.lucasstrubel.faktura.dokumente.Rechnung;
+import de.lucasstrubel.faktura.dokumente.Steuerzeile;
 import de.lucasstrubel.faktura.gemeinsam.DatenBereich;
 import de.lucasstrubel.faktura.gemeinsam.EreignisBus;
 import de.lucasstrubel.faktura.kunden.KundenService;
@@ -17,7 +18,6 @@ import de.lucasstrubel.faktura.produkte.ProduktService;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
@@ -29,19 +29,19 @@ import javafx.scene.control.SplitPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyCodeCombination;
-import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.FileChooser;
+import javafx.util.StringConverter;
 
 import org.kordamp.ikonli.feather.Feather;
 
 import java.io.File;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -57,8 +57,8 @@ import java.util.List;
  */
 public class DokumentAnsichtController {
 
-    /** Anzeige des Statusfilters für „kein Filter“ (F-06). */
-    private static final String ALLE = "Alle";
+    /** Schlüssel des Statusfilters für „kein Filter“ (F-06). */
+    private static final String ALLE = "ALLE";
 
     private final DokumentService dokumentService;
     private final KundenService kundenService;
@@ -84,6 +84,7 @@ public class DokumentAnsichtController {
     @FXML private Button folgebelegKnopf;
     @FXML private Button versendenKnopf;
     @FXML private Button stornierenKnopf;
+    @FXML private Button bezahltKnopf;
     @FXML private MenuButton ausgabeMenue;
     @FXML private MenuItem pdfEintrag;
     @FXML private MenuItem eRechnungEintrag;
@@ -126,18 +127,33 @@ public class DokumentAnsichtController {
         // Kundenname und -nummer werden in der Belegliste angezeigt
         ereignisBus.abonniere(DatenBereich.KUNDEN, this::aktualisiere);
 
-        tabelle.sceneProperty().addListener((beobachtbar, alt, szene) -> {
-            if (szene != null) {
-                registriereTastenkuerzel(szene);
-            }
-        });
+        Tastenkuerzel.binde(tabelle, this::oeffneWizard,
+                () -> suchfeld.requestFocus(), this::aktualisiere);
     }
 
+    /**
+     * Statusfilter mit lesbaren Namen (D-F-06). Gefiltert wird nach dem
+     * Anzeigestatus: Eine bezahlte Rechnung erscheint unter „Bezahlt“, nicht
+     * zusätzlich unter „Versendet“ — so passt der Filter zum Abzeichen.
+     */
     private void richteFilterEin() {
         statusFilter.getItems().add(ALLE);
         for (DokumentStatus status : DokumentStatus.values()) {
             statusFilter.getItems().add(status.name());
         }
+        statusFilter.getItems().add(Bausteine.BEZAHLT);
+        statusFilter.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(String schluessel) {
+                return schluessel == null || ALLE.equals(schluessel)
+                        ? "Alle" : Bausteine.statusText(schluessel);
+            }
+
+            @Override
+            public String fromString(String text) {
+                return text;
+            }
+        });
         statusFilter.getSelectionModel().selectFirst();
         statusFilter.valueProperty().addListener((beobachtbar, alt, neu) -> aktualisiere());
         suchfeld.textProperty().addListener((beobachtbar, alt, neu) -> aktualisiere());
@@ -151,7 +167,7 @@ public class DokumentAnsichtController {
         bruttoSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(
                 TabellenFormat.betrag(z.getValue().getSummeBrutto())));
         statusSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(
-                z.getValue().getStatus().name()));
+                Bausteine.anzeigestatus(z.getValue())));
         statusSpalte.setCellFactory(Bausteine.statusZelle());
         Bausteine.alsNummernspalte(nummerSpalte);
         Bausteine.alsBetragsspalte(bruttoSpalte);
@@ -162,52 +178,55 @@ public class DokumentAnsichtController {
                 "Mit „Neue Rechnung“ starten Sie die geführte Erstellung."));
     }
 
-    /** Dieselben Aktionen wie in der Werkzeugleiste auch per Rechtsklick. */
+    /**
+     * Dieselben Aktionen wie in der Werkzeugleiste auch per Rechtsklick — mit
+     * denselben Freigaberegeln je Status. Früher war jeder Eintrag aktiv,
+     * sobald ein Beleg gewählt war, und erst die Fachlogik lehnte nach einer
+     * Rückfrage ab („Angebot AN-… wirklich stornieren?“).
+     */
     private void richteKontextmenueEin() {
         MenuItem folgebeleg = new MenuItem("Folgebeleg erzeugen");
         folgebeleg.setOnAction(e -> erzeugeFolgebeleg());
         MenuItem versenden = new MenuItem("Versenden");
         versenden.setOnAction(e -> versende());
+        MenuItem bezahlt = new MenuItem("Als bezahlt markieren…");
+        bezahlt.setOnAction(e -> markiereBezahlt());
         MenuItem stornieren = new MenuItem("Stornieren");
         stornieren.setOnAction(e -> storniere());
         MenuItem pdf = new MenuItem("Als PDF speichern…");
         pdf.setOnAction(e -> exportierePdf());
 
-        ContextMenu menue = new ContextMenu(folgebeleg, versenden, stornieren,
+        ContextMenu menue = new ContextMenu(folgebeleg, versenden, bezahlt, stornieren,
                 new SeparatorMenuItem(), pdf);
-        // Nur bei ausgewähltem Beleg anbieten
         tabelle.setContextMenu(menue);
         menue.setOnShowing(e -> {
-            boolean ohneAuswahl = auswahl() == null;
-            menue.getItems().forEach(eintrag -> eintrag.setDisable(ohneAuswahl));
+            Dokument dokument = auswahl();
+            if (dokument == null) {
+                menue.getItems().forEach(eintrag -> eintrag.setDisable(true));
+                return;
+            }
+            BelegAktionen verfuegbar = controller.aktionenFuer(dokument);
+            folgebeleg.setDisable(dokument.belegtyp() == Belegtyp.RECHNUNG);
+            versenden.setDisable(!verfuegbar.aenderbar());
+            bezahlt.setDisable(!verfuegbar.bezahltMarkierbar());
+            stornieren.setDisable(!verfuegbar.stornierbar());
+            pdf.setDisable(!verfuegbar.pdfExport());
         });
-    }
-
-    private void registriereTastenkuerzel(Scene szene) {
-        szene.getAccelerators().put(
-                new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN),
-                this::oeffneWizard);
-        szene.getAccelerators().put(
-                new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN),
-                () -> suchfeld.requestFocus());
-        szene.getAccelerators().put(new KeyCodeCombination(KeyCode.F5), this::aktualisiere);
     }
 
     private Dokument auswahl() {
         return tabelle.getSelectionModel().getSelectedItem();
     }
 
-    private DokumentStatus gewaehlterStatus() {
-        String wert = statusFilter.getValue();
-        return wert == null || ALLE.equals(wert) ? null : DokumentStatus.valueOf(wert);
-    }
-
     private void aktualisiere() {
         Dokument vorherAusgewaehlt = auswahl();
-        DokumentStatus status = gewaehlterStatus();
+        String filter = statusFilter.getValue();
         String suchbegriff = suchfeld.getText() == null ? "" : suchfeld.getText().strip();
 
-        List<Dokument> liste = controller.gefiltert(status, suchbegriff);
+        List<Dokument> liste = controller.gefiltert(null, suchbegriff).stream()
+                .filter(d -> filter == null || ALLE.equals(filter)
+                        || filter.equals(Bausteine.anzeigestatus(d)))
+                .toList();
         tabelle.getItems().setAll(liste);
         int gesamt = controller.gefiltert(null, null).size();
 
@@ -240,19 +259,25 @@ public class DokumentAnsichtController {
     /** Aktiviert/deaktiviert die Belegaktionen gemäß Status (F-08, F-14). */
     private void aktualisiereAktionen() {
         Dokument dokument = auswahl();
+        // Das Menü bleibt immer offen: „Alle Belege als CSV…“ braucht keine
+        // Auswahl. Gesperrt werden nur die beleggebundenen Einträge.
         if (dokument == null) {
             folgebelegKnopf.setDisable(true);
             versendenKnopf.setDisable(true);
             stornierenKnopf.setDisable(true);
-            ausgabeMenue.setDisable(true);
+            bezahltKnopf.setDisable(true);
+            pdfEintrag.setDisable(true);
+            eRechnungEintrag.setDisable(true);
+            druckenEintrag.setDisable(true);
+            mailEintrag.setDisable(true);
             return;
         }
         BelegAktionen verfuegbar = controller.aktionenFuer(dokument);
         folgebelegKnopf.setDisable(dokument.belegtyp() == Belegtyp.RECHNUNG);
         versendenKnopf.setDisable(!verfuegbar.aenderbar());
         stornierenKnopf.setDisable(!verfuegbar.stornierbar());
+        bezahltKnopf.setDisable(!verfuegbar.bezahltMarkierbar());
 
-        ausgabeMenue.setDisable(false);
         pdfEintrag.setDisable(!verfuegbar.pdfExport());
         druckenEintrag.setDisable(!verfuegbar.pdfExport());
         mailEintrag.setDisable(!verfuegbar.pdfExport());
@@ -272,24 +297,42 @@ public class DokumentAnsichtController {
             return;
         }
 
-        Label titel = new Label(dokument.belegtyp().anzeigename() + " " + dokument.getBelegnummer());
+        Rechnung rechnung = dokument instanceof Rechnung r ? r : null;
+        String belegart = rechnung != null && rechnung.istStornorechnung()
+                ? "Stornorechnung" : dokument.belegtyp().anzeigename();
+        Label titel = new Label(belegart + " " + dokument.getBelegnummer());
         titel.getStyleClass().add("detail-titel");
         titel.setWrapText(true);
 
-        Label status = new Label(dokument.getStatus().name());
-        status.getStyleClass().addAll("status-abzeichen", "status-" + dokument.getStatus().name());
+        String anzeigestatus = Bausteine.anzeigestatus(dokument);
+        Label status = new Label(Bausteine.statusText(anzeigestatus));
+        status.getStyleClass().addAll("status-abzeichen", "status-" + anzeigestatus);
 
         detailBereich.getChildren().addAll(titel, status,
                 zeile("Datum", TabellenFormat.datum(dokument.getDatum())),
                 zeile("Kunde", dokument.getKundeName()),
                 zeile("Anschrift", dokument.getKundeAnschrift()));
 
-        if (dokument.getVorgaengerNr() != null) {
+        if (rechnung != null && rechnung.istStornorechnung()) {
+            detailBereich.getChildren().add(zeile("Storniert", rechnung.getStornoZu()));
+        } else if (dokument.getVorgaengerNr() != null) {
             detailBereich.getChildren().add(zeile("Vorgänger", dokument.getVorgaengerNr()));
         }
-        if (dokument instanceof Rechnung rechnung && rechnung.getZahlungsziel() != null) {
+        if (rechnung != null) {
             detailBereich.getChildren().add(
-                    zeile("Zahlungsziel", TabellenFormat.datum(rechnung.getZahlungsziel())));
+                    zeile("Leistungsdatum", TabellenFormat.datum(rechnung.getLeistungsdatum())));
+            if (rechnung.getZahlungsziel() != null) {
+                detailBereich.getChildren().add(
+                        zeile("Zahlungsziel", TabellenFormat.datum(rechnung.getZahlungsziel())));
+            }
+            if (rechnung.istBezahlt()) {
+                detailBereich.getChildren().add(
+                        zeile("Bezahlt am", TabellenFormat.datum(rechnung.getBezahltAm())));
+            }
+            if (rechnung.getStorniertAm() != null) {
+                detailBereich.getChildren().add(
+                        zeile("Storniert am", TabellenFormat.datum(rechnung.getStorniertAm())));
+            }
         }
 
         Label positionenTitel = new Label("Positionen");
@@ -301,9 +344,14 @@ public class DokumentAnsichtController {
                     TabellenFormat.betrag(position.getPositionssummeNetto())));
         }
 
-        detailBereich.getChildren().addAll(
-                zeile("Netto", TabellenFormat.betrag(dokument.getSummeNetto())),
-                zeile("Steuer", TabellenFormat.betrag(dokument.getSummeSteuer())),
+        detailBereich.getChildren().add(
+                zeile("Netto", TabellenFormat.betrag(dokument.getSummeNetto())));
+        // Umsatzsteuer je Steuersatz, wie auf dem Beleg (A-F-25)
+        for (Steuerzeile steuer : dokument.steueraufschluesselung()) {
+            detailBereich.getChildren().add(zeile("USt " + prozent(steuer.steuersatz()) + " %",
+                    TabellenFormat.betrag(steuer.steuer())));
+        }
+        detailBereich.getChildren().add(
                 summenzeile("Brutto", TabellenFormat.betrag(dokument.getSummeBrutto())));
     }
 
@@ -349,6 +397,10 @@ public class DokumentAnsichtController {
         HBox zeile = new HBox(10, links, rechts);
         zeile.setAlignment(Pos.TOP_LEFT);
         return zeile;
+    }
+
+    private static String prozent(BigDecimal steuersatz) {
+        return steuersatz.multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString();
     }
 
     private static HBox summenzeile(String beschriftung, String wert) {
@@ -406,11 +458,30 @@ public class DokumentAnsichtController {
         if (dokument == null) {
             return;
         }
-        boolean bestaetigt = FxMeldung.bestaetige("Rechnung stornieren",
-                "Rechnung " + dokument.getBelegnummer() + " über "
-                        + TabellenFormat.betrag(dokument.getSummeBrutto())
-                        + " (brutto) wirklich stornieren?");
+        String frage = "Rechnung " + dokument.getBelegnummer() + " über "
+                + TabellenFormat.betrag(dokument.getSummeBrutto()) + " (brutto) wirklich stornieren?";
+        if (dokument.getStatus() == DokumentStatus.VERSENDET) {
+            frage += "\n\nDie Rechnung wurde bereits versendet. Es wird eine Stornorechnung "
+                    + "mit negativen Beträgen erstellt, die Sie dem Kunden zusenden (A-F-29).";
+        }
+        boolean bestaetigt = FxMeldung.bestaetige("Rechnung stornieren", frage);
         FxMeldung.zeige(controller.storniere(dokument.getBelegnummer(), bestaetigt), null);
+    }
+
+    /** Zahlungseingang erfassen; das Datum ist mit heute vorbelegt (A-F-28). */
+    @FXML
+    private void markiereBezahlt() {
+        Dokument dokument = auswahl();
+        if (!(dokument instanceof Rechnung)) {
+            return;
+        }
+        Dialoge.frageDatum(fenster(), "Zahlungseingang erfassen",
+                        "Rechnung " + dokument.getBelegnummer() + " über "
+                                + TabellenFormat.betrag(dokument.getSummeBrutto())
+                                + " als bezahlt markieren.",
+                        "Bezahlt am", LocalDate.now())
+                .ifPresent(datum -> FxMeldung.zeige(
+                        controller.markiereBezahlt(dokument.getBelegnummer(), datum), null));
     }
 
     @FXML

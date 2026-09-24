@@ -31,23 +31,29 @@ public class KennzahlenDienst {
     public Kennzahlen ermittle(LocalDate heute) {
         List<Dokument> alle = dokumentService.alleDokumente();
 
-        List<Rechnung> unbezahlt = alle.stream()
+        // Stornorechnungen sind keine Forderungen, sondern gleichen eine
+        // stornierte Rechnung aus; beide zählen weder als offen noch als Umsatz
+        List<Rechnung> rechnungen = alle.stream()
                 .filter(Rechnung.class::isInstance)
                 .map(Rechnung.class::cast)
+                .filter(rechnung -> !rechnung.istStornorechnung())
+                .toList();
+
+        List<Rechnung> unbezahlt = rechnungen.stream()
                 .filter(rechnung -> rechnung.getStatus() == DokumentStatus.OFFEN
                         || rechnung.getStatus() == DokumentStatus.VERSENDET)
+                .filter(rechnung -> !rechnung.istBezahlt())
                 .toList();
 
         List<Rechnung> ueberfaellig = unbezahlt.stream()
                 .filter(rechnung -> istUeberfaellig(rechnung, heute))
                 .toList();
 
-        BigDecimal umsatzJahr = alle.stream()
-                .filter(Rechnung.class::isInstance)
+        BigDecimal umsatzJahr = rechnungen.stream()
                 .filter(beleg -> beleg.getStatus() != DokumentStatus.STORNIERT)
                 .filter(beleg -> beleg.getDatum() != null
                         && beleg.getDatum().getYear() == heute.getYear())
-                .map(Dokument::getSummeBrutto)
+                .map(Rechnung::getSummeBrutto)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         List<Dokument> letzte = alle.stream()
@@ -63,7 +69,7 @@ public class KennzahlenDienst {
     }
 
     /**
-     * Überfällig ist eine unbezahlte Rechnung, deren Zahlungsziel vor dem
+     * Überfällig ist eine unbezahlte (A-F-28) Rechnung, deren Zahlungsziel vor dem
      * Stichtag liegt (GR-06). Ohne gesetztes Zahlungsziel gilt sie nicht als
      * überfällig — die Frist ist dann schlicht unbekannt.
      */

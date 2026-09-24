@@ -22,24 +22,26 @@ public class JdbcFirmenprofilRepository {
         List<Firmenprofil> treffer = jdbc.query("SELECT * FROM firmenprofil WHERE id = 1",
                 (rs, zeilenNr) -> new Firmenprofil(
                         rs.getString("name"), rs.getString("strasse"), rs.getString("plz"),
-                        rs.getString("ort"), rs.getString("ust_id_nr"), rs.getString("telefon"),
-                        rs.getString("e_mail"), rs.getString("iban"), rs.getString("bic"),
-                        rs.getString("bank")));
+                        rs.getString("ort"), rs.getString("ust_id_nr"), rs.getString("steuernummer"),
+                        rs.getString("telefon"), rs.getString("e_mail"), rs.getString("iban"),
+                        rs.getString("bic"), rs.getString("bank")));
         return treffer.isEmpty() ? null : treffer.get(0);
     }
 
     public void speichere(Firmenprofil profil) {
         jdbc.update("""
-                INSERT INTO firmenprofil (id, name, strasse, plz, ort, ust_id_nr,
+                INSERT INTO firmenprofil (id, name, strasse, plz, ort, ust_id_nr, steuernummer,
                                           telefon, e_mail, iban, bic, bank)
-                VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT (id) DO UPDATE SET
                     name = excluded.name, strasse = excluded.strasse, plz = excluded.plz,
                     ort = excluded.ort, ust_id_nr = excluded.ust_id_nr,
+                    steuernummer = excluded.steuernummer,
                     telefon = excluded.telefon, e_mail = excluded.e_mail,
                     iban = excluded.iban, bic = excluded.bic, bank = excluded.bank
                 """,
                 profil.name(), profil.strasse(), profil.plz(), profil.ort(), profil.ustIdNr(),
-                profil.telefon(), profil.eMail(), profil.iban(), profil.bic(), profil.bank());
+                profil.steuernummer(), profil.telefon(), profil.eMail(), profil.iban(),
+                profil.bic(), profil.bank());
     }
 }

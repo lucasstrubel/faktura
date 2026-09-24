@@ -31,7 +31,7 @@
 
                 <VBox spacing="10" styleClass="abschnitt-karte">
                     <Label text="Firma" styleClass="abschnitt-titel"/>
-                    <Label text="Diese Angaben erscheinen als Briefkopf auf allen Belegen."
+                    <Label text="Diese Angaben erscheinen als Briefkopf auf allen Belegen. Für Rechnungen ist die Steuernummer oder die USt-IdNr. Pflicht (§ 14 UStG). Neue Belege übernehmen das Profil beim Erstellen; bereits erstellte Belege bleiben unverändert."
                            styleClass="abschnitt-hinweis" wrapText="true"/>
                     <GridPane hgap="10" vgap="8">
                         <columnConstraints>
@@ -49,10 +49,13 @@
                         <Label text="USt-IdNr." GridPane.rowIndex="4" GridPane.columnIndex="0"/>
                         <TextField fx:id="ustIdNrFeld" GridPane.rowIndex="4" GridPane.columnIndex="1"
                                    promptText="DE123456789"/>
-                        <Label text="Telefon" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-                        <TextField fx:id="telefonFeld" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
-                        <Label text="E-Mail" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
-                        <TextField fx:id="eMailFeld" GridPane.rowIndex="6" GridPane.columnIndex="1"
+                        <Label text="Steuernummer" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+                        <TextField fx:id="steuernummerFeld" GridPane.rowIndex="5" GridPane.columnIndex="1"
+                                   promptText="37/123/45678"/>
+                        <Label text="Telefon" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+                        <TextField fx:id="telefonFeld" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+                        <Label text="E-Mail" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
+                        <TextField fx:id="eMailFeld" GridPane.rowIndex="7" GridPane.columnIndex="1"
                                    promptText="name@domain.de"/>
                     </GridPane>
                 </VBox>
@@ -70,7 +73,8 @@
                         <TextField fx:id="ibanFeld" GridPane.rowIndex="0" GridPane.columnIndex="1"
                                    promptText="DE02 1203 0000 0000 2020 51"/>
                         <Label text="BIC" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                        <TextField fx:id="bicFeld" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                        <TextField fx:id="bicFeld" GridPane.rowIndex="1" GridPane.columnIndex="1"
+                                   promptText="BYLADEM1001"/>
                         <Label text="Bank" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
                         <TextField fx:id="bankFeld" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
                     </GridPane>

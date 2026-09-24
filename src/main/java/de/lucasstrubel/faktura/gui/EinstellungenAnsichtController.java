@@ -32,6 +32,7 @@ public class EinstellungenAnsichtController {
     @FXML private TextField plzFeld;
     @FXML private TextField ortFeld;
     @FXML private TextField ustIdNrFeld;
+    @FXML private TextField steuernummerFeld;
     @FXML private TextField telefonFeld;
     @FXML private TextField eMailFeld;
     @FXML private TextField ibanFeld;
@@ -58,10 +59,13 @@ public class EinstellungenAnsichtController {
         felder.put("PLZ", plzFeld);
         felder.put("Ort", ortFeld);
         felder.put("USt-IdNr.", ustIdNrFeld);
+        felder.put("Steuernummer", steuernummerFeld);
         felder.put("Telefon", telefonFeld);
         felder.put("E-Mail", eMailFeld);
         felder.put("IBAN", ibanFeld);
-        fuelleFelder(service.lade());
+        felder.put("BIC", bicFeld);
+        // Ohne gespeichertes Profil bleiben die Felder leer (A-F-26)
+        service.lade().ifPresent(this::fuelleFelder);
     }
 
     private void fuelleFelder(Firmenprofil profil) {
@@ -70,6 +74,7 @@ public class EinstellungenAnsichtController {
         plzFeld.setText(profil.plz());
         ortFeld.setText(profil.ort());
         ustIdNrFeld.setText(leerFuerNull(profil.ustIdNr()));
+        steuernummerFeld.setText(leerFuerNull(profil.steuernummer()));
         telefonFeld.setText(leerFuerNull(profil.telefon()));
         eMailFeld.setText(leerFuerNull(profil.eMail()));
         ibanFeld.setText(leerFuerNull(profil.iban()));
@@ -80,12 +85,12 @@ public class EinstellungenAnsichtController {
     @FXML
     private void speichere() {
         FxMeldung.mitFehlerbehandlung(felder, () -> {
-            service.speichere(new Firmenprofil(
-                    nameFeld.getText().strip(), strasseFeld.getText().strip(),
-                    plzFeld.getText().strip(), ortFeld.getText().strip(),
-                    leerZuNull(ustIdNrFeld.getText()), leerZuNull(telefonFeld.getText()),
-                    leerZuNull(eMailFeld.getText()), leerZuNull(ibanFeld.getText()),
-                    leerZuNull(bicFeld.getText()), leerZuNull(bankFeld.getText())));
+            Firmenprofil gespeichert = service.speichere(new Firmenprofil(
+                    nameFeld.getText(), strasseFeld.getText(), plzFeld.getText(), ortFeld.getText(),
+                    ustIdNrFeld.getText(), steuernummerFeld.getText(), telefonFeld.getText(),
+                    eMailFeld.getText(), ibanFeld.getText(), bicFeld.getText(), bankFeld.getText()));
+            // Gespeicherte Schreibweise zurückspielen (z. B. IBAN in Vierergruppen)
+            fuelleFelder(gespeichert);
             FxMeldung.zeige(Meldung.erfolg(
                     "Das Firmenprofil wurde gespeichert; neue Belege verwenden es sofort."), felder);
         });
@@ -108,10 +113,5 @@ public class EinstellungenAnsichtController {
 
     private static String leerFuerNull(String wert) {
         return wert == null ? "" : wert;
-    }
-
-    private static String leerZuNull(String text) {
-        String wert = text.strip();
-        return wert.isEmpty() ? null : wert;
     }
 }

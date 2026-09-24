@@ -144,7 +144,8 @@ class DokumentListenControllerTest {
         }
 
         @Override
-        public Rechnung erstelleRechnung(String k, List<Positionsangabe> p, LocalDate r, LocalDate z) {
+        public Rechnung erstelleRechnung(String k, List<Positionsangabe> p, LocalDate r,
+                                         LocalDate l, LocalDate z) {
             throw new UnsupportedOperationException();
         }
 
@@ -159,7 +160,12 @@ class DokumentListenControllerTest {
         }
 
         @Override
-        public void storniere(String rechnungsnummer) {
+        public Rechnung storniere(String rechnungsnummer) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void markiereBezahlt(String rechnungsnummer, LocalDate bezahltAm) {
             throw new UnsupportedOperationException();
         }
 

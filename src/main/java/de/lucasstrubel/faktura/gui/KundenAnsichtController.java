@@ -14,8 +14,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyCodeCombination;
-import javafx.scene.input.KeyCombination;
 import javafx.scene.input.MouseButton;
 import javafx.stage.FileChooser;
 
@@ -94,23 +92,20 @@ public class KundenAnsichtController {
         aktualisiere();
         ereignisBus.abonniere(DatenBereich.KUNDEN, this::aktualisiere);
 
-        tabelle.sceneProperty().addListener((beobachtbar, alt, szene) -> {
-            if (szene != null) {
-                szene.getAccelerators().put(
-                        new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN),
-                        this::legeNeuAn);
-                szene.getAccelerators().put(
-                        new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN),
-                        () -> suchfeld.requestFocus());
-                szene.getAccelerators().put(
-                        new KeyCodeCombination(KeyCode.F5), this::aktualisiere);
-            }
-        });
+        Tastenkuerzel.binde(tabelle, this::legeNeuAn,
+                () -> suchfeld.requestFocus(), this::aktualisiere);
     }
 
     private void aktualisiere() {
+        // Auswahl über die Aktualisierung hinweg halten: Die Objekte sind neu
+        // geladen, ohne Wiederherstellung wären Bearbeiten/Löschen gesperrt
+        Kunde vorher = tabelle.getSelectionModel().getSelectedItem();
         List<Kunde> liste = controller.kundenListe(suchfeld.getText());
         tabelle.getItems().setAll(liste);
+        if (vorher != null) {
+            liste.stream().filter(x -> x.getKundennummer().equals(vorher.getKundennummer()))
+                    .findFirst().ifPresent(x -> tabelle.getSelectionModel().select(x));
+        }
         int gesamt = controller.kundenListe("").size();
         String suchbegriff = suchfeld.getText() == null ? "" : suchfeld.getText().trim();
         trefferAnzeige.setText(suchbegriff.isEmpty()

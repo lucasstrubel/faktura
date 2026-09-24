@@ -165,7 +165,8 @@ class KennzahlenDienstTest {
         }
 
         @Override
-        public Rechnung erstelleRechnung(String k, List<Positionsangabe> p, LocalDate r, LocalDate z) {
+        public Rechnung erstelleRechnung(String k, List<Positionsangabe> p, LocalDate r,
+                                         LocalDate l, LocalDate z) {
             throw new UnsupportedOperationException();
         }
 
@@ -180,7 +181,12 @@ class KennzahlenDienstTest {
         }
 
         @Override
-        public void storniere(String rechnungsnummer) {
+        public Rechnung storniere(String rechnungsnummer) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void markiereBezahlt(String rechnungsnummer, LocalDate bezahltAm) {
             throw new UnsupportedOperationException();
         }
 
@@ -198,5 +204,28 @@ class KennzahlenDienstTest {
         public void exportierePdf(String belegnummer, Path zielDatei) {
             throw new UnsupportedOperationException();
         }
+    }
+
+    @Test
+    @DisplayName("KZ-06: Bezahlte Rechnungen sind nicht mehr offen; Stornorechnungen zählen weder offen noch als Umsatz (A-F-28, A-F-29)")
+    void bezahlteUndStornorechnungenZaehlenNicht() {
+        Rechnung bezahlt = rechnung("R-2026-000001", "119.00", DokumentStatus.VERSENDET, HEUTE.minusDays(3));
+        bezahlt.markiereBezahlt(HEUTE.minusDays(1));
+        bestand.add(bezahlt);
+        bestand.add(rechnung("R-2026-000002", "238.00", DokumentStatus.STORNIERT, HEUTE.minusDays(3)));
+        Rechnung storno = new Rechnung();
+        storno.setBelegnummer("R-2026-000003");
+        storno.setDatum(HEUTE);
+        storno.setzePositionen(List.of(position("238.00").negiert()));
+        storno.setStornoZu("R-2026-000002");
+        storno.setzeStatus(DokumentStatus.OFFEN);
+        bestand.add(storno);
+
+        Kennzahlen kennzahlen = dienst.ermittle(HEUTE);
+
+        assertEquals(0, kennzahlen.offeneAnzahl());
+        assertEquals(0, kennzahlen.ueberfaelligAnzahl());
+        assertEquals(new BigDecimal("119.00"), kennzahlen.umsatzJahr(),
+                "bezahlte Rechnung ist Umsatz; Storno und Stornorechnung heben sich auf");
     }
 }

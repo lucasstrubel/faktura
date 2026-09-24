@@ -10,6 +10,7 @@ import java.util.List;
 
 import static de.lucasstrubel.faktura.gemeinsam.Csv.TRENNZEICHEN;
 import static de.lucasstrubel.faktura.gemeinsam.Csv.feld;
+import static de.lucasstrubel.faktura.gemeinsam.Csv.zahl;
 
 import org.springframework.stereotype.Component;
 
@@ -35,7 +36,8 @@ public class DokumentCsvExport {
                 "belegnummer", "belegtyp", "datum", "status", "vorgaengerNr",
                 "kundenNr", "kundeName", "kundeAnschrift",
                 "summeNetto", "summeSteuer", "summeBrutto",
-                "zahlungsziel", "storniertAm", "storniertVon",
+                "gueltigBis", "lieferdatum", "leistungsdatum", "zahlungsziel",
+                "storniertAm", "storniertVon", "bezahltAm", "stornoZu",
                 "produktnummer", "bezeichnung", "menge",
                 "einzelpreisNetto", "steuersatz", "positionssummeNetto", "positionssummeBrutto"));
         for (Dokument dokument : repository.alle()) {
@@ -52,6 +54,8 @@ public class DokumentCsvExport {
 
     private static String belegFelder(Dokument dokument) {
         Rechnung rechnung = dokument instanceof Rechnung r ? r : null;
+        Angebot angebot = dokument instanceof Angebot a ? a : null;
+        Lieferschein lieferschein = dokument instanceof Lieferschein l ? l : null;
         return String.join(TRENNZEICHEN,
                 feld(dokument.getBelegnummer()),
                 feld(dokument.belegtyp().name()),
@@ -61,23 +65,28 @@ public class DokumentCsvExport {
                 feld(dokument.getKundenReferenz()),
                 feld(dokument.getKundeName()),
                 feld(dokument.getKundeAnschrift()),
-                feld(betrag(dokument.getSummeNetto())),
-                feld(betrag(dokument.getSummeSteuer())),
-                feld(betrag(dokument.getSummeBrutto())),
+                zahl(betrag(dokument.getSummeNetto())),
+                zahl(betrag(dokument.getSummeSteuer())),
+                zahl(betrag(dokument.getSummeBrutto())),
+                feld(angebot == null ? null : datum(angebot.getGueltigBis())),
+                feld(lieferschein == null ? null : datum(lieferschein.getLieferdatum())),
+                feld(rechnung == null ? null : datum(rechnung.getLeistungsdatum())),
                 feld(rechnung == null ? null : datum(rechnung.getZahlungsziel())),
                 feld(rechnung == null ? null : datum(rechnung.getStorniertAm())),
-                feld(rechnung == null ? null : rechnung.getStorniertVon()));
+                feld(rechnung == null ? null : rechnung.getStorniertVon()),
+                feld(rechnung == null ? null : datum(rechnung.getBezahltAm())),
+                feld(rechnung == null ? null : rechnung.getStornoZu()));
     }
 
     private static String positionsFelder(Dokumentposition position) {
         return String.join(TRENNZEICHEN,
                 feld(position.getProduktReferenz()),
                 feld(position.getBezeichnung()),
-                feld(Integer.toString(position.getMenge())),
-                feld(betrag(position.getEinzelpreisNetto())),
-                feld(betrag(position.getSteuersatz())),
-                feld(betrag(position.getPositionssummeNetto())),
-                feld(betrag(position.getPositionssummeBrutto())));
+                zahl(Integer.toString(position.getMenge())),
+                zahl(betrag(position.getEinzelpreisNetto())),
+                zahl(betrag(position.getSteuersatz())),
+                zahl(betrag(position.getPositionssummeNetto())),
+                zahl(betrag(position.getPositionssummeBrutto())));
     }
 
     private static String leerePositionsFelder() {

@@ -31,8 +31,8 @@ public class ProduktCsvExport {
         for (Produkt p : repository.alleSortiertNachBezeichnung()) {
             zeilen.add(String.join(TRENNZEICHEN,
                     feld(p.getProduktnummer()), feld(p.getBezeichnung()), feld(p.getBeschreibung()),
-                    feld(p.getEinzelpreisNetto() == null ? null : p.getEinzelpreisNetto().toPlainString()),
-                    feld(p.getSteuersatz() == null ? null : p.getSteuersatz().toPlainString()),
+                    Csv.zahl(p.getEinzelpreisNetto() == null ? null : p.getEinzelpreisNetto().toPlainString()),
+                    Csv.zahl(p.getSteuersatz() == null ? null : p.getSteuersatz().toPlainString()),
                     feld(p.getEinheit())));
         }
         Csv.schreibe(zielDatei, zeilen);

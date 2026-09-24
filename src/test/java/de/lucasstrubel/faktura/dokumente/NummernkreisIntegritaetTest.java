@@ -129,10 +129,15 @@ class NummernkreisIntegritaetTest {
                 .getProduktnummer();
     }
 
+    /** Kontext mit hinterlegtem Firmenprofil — ohne Profil entsteht kein Beleg (A-F-26). */
     private ConfigurableApplicationContext neuerKontext() {
-        return new SpringApplicationBuilder(FakturaApplication.class, FehlerKonfiguration.class)
+        ConfigurableApplicationContext kontext = new SpringApplicationBuilder(
+                FakturaApplication.class, FehlerKonfiguration.class)
                 .headless(true)
                 .run("--faktura.daten-verzeichnis=" + tempDir);
+        kontext.getBean(de.lucasstrubel.faktura.firma.FirmenprofilService.class)
+                .speichere(TestBelege.FIRMA);
+        return kontext;
     }
 
     /**

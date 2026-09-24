@@ -28,6 +28,10 @@ import java.util.concurrent.TimeUnit;
  * <p>Während ein Vorgang läuft, wird das auslösende Bedienelement gesperrt und
  * der Mauszeiger auf „beschäftigt“ gesetzt; {@link #laeuft()} und
  * {@link #beschreibung()} sind für die Statuszeile der Hauptansicht gedacht.
+ * Die Vorgänge laufen nacheinander auf einem Faden; gezählt wird, wie viele
+ * noch ausstehen, damit die Statuszeile erst nach dem letzten wieder „Bereit“
+ * zeigt. Das auslösende Element erhält danach seinen vorherigen Zustand
+ * zurück — war es schon gesperrt, bleibt es gesperrt.
  * Fehler werden über dieselbe Zuordnung wie im synchronen Fall gemeldet
  * ({@link FxMeldung#zuMeldung}), Erfolgsmeldungen laufen über den
  * Rückruf {@code beiErfolg} — beides wieder auf dem FX-Application-Thread.
@@ -50,6 +54,9 @@ public class HintergrundAufgaben implements AutoCloseable {
     private final ReadOnlyBooleanWrapper laeuft = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyStringWrapper beschreibung = new ReadOnlyStringWrapper("");
 
+    /** Anzahl gestarteter, noch nicht beendeter Vorgänge; nur auf dem FX-Thread geändert. */
+    private int ausstehend;
+
     /**
      * Führt {@code arbeit} im Hintergrund aus und meldet das Ergebnis auf dem
      * FX-Application-Thread.
@@ -68,14 +75,15 @@ public class HintergrundAufgaben implements AutoCloseable {
                 return null;
             }
         };
+        boolean warGesperrt = ausloeser != null && ausloeser.isDisable();
         aufgabe.setOnSucceeded(ereignis -> {
-            beende(ausloeser);
+            beende(ausloeser, warGesperrt);
             if (beiErfolg != null) {
                 beiErfolg.run();
             }
         });
         aufgabe.setOnFailed(ereignis -> {
-            beende(ausloeser);
+            beende(ausloeser, warGesperrt);
             LOG.warn("Hintergrundvorgang fehlgeschlagen: {}", titel);
             FxMeldung.zeige(FxMeldung.zuMeldung(aufgabe.getException()), null);
         });
@@ -95,6 +103,7 @@ public class HintergrundAufgaben implements AutoCloseable {
     }
 
     private void beginne(String titel, Node ausloeser) {
+        ausstehend++;
         laeuft.set(true);
         beschreibung.set(titel);
         if (ausloeser != null) {
@@ -103,12 +112,17 @@ public class HintergrundAufgaben implements AutoCloseable {
         }
     }
 
-    private void beende(Node ausloeser) {
-        laeuft.set(false);
-        beschreibung.set("");
+    private void beende(Node ausloeser, boolean warGesperrt) {
+        ausstehend = Math.max(0, ausstehend - 1);
+        if (ausstehend == 0) {
+            laeuft.set(false);
+            beschreibung.set("");
+        }
         if (ausloeser != null) {
-            ausloeser.setDisable(false);
-            setzeMauszeiger(ausloeser, Cursor.DEFAULT);
+            ausloeser.setDisable(warGesperrt);
+            if (ausstehend == 0) {
+                setzeMauszeiger(ausloeser, Cursor.DEFAULT);
+            }
         }
     }
 

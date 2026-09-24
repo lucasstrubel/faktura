@@ -38,7 +38,7 @@
                  Reihe zu packen ließ bei üblicher Fensterbreite jede
                  Beschriftung abschneiden. -->
             <HBox styleClass="werkzeugleiste" alignment="CENTER_LEFT">
-                <Button text="Neue Rechnung" onAction="#oeffneWizard" defaultButton="true">
+                <Button text="Neue Rechnung" onAction="#oeffneWizard" styleClass="accent">
                     <tooltip><Tooltip text="Geführte Rechnungserstellung in fünf Schritten (Strg+N)"/></tooltip>
                 </Button>
                 <Button text="Neuer Beleg" onAction="#oeffneBelegDialog">
@@ -51,8 +51,11 @@
                 <Button fx:id="versendenKnopf" text="Versenden" onAction="#versende">
                     <tooltip><Tooltip text="Als versendet markieren; danach unveränderlich (GR-02)"/></tooltip>
                 </Button>
+                <Button fx:id="bezahltKnopf" text="Bezahlt" onAction="#markiereBezahlt">
+                    <tooltip><Tooltip text="Zahlungseingang erfassen; zählt dann nicht mehr als offen"/></tooltip>
+                </Button>
                 <Button fx:id="stornierenKnopf" text="Stornieren" onAction="#storniere">
-                    <tooltip><Tooltip text="Rechnung stornieren; Belege werden nie gelöscht (GR-01)"/></tooltip>
+                    <tooltip><Tooltip text="Rechnung stornieren; versendete Rechnungen über eine Stornorechnung. Belege werden nie gelöscht (GR-01)"/></tooltip>
                 </Button>
                 <Separator orientation="VERTICAL"/>
                 <MenuButton fx:id="ausgabeMenue" text="Exportieren">

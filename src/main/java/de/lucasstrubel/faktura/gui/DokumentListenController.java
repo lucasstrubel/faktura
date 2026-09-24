@@ -6,6 +6,7 @@ import de.lucasstrubel.faktura.dokumente.DokumentStatus;
 import de.lucasstrubel.faktura.dokumente.Rechnung;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 
@@ -54,30 +55,54 @@ public class DokumentListenController {
     }
 
     /**
-     * Verfügbare Aktionen je Beleg: <i>Stornieren</i> nur für Rechnungen im
-     * Status {@code OFFEN} (F-14); inhaltliche Änderungen nur solange der
-     * Beleg nicht versendet/storniert ist (F-08, GR-02); PDF-Export immer.
+     * Verfügbare Aktionen je Beleg: <i>Stornieren</i> und <i>Als bezahlt
+     * markieren</i> für offene oder versendete, noch unbezahlte Rechnungen,
+     * die nicht selbst Stornorechnung sind (F-14, A-F-28, A-F-29);
+     * inhaltliche Änderungen nur solange der Beleg nicht versendet/storniert
+     * ist (F-08, GR-02); PDF-Export immer.
      */
     public BelegAktionen aktionenFuer(Dokument dokument) {
-        boolean stornierbar = dokument instanceof Rechnung
-                && dokument.getStatus() == DokumentStatus.OFFEN;
+        boolean offeneForderung = dokument instanceof Rechnung rechnung
+                && (rechnung.getStatus() == DokumentStatus.OFFEN
+                    || rechnung.getStatus() == DokumentStatus.VERSENDET)
+                && !rechnung.istBezahlt()
+                && !rechnung.istStornorechnung();
         boolean aenderbar = dokument.getStatus() == DokumentStatus.ENTWURF
                 || dokument.getStatus() == DokumentStatus.OFFEN;
-        return new BelegAktionen(stornierbar, aenderbar, true);
+        return new BelegAktionen(offeneForderung, aenderbar, true, offeneForderung);
     }
 
     /**
      * Storniert erst nach Bestätigung der Anwender:in (F-15); ohne
-     * Bestätigung erfolgt kein Aufruf an die Fachkomponente.
+     * Bestätigung erfolgt kein Aufruf an die Fachkomponente. Bei einer
+     * versendeten Rechnung nennt die Meldung die neu erzeugte Stornorechnung,
+     * die dem Kunden zugestellt werden muss (A-F-29).
      */
     public Meldung storniere(String rechnungsnummer, boolean bestaetigt) {
         if (!bestaetigt) {
             return null;
         }
         try {
-            dokumentService.storniere(rechnungsnummer);
-            return Meldung.erfolg("Die Rechnung " + rechnungsnummer + " wurde storniert"
-                    + protokoll(rechnungsnummer) + ".");
+            Rechnung ergebnis = dokumentService.storniere(rechnungsnummer);
+            String meldung = "Die Rechnung " + rechnungsnummer + " wurde storniert"
+                    + protokoll(rechnungsnummer) + ".";
+            if (ergebnis != null && ergebnis.istStornorechnung()) {
+                meldung += " Die Stornorechnung " + ergebnis.getBelegnummer()
+                        + " wurde erstellt — bitte dem Kunden zusenden.";
+            }
+            return Meldung.erfolg(meldung);
+        } catch (ValidierungsException e) {
+            return Meldung.fehler(e.getFeldname(), e.getMessage());
+        } catch (IllegalStateException e) {
+            return Meldung.fehler(null, e.getMessage());
+        }
+    }
+
+    /** Erfasst den Zahlungseingang einer Rechnung (A-F-28). */
+    public Meldung markiereBezahlt(String rechnungsnummer, LocalDate bezahltAm) {
+        try {
+            dokumentService.markiereBezahlt(rechnungsnummer, bezahltAm);
+            return Meldung.erfolg("Der Zahlungseingang für " + rechnungsnummer + " wurde erfasst.");
         } catch (ValidierungsException e) {
             return Meldung.fehler(e.getFeldname(), e.getMessage());
         } catch (IllegalStateException e) {

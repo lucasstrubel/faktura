@@ -29,10 +29,11 @@ class JdbcDokumentRepositoryTest {
     Path tempDir;
 
     private JdbcDokumentRepository repository;
+    private SQLiteDataSource dataSource;
 
     @BeforeEach
     void setUp() {
-        SQLiteDataSource dataSource = new SQLiteDataSource();
+        dataSource = new SQLiteDataSource();
         dataSource.setUrl("jdbc:sqlite:" + tempDir.resolve("test.db"));
         Flyway.configure().dataSource(dataSource).load().migrate();
         repository = new JdbcDokumentRepository(new JdbcTemplate(dataSource));
@@ -140,5 +141,45 @@ class JdbcDokumentRepositoryTest {
         Dokument geladen = repository.findeNachNummer("R-2026-000127");
         assertEquals(1, geladen.getPositionen().size());
         assertEquals(new BigDecimal("400.00"), geladen.getSummeNetto());
+    }
+
+    @Test
+    @DisplayName("JDB-06: Aussteller-Snapshot, Zahlungseingang und Stornoverweis überstehen die Rundreise (A-F-27 bis A-F-29)")
+    void neueFelderRundreise() {
+        Rechnung rechnung = rechnung("R-2026-000130");
+        rechnung.setzeAussteller(TestBelege.FIRMA);
+        rechnung.setzeStatus(DokumentStatus.OFFEN);
+        rechnung.versende();
+        rechnung.markiereBezahlt(LocalDate.of(2026, 6, 30));
+        repository.speichere(rechnung);
+
+        Rechnung storno = rechnung("R-2026-000132");
+        storno.setStornoZu("R-2026-000100");
+        storno.setzeStatus(DokumentStatus.OFFEN);
+        repository.speichere(storno);
+
+        Rechnung geladen = (Rechnung) repository.findeNachNummer("R-2026-000130");
+        assertEquals(TestBelege.FIRMA, geladen.getAussteller());
+        assertEquals(LocalDate.of(2026, 6, 30), geladen.getBezahltAm());
+        assertEquals(DokumentStatus.VERSENDET, geladen.getStatus());
+        assertEquals("R-2026-000100",
+                ((Rechnung) repository.findeNachNummer("R-2026-000132")).getStornoZu());
+    }
+
+    @Test
+    @DisplayName("JDB-07: Versendete Belege behalten ihre gespeicherten Summen, auch wenn die Rechenregel sich ändert (GR-02)")
+    void gespeicherteSummenBleiben() {
+        Rechnung rechnung = rechnung("R-2026-000131");
+        rechnung.setzeStatus(DokumentStatus.OFFEN);
+        rechnung.versende();
+        repository.speichere(rechnung);
+        // Ausgestellt unter einer älteren Rundungsregel: 1 Cent abweichend gespeichert
+        new JdbcTemplate(dataSource).update(
+                "UPDATE dokument SET summe_steuer = '38.01', summe_brutto = '238.01' WHERE belegnummer = ?",
+                "R-2026-000131");
+
+        Dokument geladen = repository.findeNachNummer("R-2026-000131");
+        assertEquals(new BigDecimal("38.01"), geladen.getSummeSteuer());
+        assertEquals(new BigDecimal("238.01"), geladen.getSummeBrutto());
     }
 }

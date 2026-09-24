@@ -1,4 +1,5 @@
 package de.lucasstrubel.faktura.gemeinsam;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -93,5 +94,52 @@ class ValidierungTest {
             Validierung.pruefeUstIdNr(null);
             Validierung.pruefePlz(null);
         });
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ATU12345678", "FR12345678901", "NL123456789B01", "de 123 456 789", "IT12345678901"})
+    @DisplayName("VAL-11: USt-IdNr. anderer EU-Staaten und Kleinschreibung werden akzeptiert (C-F-17)")
+    void euUstIdNrWirdAkzeptiert(String ustIdNr) {
+        assertDoesNotThrow(() -> Validierung.pruefeUstIdNr(ustIdNr));
+    }
+
+    @Test
+    @DisplayName("VAL-12: IBAN mit falscher Prüfziffer wird abgelehnt, gültige auch klein und mit Leerzeichen akzeptiert (C-F-20)")
+    void ibanPruefsumme() {
+        assertDoesNotThrow(() -> Validierung.pruefeIban("de02 1203 0000 0000 2020 51"));
+        ValidierungsException fehler = assertThrows(ValidierungsException.class,
+                () -> Validierung.pruefeIban("DE03120300000000202051"));
+        assertEquals("IBAN", fehler.getFeldname());
+    }
+
+    @Test
+    @DisplayName("VAL-13: BIC mit 8 oder 11 Zeichen wird akzeptiert, andere Längen abgelehnt (C-F-20)")
+    void bicFormat() {
+        assertDoesNotThrow(() -> Validierung.pruefeBic("BYLADEM1"));
+        assertDoesNotThrow(() -> Validierung.pruefeBic("byladem1001"));
+        assertEquals("BIC", assertThrows(ValidierungsException.class,
+                () -> Validierung.pruefeBic("BYLADE")).getFeldname());
+    }
+
+    @Test
+    @DisplayName("VAL-14: Steuernummer mit 10 bis 13 Ziffern und Schrägstrichen (C-F-20)")
+    void steuernummerFormat() {
+        assertDoesNotThrow(() -> Validierung.pruefeSteuernummer("37/123/45678"));
+        assertDoesNotThrow(() -> Validierung.pruefeSteuernummer("2893081508152"));
+        assertEquals("Steuernummer", assertThrows(ValidierungsException.class,
+                () -> Validierung.pruefeSteuernummer("12/345")).getFeldname());
+        assertEquals("Steuernummer", assertThrows(ValidierungsException.class,
+                () -> Validierung.pruefeSteuernummer("37-123-45678x")).getFeldname());
+    }
+
+    @Test
+    @DisplayName("VAL-15: Normalisierung — leere Werte werden null, USt-IdNr./IBAN/BIC einheitlich (C-F-19)")
+    void normalisierung() {
+        assertNull(Validierung.bereinige("   "));
+        assertEquals("Mannheim", Validierung.bereinige("  Mannheim "));
+        assertEquals("DE123456789", Validierung.normalisiereUstIdNr(" de 123 456 789 "));
+        assertEquals("DE02 1203 0000 0000 2020 51", Validierung.normalisiereIban("de02120300000000202051"));
+        assertEquals("BYLADEM1001", Validierung.normalisiereBic("byla dem1001"));
+        assertNull(Validierung.normalisiereIban(""));
     }
 }

@@ -22,11 +22,19 @@ public interface DokumentService {
     Lieferschein erstelleLieferschein(String kundenNr, List<Positionsangabe> positionen, LocalDate lieferdatum);
 
     /**
-     * Erstellt eine Rechnung (F-11 bis F-15); {@code zahlungsziel = null} →
+     * Erstellt eine Rechnung (F-11 bis F-15); {@code leistungsdatum = null} →
+     * Rechnungsdatum (A-F-31), {@code zahlungsziel = null} →
      * Standard-Zahlungsziel 14 Kalendertage ab Rechnungsdatum (GR-06).
      */
     Rechnung erstelleRechnung(String kundenNr, List<Positionsangabe> positionen,
-                              LocalDate rechnungsdatum, LocalDate zahlungsziel);
+                              LocalDate rechnungsdatum, LocalDate leistungsdatum,
+                              LocalDate zahlungsziel);
+
+    /** Erstellt eine Rechnung mit Leistungsdatum = Rechnungsdatum. */
+    default Rechnung erstelleRechnung(String kundenNr, List<Positionsangabe> positionen,
+                                      LocalDate rechnungsdatum, LocalDate zahlungsziel) {
+        return erstelleRechnung(kundenNr, positionen, rechnungsdatum, null, zahlungsziel);
+    }
 
     /**
      * Erzeugt den Folgebeleg im Dokumentenzyklus (GR-05, F-22):
@@ -38,8 +46,18 @@ public interface DokumentService {
     /** Setzt den Belegstatus auf {@code VERSENDET}; danach gilt GR-02. */
     void versende(String belegnummer);
 
-    /** Storniert eine offene Rechnung (F-19, F-20). */
-    void storniere(String rechnungsnummer);
+    /**
+     * Storniert eine Rechnung (F-19, F-20, A-F-29). Eine offene Rechnung wird
+     * in-place storniert; eine versendete zusätzlich durch eine neue
+     * Stornorechnung mit negativen Mengen ausgeglichen (F-24).
+     *
+     * @return die erzeugte Stornorechnung, oder die stornierte Rechnung
+     *         selbst, wenn keine Stornorechnung nötig war
+     */
+    Rechnung storniere(String rechnungsnummer);
+
+    /** Erfasst den Zahlungseingang einer offenen oder versendeten Rechnung (A-F-28). */
+    void markiereBezahlt(String rechnungsnummer, LocalDate bezahltAm);
 
     List<Dokument> alleDokumente();
 

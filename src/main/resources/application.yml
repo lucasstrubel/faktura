@@ -4,4 +4,9 @@ spring:
     banner-mode: off
 
 faktura:
-  daten-verzeichnis: daten
+  # Fester Ort im Benutzerverzeichnis statt relativ zum Arbeitsverzeichnis:
+  # Ein Start aus einem anderen Verzeichnis darf keine zweite, leere
+  # Datenbank anlegen — deren Nummernkreise begännen wieder bei 1 und
+  # vergäben bereits verwendete Rechnungsnummern erneut (GR-01).
+  # Überschreibbar per --faktura.daten-verzeichnis=… beim Start.
+  daten-verzeichnis: ${user.home}/Faktura/daten

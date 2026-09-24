@@ -1,5 +1,7 @@
 package de.lucasstrubel.faktura.dokumente;
 
+import de.lucasstrubel.faktura.firma.Firmenprofil;
+import de.lucasstrubel.faktura.firma.FirmenprofilService;
 import de.lucasstrubel.faktura.gemeinsam.DatenBereich;
 import de.lucasstrubel.faktura.gemeinsam.DatenGeaendertEreignis;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
@@ -20,7 +22,8 @@ import java.util.List;
 /**
  * Standardimplementierung des {@link DokumentService} (Komponente A, Kapitel 7):
  * orchestriert {@link BelegnummernGenerator}, {@link KundenService},
- * {@link ProduktService}, {@link DokumentRepository} und {@link PdfExporter}.
+ * {@link ProduktService}, {@link FirmenprofilService},
+ * {@link DokumentRepository} und {@link PdfExporter}.
  */
 @Service
 public class StandardDokumentService implements DokumentService {
@@ -38,6 +41,7 @@ public class StandardDokumentService implements DokumentService {
     private final BelegnummernGenerator nummernGenerator;
     private final KundenService kundenService;
     private final ProduktService produktService;
+    private final FirmenprofilService firmenprofilService;
     private final PdfExporter pdfExporter;
     private final ApplicationEventPublisher ereignisse;
 
@@ -45,12 +49,14 @@ public class StandardDokumentService implements DokumentService {
                                    BelegnummernGenerator nummernGenerator,
                                    KundenService kundenService,
                                    ProduktService produktService,
+                                   FirmenprofilService firmenprofilService,
                                    PdfExporter pdfExporter,
                                    ApplicationEventPublisher ereignisse) {
         this.repository = repository;
         this.nummernGenerator = nummernGenerator;
         this.kundenService = kundenService;
         this.produktService = produktService;
+        this.firmenprofilService = firmenprofilService;
         this.pdfExporter = pdfExporter;
         this.ereignisse = ereignisse;
     }
@@ -59,6 +65,10 @@ public class StandardDokumentService implements DokumentService {
     @Transactional
     public Angebot erstelleAngebot(String kundenNr, List<Positionsangabe> positionen, LocalDate gueltigBis) {
         LocalDate datum = LocalDate.now();
+        if (gueltigBis != null && gueltigBis.isBefore(datum)) {
+            throw new ValidierungsException("Gültig bis",
+                    "'Gültig bis' darf nicht vor dem Angebotsdatum liegen (A-F-32).");
+        }
         Angebot angebot = new Angebot();
         return erstelleBeleg(angebot, kundenNr, positionen, datum, () ->
                 angebot.setGueltigBis(gueltigBis != null
@@ -85,19 +95,38 @@ public class StandardDokumentService implements DokumentService {
     @Override
     @Transactional
     public Rechnung erstelleRechnung(String kundenNr, List<Positionsangabe> positionen,
-                                     LocalDate rechnungsdatum, LocalDate zahlungsziel) {
+                                     LocalDate rechnungsdatum, LocalDate leistungsdatum,
+                                     LocalDate zahlungsziel) {
         if (rechnungsdatum == null) {
             throw new ValidierungsException("Rechnungsdatum",
                     "Das Pflichtfeld 'Rechnungsdatum' fehlt (F-18).");
         }
+        if (zahlungsziel != null && zahlungsziel.isBefore(rechnungsdatum)) {
+            throw new ValidierungsException("Zahlungsziel",
+                    "Das 'Zahlungsziel' darf nicht vor dem Rechnungsdatum liegen (A-F-32).");
+        }
         Rechnung rechnung = new Rechnung();
         return erstelleBeleg(rechnung, kundenNr, positionen, rechnungsdatum, () -> {
-            rechnung.setLeistungsdatum(rechnungsdatum);
+            rechnung.setLeistungsdatum(leistungsdatum != null ? leistungsdatum : rechnungsdatum);
             rechnung.setZahlungsziel(zahlungsziel != null
                     ? zahlungsziel
                     : rechnungsdatum.plusDays(STANDARD_ZAHLUNGSZIEL_TAGE));
             rechnung.setzeStatus(DokumentStatus.OFFEN);
         });
+    }
+
+    /**
+     * Überschreibt die Default-Methode der Schnittstelle nur, um sie
+     * transaktional zu machen: Ein Default-Methoden-Aufruf liefe am
+     * Transaktions-Proxy vorbei — die Nummernvergabe liefe dann in einer
+     * eigenen Transaktion, und ein gescheitertes Speichern hinterließe eine
+     * Lücke (GR-01, NK-01).
+     */
+    @Override
+    @Transactional
+    public Rechnung erstelleRechnung(String kundenNr, List<Positionsangabe> positionen,
+                                     LocalDate rechnungsdatum, LocalDate zahlungsziel) {
+        return erstelleRechnung(kundenNr, positionen, rechnungsdatum, null, zahlungsziel);
     }
 
     /**
@@ -107,20 +136,23 @@ public class StandardDokumentService implements DokumentService {
      * Lieferdatum, Zahlungsziel, Status) trägt der Aufrufer über
      * {@code spezifisch} nach.
      *
-     * <p>Die Reihenfolge ist bewusst: Kunde und Positionen werden geprüft,
-     * <em>bevor</em> die Nummer gezogen wird — ein Eingabefehler soll den
-     * Nummernkreis gar nicht erst berühren. Scheitert danach das Speichern,
-     * rollt die Transaktion die Nummernvergabe zurück (GR-01).
+     * <p>Die Reihenfolge ist bewusst: Kunde, Positionen und Firmenprofil
+     * werden geprüft, <em>bevor</em> die Nummer gezogen wird — ein
+     * Eingabefehler soll den Nummernkreis gar nicht erst berühren. Scheitert
+     * danach das Speichern, rollt die Transaktion die Nummernvergabe zurück
+     * (GR-01).
      */
     private <T extends Dokument> T erstelleBeleg(T beleg, String kundenNr,
                                                  List<Positionsangabe> positionen,
                                                  LocalDate datum, Runnable spezifisch) {
         Kunde kunde = pruefeKunde(kundenNr);
         List<Dokumentposition> dokumentpositionen = bauePositionen(positionen);
+        Firmenprofil aussteller = firmenprofilService.fuerBeleg(beleg instanceof Rechnung);
 
-        beleg.setBelegnummer(nummernGenerator.naechsteNummer(beleg.belegtyp(), datum.getYear()));
+        vergebeNummer(beleg, datum);
         beleg.setDatum(datum);
         beleg.setzeKunde(kunde.getKundennummer(), kunde.getName(), kunde.anschrift());
+        beleg.setzeAussteller(aussteller);
         beleg.setzePositionen(dokumentpositionen);
         spezifisch.run();
         repository.speichere(beleg);
@@ -142,24 +174,28 @@ public class StandardDokumentService implements DokumentService {
                 yield lieferschein;
             }
             case LIEFERSCHEIN -> {
+                // Leistungsdatum ist der Tag der Lieferung, nicht der Tag der
+                // Rechnungsstellung (§ 14 Abs. 4 Nr. 6 UStG, A-F-31)
+                LocalDate lieferdatum = ((Lieferschein) vorgaenger).getLieferdatum();
                 Rechnung rechnung = new Rechnung();
-                rechnung.setLeistungsdatum(datum);
+                rechnung.setLeistungsdatum(lieferdatum != null ? lieferdatum : datum);
                 rechnung.setZahlungsziel(datum.plusDays(STANDARD_ZAHLUNGSZIEL_TAGE));
                 yield rechnung;
             }
             case RECHNUNG -> throw new ValidierungsException("Beleg",
                     "Für eine Rechnung kann kein Folgebeleg erzeugt werden.");
         };
+        Firmenprofil aussteller = firmenprofilService.fuerBeleg(folgebeleg instanceof Rechnung);
 
-        folgebeleg.setBelegnummer(nummernGenerator.naechsteNummer(folgebeleg.belegtyp(), datum.getYear()));
+        vergebeNummer(folgebeleg, datum);
         folgebeleg.setDatum(datum);
         // Übernahme von Kunde, Positionen und Mengen aus dem Vorgänger (GR-05, F-22)
         folgebeleg.setzeKunde(vorgaenger.getKundenReferenz(),
                 vorgaenger.getKundeName(), vorgaenger.getKundeAnschrift());
+        folgebeleg.setzeAussteller(aussteller);
         folgebeleg.setzePositionen(new ArrayList<>(vorgaenger.getPositionen()));
         folgebeleg.setVorgaengerNr(vorgaenger.getBelegnummer());
         if (folgebeleg instanceof Rechnung rechnung) {
-            rechnung.setLeistungsdatum(datum);
             rechnung.setzeStatus(DokumentStatus.OFFEN);
         }
         repository.speichere(folgebeleg);
@@ -176,15 +212,77 @@ public class StandardDokumentService implements DokumentService {
         ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.DOKUMENTE));
     }
 
+    /**
+     * Storniert eine Rechnung (F-19, F-20, A-F-29). Eine noch nicht
+     * versendete Rechnung hat den Empfänger nie erreicht und wird nur
+     * gekennzeichnet. Eine versendete Rechnung dagegen liegt beim Kunden;
+     * sie wird durch eine neue Stornorechnung mit negativen Mengen
+     * ausgeglichen, die eine eigene Nummer aus dem lückenlosen Rechnungskreis
+     * erhält (F-24). Kennzeichnung und Stornorechnung entstehen in einer
+     * Transaktion.
+     */
     @Override
     @Transactional
-    public void storniere(String rechnungsnummer) {
+    public Rechnung storniere(String rechnungsnummer) {
         Dokument dokument = pruefeBeleg(rechnungsnummer);
         if (!(dokument instanceof Rechnung rechnung)) {
             throw new ValidierungsException("Beleg",
                     "Nur Rechnungen können storniert werden (F-19).");
         }
-        rechnung.storniere(LocalDate.now(), SYSTEM_BENUTZER);
+        boolean warVersendet = rechnung.getStatus() == DokumentStatus.VERSENDET;
+        LocalDate heute = LocalDate.now();
+        rechnung.storniere(heute, SYSTEM_BENUTZER);
+        repository.speichere(rechnung);
+
+        Rechnung ergebnis = rechnung;
+        if (warVersendet) {
+            ergebnis = erstelleStornorechnung(rechnung, heute);
+        }
+        ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.DOKUMENTE));
+        return ergebnis;
+    }
+
+    /**
+     * Stornorechnung zu einer versendeten Rechnung (A-F-29): gleiche Kunden-,
+     * Aussteller- und Leistungsdaten, alle Mengen negiert, ohne Zahlungsziel.
+     */
+    private Rechnung erstelleStornorechnung(Rechnung original, LocalDate datum) {
+        Rechnung storno = new Rechnung();
+        vergebeNummer(storno, datum);
+        storno.setDatum(datum);
+        storno.setzeKunde(original.getKundenReferenz(), original.getKundeName(),
+                original.getKundeAnschrift());
+        storno.setzeAussteller(original.getAussteller() != null
+                ? original.getAussteller()
+                : firmenprofilService.fuerBeleg(true));
+        storno.setzePositionen(original.getPositionen().stream()
+                .map(Dokumentposition::negiert)
+                .toList());
+        storno.setVorgaengerNr(original.getBelegnummer());
+        storno.setStornoZu(original.getBelegnummer());
+        storno.setLeistungsdatum(original.getLeistungsdatum());
+        storno.setzeStatus(DokumentStatus.OFFEN);
+        repository.speichere(storno);
+        return storno;
+    }
+
+    @Override
+    @Transactional
+    public void markiereBezahlt(String rechnungsnummer, LocalDate bezahltAm) {
+        Dokument dokument = pruefeBeleg(rechnungsnummer);
+        if (!(dokument instanceof Rechnung rechnung)) {
+            throw new ValidierungsException("Beleg",
+                    "Nur Rechnungen können als bezahlt markiert werden (A-F-28).");
+        }
+        if (bezahltAm == null) {
+            throw new ValidierungsException("Zahlungsdatum",
+                    "Das Pflichtfeld 'Zahlungsdatum' fehlt (A-F-28).");
+        }
+        if (rechnung.getDatum() != null && bezahltAm.isBefore(rechnung.getDatum())) {
+            throw new ValidierungsException("Zahlungsdatum",
+                    "Das 'Zahlungsdatum' darf nicht vor dem Rechnungsdatum liegen (A-F-28).");
+        }
+        rechnung.markiereBezahlt(bezahltAm);
         repository.speichere(rechnung);
         ereignisse.publishEvent(new DatenGeaendertEreignis(DatenBereich.DOKUMENTE));
     }
@@ -212,6 +310,20 @@ public class StandardDokumentService implements DokumentService {
     @Override
     public void exportierePdf(String belegnummer, Path zielDatei) {
         pdfExporter.exportiere(pruefeBeleg(belegnummer), zielDatei);
+    }
+
+    /**
+     * Zieht die nächste Belegnummer. Liefert der Nummernkreis eine bereits
+     * vergebene Nummer, wird abgebrochen, statt einen Bestandsbeleg — womöglich
+     * eine versendete Rechnung — stillschweigend zu überschreiben (GR-01, GR-02).
+     */
+    private void vergebeNummer(Dokument beleg, LocalDate datum) {
+        String nummer = nummernGenerator.naechsteNummer(beleg.belegtyp(), datum.getYear());
+        if (repository.findeNachNummer(nummer) != null) {
+            throw new IllegalStateException("Die Belegnummer " + nummer
+                    + " ist bereits vergeben; der Nummernkreis ist inkonsistent.");
+        }
+        beleg.setBelegnummer(nummer);
     }
 
     private Kunde pruefeKunde(String kundenNr) {

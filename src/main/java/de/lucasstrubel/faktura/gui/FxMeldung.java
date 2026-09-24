@@ -53,6 +53,7 @@ public final class FxMeldung {
             Alert alert = new Alert(Alert.AlertType.ERROR, meldung.text());
             alert.setHeaderText(meldung.feldname() != null
                     ? "Eingabe unvollständig: " + meldung.feldname() : "Fehler");
+            richteEin(alert);
             alert.showAndWait();
         } else if (Benachrichtigung.istBereit()) {
             // Erfolge stören den Arbeitsfluss nicht und blenden von selbst aus
@@ -61,6 +62,7 @@ public final class FxMeldung {
             // Ohne aufgebaute Oberfläche (z. B. in Dialogen vor dem Anzeigen)
             Alert alert = new Alert(Alert.AlertType.INFORMATION, meldung.text());
             alert.setHeaderText("Erfolg");
+            richteEin(alert);
             alert.showAndWait();
         }
     }
@@ -135,6 +137,23 @@ public final class FxMeldung {
     public static boolean bestaetige(String titel, String frage) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION, frage, ButtonType.YES, ButtonType.NO);
         alert.setHeaderText(titel);
+        richteEin(alert);
         return alert.showAndWait().filter(ButtonType.YES::equals).isPresent();
+    }
+
+    /**
+     * Hängt den Hinweis an das gerade aktive Fenster: Ohne Besitzer erschien
+     * er mitunter auf einem anderen Bildschirm, ohne Anwendungssymbol, und
+     * gab den Fokus danach an das Hauptfenster statt an den offenen Dialog
+     * zurück. Stil und Symbol werden vom Besitzer übernommen.
+     */
+    private static void richteEin(Alert alert) {
+        javafx.stage.Window.getWindows().stream()
+                .filter(javafx.stage.Window::isFocused)
+                .findFirst()
+                .ifPresent(besitzer -> {
+                    alert.initOwner(besitzer);
+                    Dialoge.uebernimmStil(alert.getDialogPane().getScene(), besitzer);
+                });
     }
 }

@@ -1,4 +1,5 @@
 package de.lucasstrubel.faktura.produkte;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import de.lucasstrubel.faktura.gemeinsam.LoeschAbgelehntException;
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
@@ -191,8 +192,29 @@ class ProduktVerwaltungTest {
 
         List<String> zeilen = Files.readAllLines(ziel, StandardCharsets.UTF_8);
         assertEquals(4, zeilen.size());
-        assertEquals("produktnummer;bezeichnung;beschreibung;einzelpreisNetto;steuersatz;einheit",
+        // Byte-Order-Mark, damit Excel die Datei als UTF-8 erkennt (IF-04)
+        assertEquals("\uFEFFproduktnummer;bezeichnung;beschreibung;einzelpreisNetto;steuersatz;einheit",
                 zeilen.get(0));
         assertTrue(zeilen.get(1).startsWith("P-000001;Anker;"));
+    }
+
+    @Test
+    @DisplayName("TC-15: Preise mit mehr als zwei Nachkommastellen werden abgelehnt statt still gerundet (B-F-03)")
+    void tc15PreisMitDreiNachkommastellen() {
+        ValidierungsException fehler = assertThrows(ValidierungsException.class,
+                () -> serviceAusRepository().legeAn(produkt("Schraube", "10.005", "0.19")));
+        assertEquals("Einzelpreis", fehler.getFeldname());
+        assertDoesNotThrow(() -> serviceAusRepository().legeAn(produkt("Mutter", "10.500", "0.19")));
+    }
+
+    @Test
+    @DisplayName("TC-16: Ändern eines nicht existierenden Produkts wird abgelehnt statt es anzulegen")
+    void tc16AendernUnbekanntesProdukt() {
+        Produkt produkt = produkt("Beratung", "80.00", "0.19");
+        produkt.setProduktnummer("P-000404");
+
+        ValidierungsException fehler = assertThrows(ValidierungsException.class,
+                () -> serviceAusRepository().aendere(produkt));
+        assertEquals("Produktnummer", fehler.getFeldname());
     }
 }

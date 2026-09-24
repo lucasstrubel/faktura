@@ -1,5 +1,6 @@
 package de.lucasstrubel.faktura.gui;
 
+import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 import de.lucasstrubel.faktura.kunden.Kunde;
 import de.lucasstrubel.faktura.kunden.KundenService;
 import de.lucasstrubel.faktura.produkte.Produkt;
@@ -58,6 +59,7 @@ public class RechnungsWizardDialog extends Stage {
 
     private final DatePicker rechnungsdatumFeld = Dialoge.datumsfeld(LocalDate.now());
     private final DatePicker zahlungszielFeld = Dialoge.datumsfeld(null);
+    private final DatePicker leistungsdatumFeld = Dialoge.datumsfeld(null);
     private final ProgressBar fortschritt = new ProgressBar(0);
 
     private final TextArea zusammenfassung = new TextArea();
@@ -253,15 +255,19 @@ public class RechnungsWizardDialog extends Stage {
         rechnungsdatumFeld.setTooltip(new Tooltip("Pflichtfeld — über den Kalender wählbar"));
         zahlungszielFeld.setTooltip(new Tooltip(
                 "Optional — leer bedeutet 14 Tage nach Rechnungsdatum"));
+        leistungsdatumFeld.setTooltip(new Tooltip(
+                "Optional — Tag der Lieferung oder Leistung; leer bedeutet Rechnungsdatum"));
         Label legende = new Label("* Pflichtfeld");
         legende.getStyleClass().add("pflichtfeld-legende");
 
         HBox rechnungsdatum = new HBox(8, beschriftung("Rechnungsdatum *"), rechnungsdatumFeld);
         rechnungsdatum.setAlignment(Pos.CENTER_LEFT);
+        HBox leistungsdatum = new HBox(8, beschriftung("Leistungsdatum"), leistungsdatumFeld);
+        leistungsdatum.setAlignment(Pos.CENTER_LEFT);
         HBox zahlungsziel = new HBox(8, beschriftung("Zahlungsziel"), zahlungszielFeld);
         zahlungsziel.setAlignment(Pos.CENTER_LEFT);
 
-        return new VBox(10, rechnungsdatum, zahlungsziel, legende);
+        return new VBox(10, rechnungsdatum, leistungsdatum, zahlungsziel, legende);
     }
 
     /** Beschriftung fester Breite, damit die Felder untereinander stehen. */
@@ -298,21 +304,26 @@ public class RechnungsWizardDialog extends Stage {
     }
 
     /**
-     * Übernimmt die Datumsfelder in das Modell (F-10, Q-09). Ein
-     * {@link DatePicker} kann kein ungültiges Datum liefern, deshalb bleibt
-     * hier nur die Pflichtfeldprüfung — die frühere doppelte
-     * Parse-Fehlerbehandlung ist entfallen.
+     * Übernimmt die Datumsfelder in das Modell (F-10, Q-09) — einschließlich
+     * getippten, noch nicht bestätigten Texts. Unlesbarer Text wird als Fehler
+     * mit Feldnamen gemeldet, statt stillschweigend als leer zu gelten.
      */
     private boolean uebernehmeDaten() {
-        LocalDate rechnungsdatum = rechnungsdatumFeld.getValue();
-        if (rechnungsdatum == null) {
-            FxMeldung.zeige(Meldung.fehler("Rechnungsdatum",
-                    "Das Pflichtfeld 'Rechnungsdatum' fehlt."), null);
+        try {
+            LocalDate rechnungsdatum = Dialoge.datum(rechnungsdatumFeld, "Rechnungsdatum");
+            if (rechnungsdatum == null) {
+                FxMeldung.zeige(Meldung.fehler("Rechnungsdatum",
+                        "Das Pflichtfeld 'Rechnungsdatum' fehlt."), null);
+                return false;
+            }
+            controller.getModel().setRechnungsdatum(rechnungsdatum);
+            controller.getModel().setLeistungsdatum(Dialoge.datum(leistungsdatumFeld, "Leistungsdatum"));
+            controller.getModel().setZahlungsziel(Dialoge.datum(zahlungszielFeld, "Zahlungsziel"));
+            return true;
+        } catch (ValidierungsException e) {
+            FxMeldung.zeige(Meldung.fehler(e.getFeldname(), e.getMessage()), null);
             return false;
         }
-        controller.getModel().setRechnungsdatum(rechnungsdatum);
-        controller.getModel().setZahlungsziel(zahlungszielFeld.getValue());
-        return true;
     }
 
     private void speichere() {
