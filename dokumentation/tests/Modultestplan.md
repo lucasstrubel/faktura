@@ -271,6 +271,7 @@ Zwei Testfälle aus Kapitel 2 wurden mit Version 3.0 fachlich angepasst:
 | KZ-04 | Die jüngsten Belege stehen zuerst und sind begrenzt |
 | KZ-05 | Ein leerer Bestand liefert Nullwerte statt einer Ausnahme |
 | KZ-06 | Bezahlte Rechnungen sind nicht mehr offen; Stornorechnungen zählen weder offen noch als Umsatz (A-F-28, A-F-29) |
+| KZ-07 | Gemischter Bestand: unbekannte Bruttobeträge verhindern Teilsummen und werden je Kennzahl gezählt; vollständig bekannte Kennzahlen sowie Zahlungs- und Stornoabgrenzung bleiben unverändert (GR-02, A-F-25, A-F-28, A-F-29) |
 
 ### 3.5 A – Dokumentenzyklus: `NummernkreisIntegritaetTest`
 
