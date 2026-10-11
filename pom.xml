@@ -78,6 +78,13 @@
                 <artifactId>preflight</artifactId>
                 <version>${pdfbox.version}</version>
             </dependency>
+            <!-- Rhino kommt über Mustang-Validator → veraPDF (nur PDF/A-Prüfung, von Faktura nicht
+                 genutzt); 1.7.13 hat CVE-2025-66453 (CVSS 7.5), behoben ab 1.7.15.1 -->
+            <dependency>
+                <groupId>org.mozilla</groupId>
+                <artifactId>rhino</artifactId>
+                <version>1.7.15.1</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
