@@ -1,0 +1,93 @@
+name: Release-Pruefungen
+on:
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - run: ./mvnw --batch-mode --no-transfer-progress verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: geprueftes-jar
+          path: target/faktura-*.jar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xml-paketpruefung
+          path: target/test-classes/de/lucasstrubel/faktura/dokumente/PaketXmlPruefung.class
+  jar-smoke:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v4
+        with:
+          name: geprueftes-jar
+          path: paket
+      - uses: actions/download-artifact@v4
+        with:
+          name: xml-paketpruefung
+          path: paket/testklassen/de/lucasstrubel/faktura/dokumente
+      - name: Schema und Schematron im gepackten JAR
+        shell: pwsh
+        run: |
+          $jar = (Get-ChildItem paket/*.jar).FullName
+          java '-Dloader.main=de.lucasstrubel.faktura.dokumente.PaketXmlPruefung' '-Dloader.path=paket/testklassen' "-Dfaktura.daten-verzeichnis=$env:RUNNER_TEMP/xml-pruefung" -cp $jar org.springframework.boot.loader.launch.PropertiesLauncher "$env:RUNNER_TEMP/xml-pruefung/rechnung.xml"
+          if ($LASTEXITCODE -ne 0) { throw 'Gepackte XML-Validierung fehlgeschlagen' }
+      - name: JavaFX Smoke-Test desselben JAR
+        shell: pwsh
+        run: |
+          $jar = (Get-ChildItem paket/*.jar).FullName
+          if ($IsLinux) { xvfb-run -a pwsh -File tools/paket-pruefen.ps1 -Jar $jar -Laeufe 1 -GrenzeMs 30000 }
+          else { ./tools/paket-pruefen.ps1 -Jar $jar -Laeufe 1 -GrenzeMs 30000 }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-${{ matrix.os }}
+          path: target/paketpruefung/
+  performance:
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: actions/download-artifact@v4
+        with:
+          name: geprueftes-jar
+          path: paket
+      - name: Produktionsdaten und Messungen
+        shell: pwsh
+        run: ./mvnw.cmd test '-Dtest=ProduktionsPerformanceTest' '-Dfaktura.performance=true' '-Djacoco.skip=true' --no-transfer-progress
+      - name: JavaFX-Regressionen
+        shell: pwsh
+        run: ./mvnw.cmd test '-Dtest=GuiRegressionTest' '-Dfaktura.gui.tests=true' '-Djacoco.skip=true' --no-transfer-progress
+      - name: Drei frische Starts mit Referenzbestand
+        shell: pwsh
+        run: ./tools/paket-pruefen.ps1 -Jar (Get-ChildItem paket/*.jar).FullName -Datenquelle (Get-Content target/performance/datenpfad.txt) -Laeufe 3 -GrenzeMs 5000
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance
+          path: |
+            target/performance/
+            target/paketpruefung/

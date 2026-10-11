@@ -1,0 +1,42 @@
+name: Portfolio-Windows-Pruefung
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sicherheit:
+    uses: ./.github/workflows/sicherheit.yml
+    secrets: inherit
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build und GUI-Regressionen
+        run: ./mvnw.cmd --batch-mode --no-transfer-progress verify '-Dfaktura.gui.tests=true'
+      - name: Reproduzierbarer Demobestand
+        run: ./tools/portfolio-demo.ps1
+      - name: Portables Paket mit gebündelter Laufzeit
+        run: ./tools/windows-paket-pruefen.ps1 -Jar (Get-ChildItem target/faktura-*.jar).FullName
+      - name: MSI auf disponiblem Runner installieren und entfernen
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force target/msi-eingabe | Out-Null
+          $jar = Get-ChildItem target/faktura-*.jar
+          Copy-Item $jar.FullName target/msi-eingabe
+          $version = ([xml](Get-Content pom.xml)).project.version -replace '-.*$', ''
+          jpackage --type msi --name Faktura --app-version $version --vendor 'Lucas Strubel' --input target/msi-eingabe --main-jar $jar.Name --icon installer/faktura.ico --win-menu --win-shortcut --win-per-user-install --win-upgrade-uuid 6ff17f18-0f83-4f66-9b3b-2f5c1a4de0aa --dest target/msi-pruefung
+          if ($LASTEXITCODE -ne 0) { throw 'MSI-Bau fehlgeschlagen' }
+          ./tools/msi-pruefen.ps1 -Msi (Get-ChildItem target/msi-pruefung/*.msi).FullName
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: portfolio-pruefnachweise
+          path: |
+            target/surefire-reports/
+            target/windows-paket-*/pruefbericht.txt
+            target/portfolio-demo-*/DEMOSTAND.txt

@@ -1,0 +1,62 @@
+name: Abhaengigkeitssicherheit
+
+# OWASP Dependency-Check gegen die NVD; High/Critical (CVSS >= 7) bricht ab.
+# Voraussetzung für release.yml. Braucht das Repository-Secret NVD_API_KEY.
+on:
+  workflow_call:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 5 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  vollscan:
+    runs-on: ubuntu-latest
+    # NVD-Daten liegen in ~/nvd-daten, also außerhalb von ~/.m2: Der Maven-Cache
+    # von setup-java soll sie weder mitspeichern noch veraltet zurückspielen.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # Jeder Lauf startet mit dem jüngsten gesicherten NVD-Stand und lädt nur
+      # die Änderungen seitdem nach, statt die ganze Datenbank neu zu holen.
+      # Caches aus Läufen auf main (z. B. dem wöchentlichen Zeitplan) stehen
+      # auch Tag-Läufen des Release-Workflows zur Verfügung.
+      - name: NVD-Daten wiederherstellen
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/nvd-daten
+          key: nvd-daten-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: nvd-daten-${{ runner.os }}-
+
+      - name: Vollständiger Scan, High/Critical blockieren
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: ./mvnw --batch-mode --no-transfer-progress org.owasp:dependency-check-maven:12.2.2:check -DfailBuildOnCVSS=7 -DnvdApiKeyEnvironmentVariable=NVD_API_KEY "-DdataDirectory=$HOME/nvd-daten" -Dformats=HTML,JSON
+
+      - name: NVD-Daten vorhanden?
+        id: daten
+        if: always()
+        run: |
+          if [ -n "$(ls -A "$HOME/nvd-daten" 2>/dev/null)" ]; then echo "vorhanden=true" >> "$GITHUB_OUTPUT"; fi
+
+      # Auch speichern, wenn der Scan einen Befund meldet: Die heruntergeladenen
+      # Daten sind trotzdem gültig, und der nächste Lauf soll sie nicht neu laden.
+      - name: NVD-Daten sichern
+        if: always() && steps.daten.outputs.vorhanden == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/nvd-daten
+          key: nvd-daten-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-scan
+          path: target/dependency-check-report.*
