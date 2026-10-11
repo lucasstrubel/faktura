@@ -103,7 +103,9 @@ und Codex. Beide halten sich an dieses Dokument.
 
 - **Eine Arbeitskopie, ein Schreiber.** Claude Code arbeitet im Haupt-Checkout. Codex arbeitet
   in einem eigenen Git-Worktree auf einem Zweig `codex/<thema>`. Kein Agent ändert Dateien in
-  der Arbeitskopie des anderen oder setzt dessen Zweig zurück.
+  der Arbeitskopie des anderen oder setzt dessen Zweig zurück. Die Codex-Sandbox darf nicht in
+  das gemeinsame `.git`-Verzeichnis schreiben: Claude Code legt den Zweig im Codex-Worktree an
+  und committet dort nach dem Review; Codex ändert nur Dateien und committet nicht.
 - **Nie direkt auf `main`.** Jede Änderung: Zweig → Pull Request → grüne CI → Merge.
   Pushes, Merges, Tags und Releases, Secrets und Repository-Einstellungen nur mit
   ausdrücklicher Freigabe von Lucas. Gepusht wird ausschließlich zum GitHub-Remote
