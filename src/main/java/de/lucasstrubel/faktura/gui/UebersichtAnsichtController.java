@@ -109,21 +109,31 @@ public class UebersichtAnsichtController {
                 : zahlen.belegeGesamt() + " Belege insgesamt");
 
         kennzahlen.getChildren().setAll(
-                karte(Feather.CLOCK, "Offener Betrag",
-                        TabellenFormat.betrag(zahlen.offenerBetrag()),
+                betragskarte(Feather.CLOCK, "Offener Betrag",
+                        zahlen.offenerBetrag(), zahlen.offeneUnbekannteAnzahl(),
                         zahlen.offeneAnzahl() + " unbezahlte Rechnungen", "betonend"),
-                karte(Feather.ALERT_TRIANGLE, "Überfällig",
-                        TabellenFormat.betrag(zahlen.ueberfaelligBetrag()),
+                betragskarte(Feather.ALERT_TRIANGLE, "Überfällig",
+                        zahlen.ueberfaelligBetrag(), zahlen.ueberfaelligeUnbekannteAnzahl(),
                         zahlen.ueberfaelligAnzahl() + " Rechnungen über Zahlungsziel",
                         zahlen.ueberfaelligAnzahl() > 0 ? "warnend" : null),
-                karte(Feather.TRENDING_UP, "Umsatz " + LocalDate.now().getYear(),
-                        TabellenFormat.betrag(zahlen.umsatzJahr()),
+                betragskarte(Feather.TRENDING_UP, "Umsatz " + LocalDate.now().getYear(),
+                        zahlen.umsatzJahr(), zahlen.umsatzJahrUnbekannteAnzahl(),
                         "brutto, ohne stornierte Rechnungen", null),
                 karte(Feather.FILE_TEXT, "Belege gesamt",
                         String.valueOf(zahlen.belegeGesamt()),
                         "über alle Belegarten", null));
 
         letzteBelege.getItems().setAll(zahlen.letzteBelege());
+    }
+
+    /** Zeigt unbekannte Beträge mit der vom Dienst ermittelten Rechnungsanzahl (GR-02, A-F-25). */
+    private static VBox betragskarte(Feather symbol, String titel, BigDecimal betrag,
+                                     int unbekannteAnzahl, String zusatz, String zusatzStil) {
+        String wert = betrag == null ? "unbekannt" : TabellenFormat.betrag(betrag);
+        String zusatzText = unbekannteAnzahl == 0 ? zusatz
+                : zusatz + "; " + unbekannteAnzahl + (unbekannteAnzahl == 1 ? " Rechnung" : " Rechnungen")
+                        + " mit unbekanntem Betrag";
+        return karte(symbol, titel, wert, zusatzText, zusatzStil);
     }
 
     /**

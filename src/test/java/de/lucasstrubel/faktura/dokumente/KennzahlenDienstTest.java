@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Modultests der Kennzahlen für die Übersichtsansicht (D-F-18): offener
@@ -40,6 +41,7 @@ class KennzahlenDienstTest {
 
         assertEquals(2, kennzahlen.offeneAnzahl(), "stornierte Rechnungen zählen nicht");
         assertEquals(new BigDecimal("357.00"), kennzahlen.offenerBetrag());
+        assertEquals(0, kennzahlen.offeneUnbekannteAnzahl());
     }
 
     @Test
@@ -55,6 +57,7 @@ class KennzahlenDienstTest {
         assertEquals(1, kennzahlen.ueberfaelligAnzahl(),
                 "weder das heutige Zahlungsziel noch ein fehlendes gilt als überfällig");
         assertEquals(new BigDecimal("100.00"), kennzahlen.ueberfaelligBetrag());
+        assertEquals(0, kennzahlen.ueberfaelligeUnbekannteAnzahl());
     }
 
     @Test
@@ -96,7 +99,12 @@ class KennzahlenDienstTest {
         assertEquals(0, kennzahlen.belegeGesamt());
         assertEquals(0, kennzahlen.offeneAnzahl());
         assertEquals(new BigDecimal("0.00"), kennzahlen.offenerBetrag());
+        assertEquals(0, kennzahlen.offeneUnbekannteAnzahl());
+        assertEquals(0, kennzahlen.ueberfaelligAnzahl());
+        assertEquals(new BigDecimal("0.00"), kennzahlen.ueberfaelligBetrag());
+        assertEquals(0, kennzahlen.ueberfaelligeUnbekannteAnzahl());
         assertEquals(new BigDecimal("0.00"), kennzahlen.umsatzJahr());
+        assertEquals(0, kennzahlen.umsatzJahrUnbekannteAnzahl());
         assertEquals(List.of(), kennzahlen.letzteBelege());
     }
 
@@ -115,7 +123,12 @@ class KennzahlenDienstTest {
         rechnung.setBelegnummer(nummer);
         rechnung.setDatum(datum);
         rechnung.setzeKunde("K-000001", "Muster GmbH", "Hauptstr. 1, 68163 Mannheim");
-        rechnung.setzePositionen(List.of(position(brutto)));
+        rechnung.setzePositionen(List.of(position(brutto == null ? "100.00" : brutto)));
+        if (brutto == null) {
+            // Fehlende gespeicherte Summen bleiben trotz vollständiger Positionen unbekannt (GR-02).
+            rechnung.stelleBetragssnapshotWiederHer(
+                    Betragssnapshot.ausAltbestand(rechnung.getPositionen(), null, null, null));
+        }
         rechnung.setZahlungsziel(zahlungsziel);
         if (status == DokumentStatus.STORNIERT) {
             rechnung.setzeStatus(DokumentStatus.OFFEN);
@@ -227,5 +240,64 @@ class KennzahlenDienstTest {
         assertEquals(0, kennzahlen.ueberfaelligAnzahl());
         assertEquals(new BigDecimal("119.00"), kennzahlen.umsatzJahr(),
                 "bezahlte Rechnung ist Umsatz; Storno und Stornorechnung heben sich auf");
+    }
+
+    @Test
+    @DisplayName("KZ-07: Unbekannte Beträge verhindern Teilsummen und werden je Kennzahl gezählt (GR-02, A-F-25)")
+    void unbekannteBetraegeWerdenJeKennzahlGezaehlt() {
+        bestand.add(rechnung("R-2026-000001", "100.00", DokumentStatus.OFFEN, HEUTE.minusDays(1)));
+        Rechnung bekannt = rechnung("R-2026-000002", "200.00", DokumentStatus.OFFEN, HEUTE.plusDays(7));
+        // Eine ungeklärte Berechnungsart macht einen gespeicherten Bruttobetrag nicht unbekannt.
+        bekannt.stelleBetragssnapshotWiederHer(Betragssnapshot.ausAltbestand(
+                bekannt.getPositionen(), null, null, new BigDecimal("200.00")));
+        bestand.add(bekannt);
+        Rechnung bezahlt = rechnung("R-2026-000003", "300.00", DokumentStatus.VERSENDET, HEUTE.minusDays(3));
+        bezahlt.markiereBezahlt(HEUTE.minusDays(1));
+        bestand.add(bezahlt);
+
+        // Unbekannte Beträge stornierter Rechnungen und Stornorechnungen zählen nicht (A-F-29).
+        bestand.add(rechnung("R-2026-000004", null, DokumentStatus.STORNIERT, HEUTE.minusDays(3)));
+        Rechnung storno = rechnung("R-2026-000005", null, DokumentStatus.OFFEN, HEUTE.minusDays(3));
+        storno.setStornoZu("R-2026-000004");
+        bestand.add(storno);
+
+        Kennzahlen nurBekannteEinbezogen = dienst.ermittle(HEUTE);
+        assertEquals(new BigDecimal("300.00"), nurBekannteEinbezogen.offenerBetrag());
+        assertEquals(0, nurBekannteEinbezogen.offeneUnbekannteAnzahl());
+        assertEquals(new BigDecimal("100.00"), nurBekannteEinbezogen.ueberfaelligBetrag());
+        assertEquals(0, nurBekannteEinbezogen.ueberfaelligeUnbekannteAnzahl());
+        assertEquals(new BigDecimal("600.00"), nurBekannteEinbezogen.umsatzJahr());
+        assertEquals(0, nurBekannteEinbezogen.umsatzJahrUnbekannteAnzahl());
+
+        // Eine unbezahlte Vorjahresrechnung beeinflusst den Jahresumsatz nicht.
+        bestand.add(rechnung("R-2025-000001", null, DokumentStatus.VERSENDET,
+                HEUTE.minusDays(7), HEUTE.minusYears(1)));
+
+        Kennzahlen mitVorjahr = dienst.ermittle(HEUTE);
+        assertEquals(3, mitVorjahr.offeneAnzahl());
+        assertNull(mitVorjahr.offenerBetrag(), "die bekannten 300,00 dürfen keine Gesamtsumme bilden");
+        assertEquals(1, mitVorjahr.offeneUnbekannteAnzahl());
+        assertEquals(2, mitVorjahr.ueberfaelligAnzahl());
+        assertNull(mitVorjahr.ueberfaelligBetrag(), "die bekannten 100,00 dürfen keine Gesamtsumme bilden");
+        assertEquals(1, mitVorjahr.ueberfaelligeUnbekannteAnzahl());
+        assertEquals(new BigDecimal("600.00"), mitVorjahr.umsatzJahr());
+        assertEquals(0, mitVorjahr.umsatzJahrUnbekannteAnzahl());
+
+        bestand.add(rechnung("R-2026-000006", null, DokumentStatus.OFFEN, HEUTE.plusDays(7)));
+        Rechnung bezahltUnbekannt = rechnung("R-2026-000007", null,
+                DokumentStatus.VERSENDET, HEUTE.minusDays(3));
+        bezahltUnbekannt.markiereBezahlt(HEUTE.minusDays(1));
+        bestand.add(bezahltUnbekannt);
+
+        Kennzahlen mitUnbekanntemJahresumsatz = dienst.ermittle(HEUTE);
+        assertEquals(4, mitUnbekanntemJahresumsatz.offeneAnzahl());
+        assertNull(mitUnbekanntemJahresumsatz.offenerBetrag());
+        assertEquals(2, mitUnbekanntemJahresumsatz.offeneUnbekannteAnzahl());
+        assertEquals(2, mitUnbekanntemJahresumsatz.ueberfaelligAnzahl());
+        assertNull(mitUnbekanntemJahresumsatz.ueberfaelligBetrag());
+        assertEquals(1, mitUnbekanntemJahresumsatz.ueberfaelligeUnbekannteAnzahl());
+        assertNull(mitUnbekanntemJahresumsatz.umsatzJahr(), "die bekannten 600,00 dürfen keine Gesamtsumme bilden");
+        assertEquals(2, mitUnbekanntemJahresumsatz.umsatzJahrUnbekannteAnzahl(),
+                "bezahlte Rechnungen zählen nur zum Umsatz, nicht zu Forderungen (A-F-28)");
     }
 }

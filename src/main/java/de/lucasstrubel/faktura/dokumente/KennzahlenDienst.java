@@ -14,6 +14,8 @@ import java.util.List;
  *
  * <p>Bewusst frei von JavaFX: Die Auswertung ist Fachlogik der Komponente A
  * und damit ohne laufende Oberfläche prüfbar.
+ * Gespeicherte Bruttobeträge bleiben maßgeblich (GR-02, A-F-25): Unbekannte
+ * Beträge werden je Kennzahl gezählt und verhindern eine scheinbare Gesamtsumme.
  */
 @Service
 public class KennzahlenDienst {
@@ -49,11 +51,11 @@ public class KennzahlenDienst {
                 .filter(rechnung -> istUeberfaellig(rechnung, heute))
                 .toList();
 
-        BigDecimal umsatzJahr = summe(rechnungen.stream()
+        List<Rechnung> jahresrechnungen = rechnungen.stream()
                 .filter(beleg -> beleg.getStatus() != DokumentStatus.STORNIERT)
                 .filter(beleg -> beleg.getDatum() != null
                         && beleg.getDatum().getYear() == heute.getYear())
-                .toList());
+                .toList();
 
         List<Dokument> letzte = alle.stream()
                 .sorted(Comparator.comparing(Dokument::getDatum,
@@ -62,9 +64,9 @@ public class KennzahlenDienst {
                 .limit(ANZAHL_LETZTE_BELEGE)
                 .toList();
 
-        return new Kennzahlen(unbezahlt.size(), summe(unbezahlt),
-                ueberfaellig.size(), summe(ueberfaellig),
-                skaliere(umsatzJahr), alle.size(), letzte);
+        return new Kennzahlen(unbezahlt.size(), summe(unbezahlt), anzahlUnbekannterBetraege(unbezahlt),
+                ueberfaellig.size(), summe(ueberfaellig), anzahlUnbekannterBetraege(ueberfaellig),
+                summe(jahresrechnungen), anzahlUnbekannterBetraege(jahresrechnungen), alle.size(), letzte);
     }
 
     /**
@@ -76,8 +78,18 @@ public class KennzahlenDienst {
         return rechnung.getZahlungsziel() != null && rechnung.getZahlungsziel().isBefore(heute);
     }
 
+    /** Zählt fehlende gespeicherte Bruttobeträge, ohne sie neu zu berechnen (GR-02, A-F-25). */
+    private static int anzahlUnbekannterBetraege(List<Rechnung> rechnungen) {
+        return (int) rechnungen.stream()
+                .filter(rechnung -> rechnung.getSummeBrutto() == null)
+                .count();
+    }
+
+    /** Liefert bei unbekannten Beträgen keine Teilsumme als Gesamtbetrag (GR-02, A-F-25). */
     private static BigDecimal summe(List<Rechnung> rechnungen) {
-        if (rechnungen.stream().anyMatch(r -> r.getSummeBrutto() == null)) { return null; }
+        if (rechnungen.stream().anyMatch(rechnung -> rechnung.getSummeBrutto() == null)) {
+            return null;
+        }
         return skaliere(rechnungen.stream()
                 .map(Dokument::getSummeBrutto)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
