@@ -14,13 +14,18 @@ set "MAVEN_HOME=%WRAPPER_DIR%\apache-maven-%MAVEN_VERSION%"
 if exist "%MAVEN_HOME%\bin\mvn.cmd" goto run
 
 echo Lade Apache Maven %MAVEN_VERSION% herunter (einmalig)...
+rem Aus PowerShell 7 aufgerufen (z. B. GitHub-Runner) erbt Windows PowerShell 5.1 sonst
+rem dessen PSModulePath und findet Cmdlets wie Get-FileHash nicht. Leer = Standardpfade.
+set "PSModulePath="
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$ErrorActionPreference = 'Stop';" ^
   "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;" ^
   "New-Item -ItemType Directory -Force '%WRAPPER_DIR%' | Out-Null;" ^
   "$zip = Join-Path '%WRAPPER_DIR%' 'apache-maven-%MAVEN_VERSION%-bin.zip';" ^
   "Invoke-WebRequest -Uri 'https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/%MAVEN_VERSION%/apache-maven-%MAVEN_VERSION%-bin.zip' -OutFile $zip;" ^
-  "if ((Get-FileHash -LiteralPath $zip -Algorithm SHA512).Hash -ne '%MAVEN_SHA512%') { Remove-Item -LiteralPath $zip; throw 'Maven-Pruefsumme stimmt nicht ueberein' };" ^
+  "$sha = [Security.Cryptography.SHA512]::Create(); $strom = [IO.File]::OpenRead($zip);" ^
+  "try { $ist = [BitConverter]::ToString($sha.ComputeHash($strom)).Replace('-', '') } finally { $strom.Dispose() };" ^
+  "if ($ist -ne '%MAVEN_SHA512%') { Remove-Item -LiteralPath $zip; throw 'Maven-Pruefsumme stimmt nicht ueberein' };" ^
   "Expand-Archive -Path $zip -DestinationPath '%WRAPPER_DIR%' -Force;" ^
   "Remove-Item $zip"
 if errorlevel 1 (

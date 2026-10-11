@@ -19,6 +19,10 @@ Alle nennenswerten Änderungen an Faktura. Das Format folgt
 - Prüfsummen im Maven-Bootstrap, engere SpotBugs-Ausnahmen und zusätzliche Release-Prüfungen.
 - Dokumentation benennt Kontrollen und offene Nachweise; XRechnung gehört nicht zum Umfang.
 - Das Fat-JAR wird durch den Mustang-Validator (Schema, Schematron, Saxon) deutlich größer.
+- Sicherheitsupdates nach dem ersten vollständigen Abhängigkeitsscan: Spring Boot 4.1.1
+  (Spring Framework 7.0.9, Jackson 2.21.5, Log4j 2.25.5) und PDFBox 3.0.8 für alle PDFBox-Module.
+- Maven-Wrapper (Windows) prüft die Prüfsumme ohne `Get-FileHash`, damit der erste Download auch
+  aus PowerShell 7 heraus gelingt.
 - Review-Korrekturen: Rückfrage beim Beenden auch außerhalb der Einstellungen, erneut gedruckte
   Alt-PDFs ohne Hinweistext, Positionen nicht über Seitenwechsel getrennt, Aufräumfehler blockieren
   den Start nicht mehr, V6-Migration ohne Fachklassen eingefroren und im Paket geprüft,
