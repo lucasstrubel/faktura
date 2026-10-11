@@ -2,8 +2,8 @@
 title: "Anforderungsabgleich und Traceability-Matrix"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
 author: "Lucas Strubel"
-date: "24.09.2026"
-version: "2.0"
+date: "10.10.2026"
+version: "2.1"
 lang: de-DE
 ---
 
@@ -13,12 +13,13 @@ lang: de-DE
 |----|------|------------------------------|
 | 1.0     | 06/2026    | Nachweis der Lastenheft-Anforderungen zur Abnahme der Version 1.0 |
 | 2.0     | 24.09.2026 | Neuer Abgleich gegen den Stand 3.0: Codebelege auf SQLite-Persistenz, transaktionalen Nummernkreis und JavaFX-Oberfläche umgestellt; Kapitel 5 mit den Anforderungen der Weiterentwicklung (Pflichtenheft v2.1–v2.4) |
+| 2.1 | 10.10.2026 | Review-Remediation 3.1.0-rc.1; historische Nachweise und offene Freigabeschranken getrennt |
 
 # Zweck
 
-Dieses Dokument weist nach, dass die Implementierung die Anforderungen des Lastenhefts
-(v1.3) und die darüber hinausgehenden Anforderungen der Weiterentwicklung (Pflichtenheft
-v2.1–v2.4) erfüllt. Es dient als Traceability-Matrix *Anforderung ↔ Codebeleg ↔
+Dieses Dokument ordnet den Anforderungen des Lastenhefts und der Weiterentwicklung
+die Implementierung und vorhandene Nachweise zu. Offene Freigabeschritte sind ausdrücklich
+gekennzeichnet; die Tabelle ist keine pauschale Produktfreigabe. Es dient als Traceability-Matrix *Anforderung ↔ Codebeleg ↔
 Testfall* gemäß Abnahmebedingung Kap. 7.2 des Lastenhefts.
 
 Testfälle werden als *Testklasse ID* angegeben; die IDs entsprechen dem `@DisplayName`
@@ -60,15 +61,15 @@ belegt; **organisatorisch** — nur durch einen Nachweis außerhalb des Codes be
 
 | Anf. | Inhalt | Codebeleg / Nachweis | Testfall | Status |
 |---|------|--------|---------|---|
-| Q-01 | Referenzgröße 5.000 Kunden/Produkte | Seeding im Test | `PerformanceTest` (Seeding) | erfüllt |
-| Q-02 | Suche/Auflistung ≤ 1 s | `Jdbc*Repository.suche` bzw. `Json*Repository.suche` | `PerformanceTest` `q02Suche` | erfüllt |
-| Q-03 | PDF-Erstellung ≤ 2 s (50 Positionen) | `PdfBoxPdfExporter` mit eingebetteter Schrift | `PerformanceTest` `q03PdfErstellung` | erfüllt |
-| Q-04 | Anwendungsstart ≤ 5 s | Laden des Bestands, Spring-Kontext | `PerformanceTest` `q04Anwendungsstart`; `FakturaApplicationTest` KTX-01 | erfüllt |
-| Q-05 | Ersterstellung Rechnung < 10 min (≥ 5 Personen) | Wizard `RechnungsWizardController` | Usability-Test | organisatorisch |
-| Q-06 | 100 % lokale Datenhaltung | SQLite-Datenbank im Benutzerverzeichnis; Mailversand nur über den lokalen Standard-Client (IF-03) | `FakturaApplicationTest` KTX-02, KTX-06; Code-Inspektion | erfüllt |
+| Q-01 | 5.000 Kunden, 5.000 Produkte, 1.000 Belege mit je 5 Positionen | SQLite mit Spring-Services | `ProduktionsPerformanceTest` PERF-01 | lokal gemessen |
+| Q-02 | Suche/Auflistung ≤ 1 s | SQLite-Produktionspfad | `ProduktionsPerformanceTest` PERF-01 | lokal bestanden; RC-Job offen |
+| Q-03 | PDF ≤ 2 s, 50 Positionen | `PdfBoxPdfExporter` | `ProduktionsPerformanceTest` PERF-01 | lokal bestanden; RC-Job offen |
+| Q-04 | Gepackter Start ≤ 5 s | Fenster plus erster FX-Ereigniszyklus | `tools/paket-pruefen.ps1`, drei frische Starts | lokal überschritten; Freigabe gesperrt |
+| Q-05 | Ersterstellung Rechnung < 10 min (≥ 5 Personen) | Wizard `RechnungsWizardController` | Usability-Test | zurückgestellt; Studie nicht durchgeführt |
+| Q-06 | 100 % lokale Datenhaltung | SQLite-Datenbank im Benutzerverzeichnis; Mailversand nur über den lokalen Standard-Client (IF-03) | `FakturaApplicationTest` KTX-02, KTX-06; Code-Inspektion | implementiert; Netzwerk-Monitoring offen |
 | Q-07 | Unveränderlichkeit versendeter Rechnungen | `Dokument.pruefeAenderbar`, Stornorechnung statt Änderung | `DokumentzyklusTest` TC-08, DZ-01 | erfüllt |
-| Q-08 | Vollexport Stamm- und Bewegungsdaten ≤ 30 s | `KundenCsvExport`, `ProduktCsvExport`, `DokumentCsvExport`, `Csv` | `DokumentCsvExportTest` TC-18; `CsvTest` CSV-01 bis CSV-03; `PerformanceTest` `q08Datenexport` | erfüllt |
-| Q-09 | Pflichtfeldhinweis (≥ 80 % Korrektur) | `ValidierungsException`, `FxMeldung`, Wizard-Validierung | `OberflaechenControllerTest` TC-03 bis TC-05; `ValidierungTest` VAL-01; Usability-Test | erfüllt (Code), organisatorisch (Usability) |
+| Q-08 | Vollständiger ZIP-Export ≤ 30 s | `GesamtExport`, eine Lesetransaktion | `ProduktionsPerformanceTest` PERF-01; REM-06 | lokal bestanden; RC-Job offen |
+| Q-09 | Pflichtfeldhinweis (≥ 80 % Korrektur) | `ValidierungsException`, `FxMeldung`, Wizard-Validierung | `OberflaechenControllerTest` TC-03 bis TC-05; `ValidierungTest` VAL-01; Usability-Test | erfüllt (Code), zurückgestellt (Usability) |
 
 # Akzeptanzkriterien (AC)
 
@@ -77,14 +78,14 @@ belegt; **organisatorisch** — nur durch einen Nachweis außerhalb des Codes be
 | AC-01 | BA-01, BA-04 | `KundenVerwaltungTest` TC-01, TC-12 | erfüllt |
 | AC-02 | BA-02, BA-03, GR-04 | `KundenVerwaltungTest` TC-07, TC-10 | erfüllt |
 | AC-03 | BA-05, BA-06, GR-02 | `ProduktVerwaltungTest` TC-06; `DokumentzyklusTest` TC-11 | erfüllt |
-| AC-04 | BA-07, BA-08 | `ProduktVerwaltungTest` TC-08, TC-09, TC-11, TC-12; `PerformanceTest` `q02Suche` | erfüllt |
-| AC-05 | BA-09, Q-03 | `DokumentzyklusTest` TC-10; `PerformanceTest` `q03PdfErstellung` | erfüllt |
+| AC-04 | BA-07, BA-08 | `ProduktVerwaltungTest` TC-08, TC-09, TC-11, TC-12; `ProduktionsPerformanceTest` PERF-01 | erfüllt |
+| AC-05 | BA-09, Q-03 | `DokumentzyklusTest` TC-10; `ProduktionsPerformanceTest` PERF-01 | erfüllt |
 | AC-06 | BA-10 | `DokumentzyklusTest` TC-10 | erfüllt |
 | AC-07 | BA-11 | `DokumentzyklusTest` DZ-05 | erfüllt |
 | AC-08 | BA-12, GR-01, GR-06 | `DokumentzyklusTest` TC-04, TC-06, TC-13; `NummernkreisIntegritaetTest` NK-01 | erfüllt |
 | AC-09 | BA-13 | `OberflaechenControllerTest` TC-02, TC-07, TC-08 | erfüllt |
 | AC-10 | BA-14 | `DokumentzyklusTest` TC-09, DZ-01; `OberflaechenControllerTest` TC-10, TC-11 | erfüllt |
-| AC-11 | Q-09 | `OberflaechenControllerTest` TC-03 bis TC-05; Usability-Test | erfüllt (Code), organisatorisch (Usability) |
+| AC-11 | Q-09 | `OberflaechenControllerTest` TC-03 bis TC-05; Usability-Test | erfüllt (Code), zurückgestellt (Usability) |
 
 # Anforderungen der Weiterentwicklung (Pflichtenheft v2.1–v2.4)
 
@@ -118,6 +119,41 @@ Folgende Punkte sind nicht durch Code oder automatisierte Tests abdeckbar:
   (Ersterstellung einer Rechnung < 10 min; Pflichtfeldkorrektur ≥ 80 %).
 
 Die Abschlusspräsentation und Abnahme der Version 1.0 (M-07) sind im Rahmen des Moduls
-Software Engineering 1 erfolgt. Alle übrigen Anforderungen sind durch Code und
-automatisierte JUnit-Tests belegt; die Oberfläche selbst wurde zusätzlich manuell mit
-Demodaten geprüft.
+Software Engineering 1 erfolgt. Diese historische Abnahme ersetzt keine aktuellen
+RC-Nachweise. Offene Leistungs-, Plattform-, Installations- und Sicherheitsnachweise
+stehen im Testbericht. Das spezifizierte Netzwerk-Monitoring für Q-06 ist noch nicht
+dokumentiert. Die Usability-Studie ist derzeit zurückgestellt; Q-05 und der empirische
+Anteil von Q-09 bleiben unbewiesen. Der [Portfolio-Abschluss](../projekt/Portfolio-Abschluss.md)
+trennt Vorführung, offene Nachweise und spätere Erweiterungen; RC-08 bleibt unverändert.
+
+
+# Ergänzung 3.1.0-rc.1 (10.10.2026)
+
+Maßgeblicher RC-Umfang: EN 16931 CII mit eingebetteter Schema-/Schematron-Prüfung;
+XRechnung ist nicht implementiert. Lückenlose Nummernvergabe ist Projektinvariante GR-01,
+keine pauschale Aussage über gesetzliche Anforderungen oder Compliance.
+Historische Beträge und unbekannte Einheiten werden erhalten; nicht reproduzierbares XML
+wird gesperrt. Details zu Snapshots, Migration, Einheiten, CSV und Rücksicherung stehen in
+[Betrieb 3.1](../projekt/Betrieb-3.1.md). Die v1.0-Abnahme bleibt ein historischer Nachweis.
+Aktuelle Ergebnisse, verbleibende Plattformprüfungen und offene Usability-Studien sind im
+[Modultestbericht](../tests/Modultestbericht.md) ausgewiesen. Frühere JSON-Zeitmessungen
+belegen weder SQLite-Performance noch die Startzeit des gepackten Programms.
+
+## Review-Nachverfolgung 3.1
+
+| Befund | Implementierung | Nachweis |
+|---|---|---|
+| Preis-/Datumsverlust | TabellenFormat, Datumseingabe | REM-01/02, GUI-REM-01 |
+| Historische Beträge | Betragssnapshot, V5/V6, Repository | REM-03/04/07/08 |
+| Einheiten | Einheiten, Dokumentposition, Produktformular | REM-05/09, ERE-10 |
+| PDF-Breiten | Gemessene Spalten, Stapel-/Summenlayout | PDF-REM-01 und visuelle Prüfung |
+| Normvalidierung | ERechnungsPruefung, Mustang 2.24.0 | ERE-01 bis ERE-12, ERE-PAKET-01 |
+| CSV-Vollständigkeit | DokumentCsvExport, GesamtExport | REM-06 |
+| Sortierung/Einstellungen | Bausteine, SchliessSchutz | GUI-REM-02/03 |
+| Sicherung/Upgrade | AtomareDatei, Datensicherung, UpgradeSicherung | REM-04/06/08 |
+| Datenzugriff/Leistung | Bulk-Abfragen, gezieltes COUNT/EXISTS | REM-05, PERF-01, Paketstart |
+| Liefersicherheit | Wrapper-SHA512, Scans, Release-Abhängigkeiten | CI-Läufe erforderlich |
+
+Der aktuelle Testbericht ist maßgeblich für den Nachweisstatus. Ein implementierter
+Prüfschritt gilt erst nach erfolgreicher Ausführung als bestanden. Plattform-, MSI- und
+Sicherheitsfreigaben sind unabhängig von einer lokalen JUnit-Abnahme erforderlich.

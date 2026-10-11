@@ -72,6 +72,10 @@ style: |
     margin: 1em 0;
     border-radius: 0;
   }
+  section.compact { font-size: 22px; line-height: 1.35; }
+  section.compact table { font-size: 19px; }
+  section.compact td { padding: 5px 12px; }
+  section.compact blockquote { font-size: 18px; margin: 0.5em 0; color: #58584f; }
   section.lead {
     justify-content: center;
     text-align: center;
@@ -168,9 +172,9 @@ Querschnitt (`gemeinsam`): EreignisBus, JSON-Persistenz, CSV-Hilfe – von allen
 | **PZ-01** | Digitale Verwaltung von Kunden- & Produktstammdaten (CRUD) |
 | **PZ-02** | Vollständiger Dokumentenzyklus: Angebot → AB → Lieferschein → Rechnung |
 | **PZ-03** | Bedienbar ohne Vorkenntnisse (Rechnung in < 10 Min) |
-| **PZ-04** | 100 % lokale, DSGVO-konforme Datenhaltung |
+| **PZ-04** | Lokale Datenhaltung; Datenschutzbewertung gesondert |
 
-*Nichtziele:* Mehrbenutzer/Netzwerk, vollständige Buchhaltung, E-Rechnung (ZUGFeRD/XRechnung).
+*Nichtziele der Version 1.0:* Mehrbenutzer/Netzwerk, vollständige Buchhaltung, E-Rechnung.
 
 ---
 
@@ -230,7 +234,7 @@ Angebot → Auftragsbestätigung → Lieferschein → Rechnung *(BA-09–12)* ·
 
 ### Technische Umsetzung
 - **Snapshot-Prinzip**: alte Rechnungen bleiben preisstabil, auch wenn sich Produktpreise ändern *(GR-03)*
-- **Lückenlose** Belegnummern (GoBD) · Folgebeleg übernimmt Daten + Rückreferenz *(GR-05)*
+- **Lückenlose** Belegnummern (Projektinvariante GR-01) · Folgebeleg übernimmt Daten + Rückreferenz *(GR-05)*
   <small>`DokumentRepository` · `BelegnummernGenerator` · `PdfBoxPdfExporter`</small>
 
 ### Live-Demo
@@ -262,6 +266,8 @@ Geführte Rechnungserstellung *(BA-13)* · Navigation, Pflichtfeldhinweise *(Q-0
 
 ---
 
+<!-- _class: compact -->
+
 ## Ergebnisse der Modultestpläne
 
 ### 71 / 71 Testfälle bestanden — 100 %, 0 Fehler
@@ -278,7 +284,7 @@ Geführte Rechnungserstellung *(BA-13)* · Navigation, Pflichtfeldhinweise *(Q-0
 
 <small>Deterministische JUnit-5-Tests, Nachbarkomponenten als Stubs/Mocks. Traceability **Anforderung → Code (`@DisplayName`) → Testfall**; spezifiziert in `Modultestplan.md`, nachgewiesen in `Anforderungsabgleich.md`.</small>
 
-> Alle durch Code/Tests belegbaren Anforderungen erfüllt — offen bleiben nur organisatorische Usability-Tests (Q-05 / AC-11).
+> Historische Abnahme v1.0. Für 3.1.0-rc.1 gelten zusätzliche technische Freigabeprüfungen; Usability-Studien sind weiterhin offen.
 
 ---
 
@@ -310,3 +316,50 @@ Geführte Rechnungserstellung *(BA-13)* · Navigation, Pflichtfeldhinweise *(Q-0
 <!-- _paginate: false -->
 
 # Vielen Dank!
+
+
+---
+
+# Release Candidate 3.1.0-rc.1
+
+- Historische Beträge und Einheiten als unveränderliche Snapshots
+- EN 16931 CII mit Schema-/Schematron-Prüfung; keine XRechnung
+- Atomare Sicherungen und Upgradeprobe auf restaurierter Kopie
+- CSV-Gesamtexport, Sortierung, Schutz ungespeicherter Einstellungen
+- Freigabe erst nach Plattform-, MSI-, Sicherheits- und Leistungstests
+
+Stand: 10.10.2026; unveröffentlicht. Ergebnisse im Modultestbericht.
+
+
+---
+
+## Portfolio: aktueller Schwerpunkt
+
+- Windows-Demo: ein Kunde, zwei Produkte, vollständige Belegkette
+- Neue Rechnung: 185,00 EUR netto + 35,15 EUR Steuer = 220,15 EUR
+- Produktpreis ändern: bestehende Rechnung bleibt unverändert
+- PDF, validiertes CII-XML, vollständiger CSV-Export und Sicherung
+
+Vorbereitung und Drei-Minuten-Drehbuch: Portfolio-Abschluss.md
+
+---
+
+## Nachweise und Grenzen offen benennen
+
+- Usability mit fünf Personen: derzeit zurückgestellt, nicht nachgewiesen
+- Startzeit: zwei von drei letzten Läufen über fünf Sekunden
+- Security-Scan: NVD HTTP 429; MSI und weitere Plattformläufe offen
+- Mahnwesen, zusätzliche Steuerszenarien und native Pakete: später
+
+Portfolio-Vorführung ist keine Produktiv- oder RC-Freigabe.
+
+---
+
+## Eigenleistung und KI-Unterstützung
+
+- Ursprung: SE1-Teamprojekt; anschließende individuelle Weiterentwicklung
+- Claude: Unterstützung bei Code, Dokumentation und Umbauten
+- Codex: Review, Remediation, Regressionen und Portfolio-Aufbereitung
+- Eigene Verantwortung: übernommene Regeln verstehen und erläutern
+
+Gesprächsbeispiele: Transaktionen, historische Beträge, sichere Migration.

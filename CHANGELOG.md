@@ -4,6 +4,36 @@ Alle nennenswerten Änderungen an Faktura. Das Format folgt
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [3.1.0-rc.1] — unveröffentlicht
+
+- Preise mit eindeutigem deutschem Editorformat; strenge Kalenderprüfung.
+- Persistente Betragssnapshots und historische Steuerrekonstruktion ohne Änderung alter Summen.
+- Einheiten-Snapshots mit Presets (neu: Monat/MON, Pauschale/LS) und freien PDF-Einheiten; Produkte ohne
+  Einheit ergeben Positionen mit Stück/C62 wie bisher; unbekannte historische Einheiten sperren XML.
+- EN-16931-CII-Prüfung mit Mustang 2.24.0, Betragsabgleich und atomarer Veröffentlichung.
+- Gemessene PDF-Spalten mit gestapeltem Ausweichlayout und getrennten Summenspalten.
+- Erweiterte CSV-Ausgabe und versionierter Gesamtexport aus einer Lesetransaktion.
+- Typisierte Tabellensortierung, Schutz ungespeicherter Einstellungen beim Beenden.
+- Atomare geprüfte ZIP-Sicherung; Upgradeprüfung auf wiederhergestellter Sicherung.
+- Gebündelte Belegabfragen, gezielte Referenzabfragen, SQLite-Leistungsmessungen.
+- Prüfsummen im Maven-Bootstrap, engere SpotBugs-Ausnahmen und zusätzliche Release-Prüfungen.
+- Dokumentation benennt Kontrollen und offene Nachweise; XRechnung gehört nicht zum Umfang.
+- Das Fat-JAR wird durch den Mustang-Validator (Schema, Schematron, Saxon) deutlich größer.
+- Review-Korrekturen: Rückfrage beim Beenden auch außerhalb der Einstellungen, erneut gedruckte
+  Alt-PDFs ohne Hinweistext, Positionen nicht über Seitenwechsel getrennt, Aufräumfehler blockieren
+  den Start nicht mehr, V6-Migration ohne Fachklassen eingefroren und im Paket geprüft,
+  Exportversion aus dem Build.
+
+Die Freigabe bleibt bis zum erfolgreichen Abschluss sämtlicher Plattform-, MSI-,
+Sicherheits- und Leistungsläufe offen. Es wurde kein Release veröffentlicht.
+
+### Portfolio-Aufbereitung (unveröffentlicht)
+
+- Usability ausdrücklich zurückgestellt; spätere Produktfunktionen vom Portfolio-Abschluss getrennt.
+- Dokumentationswidersprüche zu Download, Stornierung und Nachweisen korrigiert; KI-Unterstützung ergänzt.
+- Isolierte Demodaten, Drei-Minuten-Drehbuch und Prüfung eines portablen Windows-Pakets ergänzt.
+- Separater manueller Windows-/MSI-Workflow ohne Veröffentlichung vorbereitet; RC-Gates unverändert.
+
 ## [3.0.0] — 2026-09-24
 
 Erste öffentliche Veröffentlichung mit Installer. Enthält die Überarbeitung vom Juli 2026
