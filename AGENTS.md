@@ -1,45 +1,124 @@
-# Repository Guidelines
+# AGENTS.md
 
-## Projektstruktur und Architektur
+Gemeinsame Arbeitsregeln für alle, die in diesem Repository arbeiten — Menschen und
+Coding-Agenten (Claude Code, Codex). Claude Code liest sie über `CLAUDE.md`, das diese
+Datei einbindet; Codex liest sie direkt. Änderungen an den Regeln gehören hierher, nicht
+in `CLAUDE.md`.
 
-Faktura ist eine lokale Desktop-Anwendung mit Java 21, JavaFX, Spring Boot und SQLite.
+## Projekt
 
-- `src/main/java/de/lucasstrubel/faktura/`: Fachpakete `dokumente`, `kunden`, `produkte`, `firma`, Oberfläche `gui` und gemeinsame Infrastruktur `gemeinsam`.
-- `src/main/resources/`: FXML, CSS, Symbole, Schriften und `application.yml`; Flyway-SQL-Migrationen unter `db/migration/`, Java-Migrationen unter `src/main/java/db/migration/`.
-- `src/test/java/`: Tests spiegeln die Quellpakete; `src/test/resources/` enthält Testkonfiguration.
-- `dokumentation/`: Anforderungen, Testpläne, Diagramme und PDFs; `tools/`: Prüf- und Dokumentationsskripte; `installer/`: Installationsgrafiken. Build-Ergebnisse liegen in `target/`.
+**Faktura** — Desktop-Fakturierungsanwendung (Einzelplatz) von Lucas Strubel; gestartet im Modul Software Engineering 1 an der TH Mannheim (12 Studierende, vier Gruppen à drei, je eine Komponente A–D), danach als Einzelprojekt zu Produktqualität weiterentwickelt (Roadmap: `dokumentation/projekt/Projektuebersicht.md`). Öffentlich auf GitHub (`lucasstrubel/faktura`). Java 21, JavaFX-GUI (FXML + AtlantaFX), Spring Boot, SQLite, Maven-Build. Alle Bezeichner, Kommentare und Spezifikationen sind auf **Deutsch** — neue Klassen, Methoden und Texte ebenfalls auf Deutsch benennen. Auch README, CHANGELOG und die gesamte Dokumentation sind deutsch. Javadoc-Kommentare referenzieren Anforderungs-IDs aus dem Pflichtenheft (z. B. `F-12`, `GR-02`, `C-F-06`); dieses Muster beibehalten. IDs gelten je Komponente A–D; komponentenübergreifende Verweise tragen den Präfix (`A-F-12`, `C-F-06`).
 
-Fachlogik gehört in Services und GUI-unabhängige Controller; Datenzugriffe laufen über Repository-Schnittstellen.
+## Build & Run
 
-## Build, Tests und lokale Entwicklung
-
-JDK 21 verwenden; die Wrapper laden Maven selbst. In PowerShell:
-
-```powershell
-.\mvnw.cmd compile                         # Quellcode kompilieren
-.\mvnw.cmd test                            # Standard-Testlauf
-.\mvnw.cmd test "-Dtest=KundenVerwaltungTest" # Einzelne Testklasse
-.\mvnw.cmd verify                          # Tests, JaCoCo und SpotBugs
-.\mvnw.cmd package                         # Ausführbares JAR bauen
-java -jar target/faktura-3.1.0-rc.1.jar      # Anwendung starten
+```bash
+./mvnw compile                                        # Kompilieren
+./mvnw test                                           # Alle Tests (JUnit 5)
+./mvnw test -Dtest=KundenVerwaltungTest               # Einzelne Testklasse
+./mvnw test -Dtest=KundenVerwaltungTest#testMethode   # Einzelne Testmethode
+./mvnw verify                                         # Tests + JaCoCo + SpotBugs (wie CI)
+./mvnw package                                        # Fat-JAR (spring-boot-maven-plugin repackage)
+java -jar target/faktura-3.1.0-rc.1.jar               # Anwendung starten
 ```
 
-Unter Unix/Git Bash `./mvnw` verwenden. Den JAR-Dateinamen bei Versionsänderungen an `pom.xml` anpassen.
+Unter Windows ohne Git Bash `mvnw.cmd` statt `./mvnw` (in PowerShell `.\mvnw.cmd`, Systemeigenschaften in Anführungszeichen: `"-Dtest=KundenVerwaltungTest"`). `verify` ist das CI-Gate und bricht ab bei SpotBugs-Befunden (Ausnahmen in `spotbugs-exclude.xml`) oder unterschrittener JaCoCo-Schwelle (Bundle: 85 % Instruktionen, 70 % Zweige). Die Schwelle liegt bewusst knapp unter dem Ist-Stand — wer die Abdeckung hebt, zieht sie im `pom.xml` nach. FX-gebundene Klassen (`gui/*Ansicht*`, `*Dialog*`, `Bausteine`, `FxMeldung`, `HintergrundAufgaben`, `Tastenkuerzel`, `FxAnwendung` …) sind ausgenommen; Dialogführung und Logik gehören deshalb in GUI-freie `*Controller`-Klassen, die ohne JavaFX-Laufzeit testbar sind und mitgezählt werden.
 
-## Codestil und Benennung
+Release: Ein Tag `v*` löst `.github/workflows/release.yml` aus. Vorher laufen `pruefungen.yml` (`verify`, JAR-Smoke-Test auf Windows/Linux/macOS inkl. XML-Prüfung im gepackten JAR, Leistungsmessung, GUI-Regressionen) und `sicherheit.yml` (OWASP Dependency-Check, bricht ab CVSS 7; braucht das Repository-Secret `NVD_API_KEY`). Danach Windows-Runner, Abgleich Tag ↔ pom-Version, `jpackage` → MSI mit `installer/faktura.ico` (RC-Versionen ohne Suffix), Installationsprobe über `tools/msi-pruefen.ps1`, GitHub-Release mit MSI + geprüftem Fat-JAR (`-rc.`-Tags als Vorabversion). `portfolio.yml` ist ein manueller Windows-Prüflauf ohne Veröffentlichung. Das Fat-JAR enthält die JavaFX-Natives für win, linux und mac-aarch64 (ausdrückliche Klassifikatoren im `pom.xml`). Die Version im `pom.xml`, im `java -jar`-Pfad oben, im README und im CHANGELOG mitziehen.
 
-Vier Leerzeichen einrücken; öffnende Java-Klammern stehen auf derselben Zeile. Klassen verwenden `PascalCase`, Methoden und Felder `camelCase`, Konstanten `UPPER_SNAKE_CASE`. Bezeichner, Kommentare, Oberflächentexte und Dokumentation auf Deutsch verfassen. Anforderungs-IDs wie `A-F-12` in Javadoc beibehalten. Dateien als UTF-8 speichern und `.gitattributes` beachten. Kein automatischer Formatter ist konfiguriert; bestehenden Stil übernehmen. SpotBugs-Ausnahmen stehen in `spotbugs-exclude.xml`.
+### Tests
 
-## Testregeln
+Modultests instanziieren die Services direkt mit `Json*Repository` bzw. `Einfacher*NummernGenerator` in einem `@TempDir` — ohne Spring-Kontext (Firmenprofil über einen `FirmenprofilService`-Stub, Testdaten in `TestBelege`, inkl. `TestBelege.FIRMA`). Kontexttests (`FakturaApplicationTest`, `NummernkreisIntegritaetTest`, `FirmenprofilServiceTest`, `DatensicherungTest`) übergeben das Datenverzeichnis als Startargument `--faktura.daten-verzeichnis=…` und müssen vor Belegen ein Firmenprofil speichern. Testfälle tragen eine ID im `@DisplayName` (z. B. `"DZ-03: … (A-F-28)"`); neue Tests folgen diesem Muster und werden im Modultestplan (Kapitel 3) nachgetragen. Default-Methoden an Service-Schnittstellen laufen am Transaktions-Proxy vorbei — transaktionale Überladungen in der Implementierung überschreiben (siehe `StandardDokumentService.erstelleRechnung`). Schemaänderungen nur als neue Flyway-Migration `V<n>__beschreibung.sql`, nie bestehende Migrationen ändern. Datenmigrationen, die Rechenlogik brauchen, dürfen Java-Migrationen unter `src/main/java/db/migration/` sein (z. B. `V6__historische_betragsstaende`) — dann ohne Importe aus den Fachpaketen, damit spätere Codeänderungen eine bereits ausgelieferte Migration nicht verändern. GUI-Regressionen (`-Dfaktura.gui.tests=true`) und Produktions-Leistungstests (`-Dfaktura.performance=true`) laufen nur auf ausdrücklichen Schalter.
 
-JUnit Jupiter verwenden, Testklassen `*Test.java` nennen und Testfall-IDs in `@DisplayName` aufnehmen. Services möglichst direkt mit Test-Repositories und `@TempDir` prüfen. Neue Fälle in `dokumentation/tests/Modultestplan.md` ergänzen.
+## Architektur
 
-`verify` verlangt mindestens 85 % Instruktions- und 70 % Zweigabdeckung; ausgewählte JavaFX-Klassen sind ausgenommen. Berichte stehen unter `target/site/jacoco/`. GUI-Regressionen separat mit `.\mvnw.cmd test "-Dfaktura.gui.tests=true"` bei verfügbarer grafischer Umgebung aktivieren; Produktions-Performance-Tests mit `.\mvnw.cmd test "-Dfaktura.performance=true"`.
+Vier fachliche Komponenten unter `src/main/java/de/lucasstrubel/faktura/`, plus ein Querschnittspaket:
+
+| Paket | Komponente | Verantwortung |
+|-------|------------|---------------|
+| `dokumente` | A | Dokumentenzyklus Angebot → Auftragsbestätigung → Lieferschein → Rechnung, Belegnummern, PDF-Export (PDFBox), E-Rechnung EN 16931 (`ERechnungExport`, Mustang) |
+| `produkte` | B | Produktverwaltung (CRUD, Nummernvergabe, Löschsperre) |
+| `kunden` | C | Kundenverwaltung (CRUD, Nummernvergabe, Löschsperre) |
+| `gui` | D | JavaFX-Oberfläche (FXML-Ansichten unter `src/main/resources/fxml/`, Ansicht-Controller, modale Dialoge, RechnungsWizard, Seitennavigation, Übersicht) |
+| `gemeinsam` | — | Querschnitt: EreignisBus, JdbcNummernkreis, JsonPersistenz, Csv, Validierung, Datensicherung, Exceptions |
+| `firma` | — | Firmenprofil des Ausstellers (Einstellungen-Tab; Briefkopf, Zahlungshinweis, E-Rechnung) |
+
+Das Wiring erfolgt über den Spring-IoC-Container: `FakturaApplication` (@SpringBootApplication) startet die JavaFX-Laufzeit `FxAnwendung` (Application; `init()` fährt den Container hoch, `start()` lädt die Oberfläche). FXML-Ansichten lädt der `FxmlLader` mit Spring-Controller-Factory (`createBean` — Ansicht-Controller sind KEINE registrierten Beans, bekommen aber Konstruktor-Injektion). `PersistenzKonfiguration` definiert Repositories/Generatoren als Beans, `FakturaEigenschaften` (@ConfigurationProperties `faktura`) das Datenverzeichnis. Services tragen `@Service` (bei mehreren Konstruktoren: `@Autowired` am vollständigen), Querschnittsklassen `@Component`.
+
+### Wichtige Muster
+
+- **Ereignisse** (Observer, synchron, FX-Thread): Services publizieren nach jeder schreibenden Operation `DatenGeaendertEreignis(DatenBereich.…)` über den `ApplicationEventPublisher`; der `EreignisBus` benachrichtigt die abonnierten Ansichten. Die Brücke ist `@TransactionalEventListener(AFTER_COMMIT, fallbackExecution = true)` — nach einem Rollback darf die Oberfläche keinen Datensatz zeigen, den es nicht gibt. Kein manueller Refresh zwischen Modulen.
+- **Repository-Interfaces** (`KundenRepository`, `ProduktRepository`, `DokumentRepository`) mit `Jdbc*Repository`-Implementierungen (SQLite, primär) und `Json*Repository` (Import/Backup; schreibt atomar über `JsonPersistenz.schreibeAtomar()`).
+- **NummernGeneratoren**: Im Datenbankbetrieb `Jdbc*NummernGenerator` über `JdbcNummernkreis` (Tabelle `nummernkreis`, Flyway V3) — die Vergabe läuft in **derselben Transaktion** wie das Speichern (`@Transactional` auf den Service-Methoden), damit ein Fehlschlag keine Nummer verbraucht (GR-01). Der Startwert wird beim ersten Zugriff träge aus dem Bestand abgeleitet. Die `Einfacher*NummernGenerator` (Speicherzähler) bleiben für Modultests und den JSON-Betrieb. Belegnummern haben das Format `<PRÄFIX>-<JAHR>-NNNNNN` (AN/AB/LS/R), je Typ und Jahr fortlaufend; das Format liegt allein in `Belegnummernformat`.
+- **E-Rechnung-Prüfung**: `ERechnungsPruefung` validiert jedes XML vor dem (atomaren) Schreiben offline mit dem Mustang-Validator und gleicht Beträge mit dem Beleg ab. Ihr statischer Initialisierer setzt **JVM-weit** `javax.xml.accessExternal*` auf leer und registriert `KlassenpfadSchemaFactory` als XSD-`SchemaFactory`, die nur Mustangs gebündelte Schemas lädt — wer weitere XSD-Validierung einbaut, muss das berücksichtigen.
+- **Hintergrundausführung**: Alles, was dauern kann (PDF, E-Rechnung, CSV, Datensicherung, Druck, Mail), läuft über `HintergrundAufgaben.starte(...)` — nie direkt im FX-Ereignis-Handler. Fehler laufen über `FxMeldung.zuMeldung(...)`, die einzige Stelle mit der Ausnahme-Zuordnung.
+- **Oberflächen-Bausteine**: Statusabzeichen, Leerzustände und Spaltenformate kommen aus `Bausteine`; Erfolgsmeldungen über `Benachrichtigung` (nicht blockierend), Fehler und Rückfragen bleiben modale Dialoge. Farben ausschließlich über AtlantaFX-Variablen (`-color-…`), damit heller und dunkler Modus ohne Zusatzregeln tragen.
+- **ReferenzPrüfung** (Löschsperre GR-04): `DokumentReferenzPruefung` (Komponente A) implementiert `KundenReferenzPruefung` und `ProduktReferenzPruefung`; Kunden/Produkte, die in Belegen referenziert sind, dürfen nicht gelöscht werden (`LoeschAbgelehntException`).
+
+### Fachliche Invarianten
+
+- Belege werden **nie gelöscht**, nur storniert — Rechnungsnummern müssen lückenlos bleiben (GR-01, F-12). Eine vergebene Nummer wird nie überschrieben (Prüfung in den Services).
+- Versendete Rechnungen werden über eine **Stornorechnung** ausgeglichen (neue Rechnung mit negierten Mengen, `stornoZu`, A-F-29); der **Zahlungseingang** ist ein Datum (`bezahltAm`), kein Status (A-F-28).
+- Umsatzsteuer wird **je Steuersatz** einmal gerundet (`Dokument.steueraufschluesselung`, A-F-25) — PDF und E-Rechnung müssen dieselben Beträge zeigen. Summen und Steueraufschlüsselung liegen als **`Betragssnapshot`** am Beleg (Tabelle `dokumentsteuer`, Spalte `berechnungsart`) und werden beim Laden übernommen, nie neu berechnet. `Berechnungsart`: `JE_STEUERSATZ` (aktuelle Regel), `ALTE_POSITIONSRUNDUNG` (nachweisbar alte Regel) oder `UNGEKLAERT` (Summen fehlen oder passen zu keiner Regel; `null` heißt unbekannt, nicht 0). E-Rechnungen entstehen nur für `JE_STEUERSATZ` und Positionen mit Einheitencode; der PDF-Export bleibt immer möglich.
+- Positionen speichern die Einheit samt UN/ECE-Code als Snapshot (`Einheiten`, A-F-33); Produkte ohne Einheit werden als „Stück“/`C62` übernommen, freie Einheiten ohne Code taugen nur fürs PDF.
+- Ohne gespeichertes Firmenprofil entstehen keine Belege; Rechnungen brauchen Steuernummer oder USt-IdNr. (`FirmenprofilService.fuerBeleg`, A-F-26). Belege speichern den Aussteller als Snapshot (A-F-27).
+- Belege im Status `VERSENDET` oder `STORNIERT` sind unveränderlich; `Dokument.pruefeAenderbar()` wirft sonst `IllegalStateException` (GR-02, F-24). Statusfolge: `ENTWURF → OFFEN → VERSENDET / STORNIERT`.
+- Belege speichern Kundenname/-anschrift und Positionspreise als **Snapshot** zum Erstellzeitpunkt; spätere Stammdatenänderungen dürfen bestehende Belege nicht verändern (C-F-06).
+- Geldbeträge sind `BigDecimal` mit Scale 2, Rundung `HALF_UP`.
+- Fachliche Validierungsfehler werfen `ValidierungsException` (Feldname + Meldung mit Anforderungs-ID).
+
+### Persistenz
+
+SQLite-Datenbank `faktura.db` im Datenverzeichnis (Standard `<user.home>/Faktura/daten`; `FakturaApplication.main` setzt es vor dem ersten Logger als System-Property, damit auch die Logdatei folgt) über Spring JDBC (`Jdbc*Repository`); das Schema verwaltet Flyway (`src/main/resources/db/migration`, Migration läuft programmatisch im `dataSource`-Bean — Boot-4-Auto-Config greift hier nicht). Die Verbindung läuft mit WAL-Journalmodus, `busy_timeout` und aktiver Fremdschlüsselprüfung; die Datensicherung zieht den Abzug über `VACUUM INTO` (eine Dateikopie wäre bei offenen Verbindungen inkonsistent). Belege liegen als Single-Table-Vererbung mit Diskriminatorspalte `typ`; Beträge als TEXT (BigDecimal-verlustfrei). Beim Laden versendeter/stornierter Belege wird der Status **zuletzt** gesetzt (GR-02-Prüfung). Die `Json*Repository`-Klassen bleiben für die einmalige Übernahme (`JsonDatenUebernahme`: nur bei leerer DB, alles oder nichts in einer Transaktion, danach Umbenennung in `*.uebernommen`) und als Backup-Format erhalten; `Dokument` nutzt dafür Jackson-Polymorphie (`@JsonTypeInfo` mit Property `typ`). Die Nummernkreise leiten ihren Startwert erst beim ersten Zugriff aus dem Bestand ab, also nach der Übernahme.
+
+## Dokumentation
+
+Unter `dokumentation/`: `anforderungen/` (Lastenheft, konsolidiertes Pflichtenheft mit Teilen A–D, Anforderungsabgleich), `tests/` (Modultestplan, -bericht), `projekt/` (Projektübersicht mit Roadmap, Fallstudie, Marp-Präsentation), `diagramme/` (PlantUML-Quellen, gerendert via `java -jar tools/plantuml.jar -Playout=smetana -charset UTF-8`, kein Graphviz nötig; das Jar ist nicht versioniert), `bilder/` (Screenshots aus fiktiven Demodaten), `pdf/` (versionierte PDF-Fassungen).
+
+Die PDFs baut `tools/dokumentation-bauen.ps1` (pandoc + MiKTeX-XeLaTeX, Präsentation über `npx @marp-team/marp-cli`). Seitenlayout, Kopf-/Fußzeile und Schriften liegen zentral in `tools/pandoc/` (`standard.yaml`, `kopf.tex`, `kopfzeile.lua`); die Markdown-Dateien tragen im Front Matter nur Titel, Untertitel, Autor, Datum, Version und `lang` — kein LaTeX und kein `\newpage`, damit GitHub sie sauber darstellt. Neue Seiten beginnen automatisch vor jeder Überschrift der Ebene 1. Nach Doku-Änderungen PDFs neu bauen und mit einchecken.
+
+## Codestil
+
+Vier Leerzeichen einrücken; öffnende Java-Klammern stehen auf derselben Zeile. Klassen
+`PascalCase`, Methoden und Felder `camelCase`, Konstanten `UPPER_SNAKE_CASE`. Importe statt
+voll qualifizierter Klassennamen im Code; eine Anweisung je Zeile. Dateien als UTF-8 mit den
+Zeilenenden aus `.gitattributes` (LF, Windows-Skripte CRLF). Kein automatischer Formatter —
+bestehenden Stil übernehmen. Neue SpotBugs-Befunde beheben statt ausschließen; Ausnahmen in
+`spotbugs-exclude.xml` bleiben eng (Klasse, Methode, ein Muster) und begründet.
 
 ## Commits und Pull Requests
 
-Die Historie nutzt überwiegend kurze deutsche Beschreibungen, gelegentlich mit Präfixen wie `Build:` oder `Oberflaeche:`. Änderungen thematisch bündeln. Pull Requests sollen Verhaltensänderungen, relevante Issues/Anforderungs-IDs und Prüfergebnisse beschreiben; bei Oberflächenänderungen Screenshots ergänzen. Vor Einreichung `verify` ausführen. Bei Änderungen an Dokumentationsquellen zugehörige versionierte PDFs mit `tools/dokumentation-bauen.ps1` aktualisieren.
+Commit-Nachrichten kurz und deutsch, bei Bedarf mit Präfix (`Build:`, `Oberflaeche:`,
+`Dokumentation:`); Änderungen thematisch bündeln. Jede Änderung läuft über einen Zweig und
+einen Pull Request auf GitHub; gemergt wird erst bei grüner CI (`build`, `dependency-review`).
+Pull Requests beschreiben Verhaltensänderungen, Anforderungs-IDs und Prüfergebnisse; bei
+Oberflächenänderungen Screenshots aus Demodaten. Vor dem Pull Request `verify` ausführen.
+Geänderte Dokumentationsquellen: zugehörige PDFs mit `tools/dokumentation-bauen.ps1` neu bauen
+und nur die tatsächlich geänderten PDFs einchecken. Datenbanken, Logs und echte Kundendaten
+nie einchecken; Entwicklungsdaten über `--faktura.daten-verzeichnis=<pfad>` isolieren.
 
-## Persistenz und Konfiguration
+## Zusammenarbeit von Claude Code und Codex
 
-Bestehende Flyway-Migrationen unverändert lassen; neue als `V<n>__beschreibung.sql` ergänzen. Unveränderliche Belege, historische Snapshots und transaktionale Nummernvergabe bewahren. Entwicklungsdaten über `--faktura.daten-verzeichnis=<pfad>` isolieren. Datenbanken, Logs und echte Kundendaten niemals einchecken.
+Zwei Coding-Agenten arbeiten im Auftrag von Lucas Strubel an diesem Repository: Claude Code
+und Codex. Beide halten sich an dieses Dokument.
+
+- **Eine Arbeitskopie, ein Schreiber.** Claude Code arbeitet im Haupt-Checkout. Codex arbeitet
+  in einem eigenen Git-Worktree auf einem Zweig `codex/<thema>`. Kein Agent ändert Dateien in
+  der Arbeitskopie des anderen oder setzt dessen Zweig zurück.
+- **Nie direkt auf `main`.** Jede Änderung: Zweig → Pull Request → grüne CI → Merge.
+  Pushes, Merges, Tags und Releases, Secrets und Repository-Einstellungen nur mit
+  ausdrücklicher Freigabe von Lucas. Gepusht wird ausschließlich zum GitHub-Remote
+  `github`; weitere lokale Remote-Regeln stehen in nicht versionierten Dateien und gelten
+  genauso.
+- **Gegenseitige Prüfung.** Jede Änderung prüft vor dem Merge der jeweils andere Agent:
+  Claude Code prüft Codex-Zweige, Codex prüft Claude-Zweige (`codex review --base main`)
+  und kommentiert Pull Requests auf GitHub. Befunde werden vor dem Umsetzen am Code
+  nachgeprüft; verworfene Befunde stehen mit Begründung im Pull Request.
+- **Übergabe.** Ein Auftrag an den anderen Agenten nennt Ziel, betroffene Dateien,
+  Akzeptanzkriterien und erwartete Tests (mit Test-ID). Der Ergebnisbericht nennt geänderte
+  Dateien, das Ergebnis von `verify` und offene Punkte. Was nicht ausgeführt werden konnte
+  (z. B. GUI-Tests ohne Bildschirm, Netzwerkzugriff in der Sandbox), wird als offen
+  gemeldet, nie als bestanden.
+- **Gleiche Qualitätsgrenze.** Für beide gilt `verify` grün vor dem Pull Request, neue Tests
+  mit ID im `@DisplayName` und im Modultestplan, Doku und PDFs nachgezogen.
+- **Unklare Aufträge** nicht mit Annahmen füllen: offene Fragen im Ergebnisbericht stellen
+  statt sie stillschweigend zu entscheiden.
