@@ -13,7 +13,7 @@ nachträglich als bestanden umgedeutet.
 | Windows-Demo mit fiktiven Daten | Bestandteil | `tools/portfolio-demo.ps1`, PORT-01 |
 | Portables Windows-Paket mit Laufzeit | Lokal bestanden | `tools/windows-paket-pruefen.ps1`, PORT-02; Details im Testbericht 8.5 |
 | Abhängigkeitsscan | Bestanden (11.10.2026) | Mit NVD-Schlüssel und NVD-Cache; zuvor gemeldete Funde behoben durch Spring Boot 4.1.1, PDFBox 3.0.8, Rhino 1.7.15.1 |
-| MSI-Installation / Deinstallation | Offener CI-Nachweis | Nur disponibler Windows-Runner; portabler Start ersetzt diesen Test nicht |
+| MSI-Installation / Deinstallation | Bestanden (11.10.2026) | Release-Workflow: MSI gebaut, auf disponiblem Windows-Runner installiert, gestartet (Readiness-Marker) und deinstalliert |
 | Startzeit höchstens 5 Sekunden | Weiterhin nicht zuverlässig erfüllt | Serie 11.10.2026 lokal 4.502 / 4.964 / 5.270 ms; Anforderung unverändert, CI nur noch Regressionswächter (8 s); RC als Vorabversion, 3.1.0 gesperrt |
 | Linux-/macOS-JAR | JAR-Smoke-Test bestanden (11.10.2026) | Dasselbe JAR startet in CI unter Windows, Ubuntu und macOS 14 und besteht dort die XML- und Migrationsprüfung |
 | Usability mit mindestens fünf Personen | Auf Wunsch des Projektverantwortlichen zurückgestellt | Q-05/Q-09 bleiben ohne empirischen Nachweis; keine erfundenen Ergebnisse |
@@ -60,7 +60,7 @@ PORT-01 prüft beim Aufbau die unveränderte Rechnung nach einer Produktpreisän
 | 1:15–1:45 | PDF exportieren und öffnen | Preis, Einheit, Steuersatz und Summen vollständig lesbar |
 | 1:45–2:20 | Produkt Beratung von 80,00 auf 95,00 EUR ändern; bestehende Rechnung erneut öffnen | Bestehender Beleg bleibt bei 220,15 EUR; neue Berechnung wäre 255,85 EUR brutto |
 | 2:20–2:45 | XML-Ausgabe und vorbereiteten Gesamtexport zeigen | Schema-/Schematron-Prüfung; dokumentierte CSV-Daten; historische Einschränkungen nennen |
-| 2:45–3:00 | Grenzen nennen | Usability zurückgestellt; Startzeit, Security- und externe Release-Nachweise offen |
+| 2:45–3:00 | Grenzen nennen | Usability zurückgestellt; Startzeit (Q-04) mit großem Bestand nicht zuverlässig erfüllt; 3.1.0-rc.1 ist Vorabversion |
 
 Die Tabelle ist ein Drehbuch, keine Behauptung über eine bereits aufgezeichnete
 Video-Demo oder eine durchgeführte Usability-Studie. Für einen neuen Versuch das Skript
@@ -88,11 +88,10 @@ $paketpfad = Get-Content target/windows-paket-pfad.txt
 
 `.github/workflows/portfolio.yml` führt Windows-Build, Demo, portablen Start und einen
 echten MSI-Test aus; der vollständige Sicherheitsscan läuft unabhängig daneben.
-Der Workflow veröffentlicht nichts und lockert keine Release-Gates. Er muss zuerst
-auf einem autorisierten Remote-Branch verfügbar sein. Der aktuelle lokale Arbeitsstand
-wurde nicht gepusht. In GitHub ist kein `NVD_API_KEY`-Secret hinterlegt; dessen Einrichtung
-und ein erfolgreicher Scan bleiben erforderlich. Ein Lauf gegen älteren Remote-Code
-wäre kein Nachweis für diese Änderungen.
+Der Workflow veröffentlicht nichts und lockert keine Release-Gates; er ist manuell auf
+`main` startbar. Das `NVD_API_KEY`-Secret ist hinterlegt; der vollständige Scan ist seit dem
+11.10.2026 grün. Release-Prüfungen und MSI-Test liefen zusätzlich im Release-Workflow für
+3.1.0-rc.1.
 
 ## Eigenleistung und KI-Unterstützung erläutern
 

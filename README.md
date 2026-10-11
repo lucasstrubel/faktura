@@ -69,21 +69,23 @@ Rechnung als PDF, mit Steuernummer im Briefkopf und Umsatzsteuer je Steuersatz:
 
 ## Aktueller Stand und Portfolio-Demo
 
-**3.1.0-rc.1 ist ein unveröffentlichter Arbeitsstand.** Die Windows-Demo und ihre
+**3.1.0-rc.1 ist als [Vorabversion](https://github.com/lucasstrubel/faktura/releases/tag/v3.1.0-rc.1) veröffentlicht** — zum Ausprobieren,
+keine Produktivfreigabe. **Bekannte Lücke:** Mit großem Datenbestand (5.000 Kunden und
+Produkte) überschreitet der Programmstart die Vorgabe von 5 Sekunden (Q-04); die
+endgültige Version 3.1.0 folgt erst, wenn sie eingehalten wird. Die Windows-Demo und ihre
 Vorbereitung stehen im [Portfolio-Abschluss](dokumentation/projekt/Portfolio-Abschluss.md).
-Usability ist ausdrücklich zurückgestellt. Sicherheits-, MSI- und weitere RC-Nachweise
-sind offen; Details stehen im aktuellen Testbericht. Dies ist keine Produktivfreigabe.
+Usability ist ausdrücklich zurückgestellt; Details stehen im aktuellen Testbericht.
 
 ## Download und Start
 
-**Bereits veröffentlichte Versionen:** unter
-[Releases](https://github.com/lucasstrubel/faktura/releases) stehen die jeweils dort
-ausgewiesenen Artefakte. Die folgenden Befehle beziehen sich auf den lokalen RC-Build,
-nicht auf einen bereits verfügbaren Download von 3.1.0-rc.1.
+**Download:** unter [Releases](https://github.com/lucasstrubel/faktura/releases).
+[3.1.0-rc.1](https://github.com/lucasstrubel/faktura/releases/tag/v3.1.0-rc.1) enthält einen Windows-Installer (MSI mit gebündelter
+Java-Laufzeit) und ein plattformübergreifendes JAR, das Java 21 voraussetzt. Dasselbe JAR
+wurde in CI unter Windows, Linux x64 (Ubuntu) und macOS arm64 gestartet und geprüft; die
+Portfolio-Demo ist auf Windows ausgerichtet.
 
-**Lokaler RC-Build mit JDK 21:** `./mvnw.cmd verify` unter Windows ausführen.
-Die Portfolio-Demo ist auf Windows ausgerichtet; Linux x64 und macOS arm64 sind
-Zielplattformen mit noch offenen RC-Smoke-Tests. Das gebaute JAR starten:
+**Selbst bauen mit JDK 21:** `./mvnw.cmd verify` unter Windows ausführen. Das gebaute JAR
+starten:
 
 ```bash
 java -jar target/faktura-3.1.0-rc.1.jar
@@ -116,11 +118,11 @@ cd faktura
 java -jar target/faktura-3.1.0-rc.1.jar
 ```
 
-Unter Windows ohne Git Bash `mvnw.cmd` statt `./mvnw` verwenden. Dieser Stand ist
-unveröffentlicht. Der Release-Workflow verlangt erfolgreiche Plattform-, MSI-, Leistungs-
-und Sicherheitspr?fungen; Veröffentlichung durch einen Versions-Tag bleibt ein eigener Schritt.
+Unter Windows ohne Git Bash `mvnw.cmd` statt `./mvnw` verwenden. Der Release-Workflow
+verlangt erfolgreiche Plattform-, MSI-, Leistungs- und Sicherheitsprüfungen; veröffentlicht
+wird erst durch einen Versions-Tag.
 
-[Upgrade, historische XML-Einschr?nkungen, CSV-Format und Wiederherstellung](dokumentation/projekt/Betrieb-3.1.md).
+[Upgrade, historische XML-Einschränkungen, CSV-Format und Wiederherstellung](dokumentation/projekt/Betrieb-3.1.md).
 
 ## Technik
 
