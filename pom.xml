@@ -35,9 +35,9 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>
-        <spring-boot.version>4.1.0</spring-boot.version>
+        <spring-boot.version>4.1.1</spring-boot.version>
         <javafx.version>21.0.11</javafx.version>
-        <pdfbox.version>3.0.5</pdfbox.version>
+        <pdfbox.version>3.0.8</pdfbox.version>
         <ikonli.version>12.3.1</ikonli.version>
         <mustang.version>2.24.0</mustang.version>
     </properties>
@@ -50,6 +50,40 @@
                 <version>${spring-boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- Alle PDFBox-Module in einer Version: Mustang bringt xmpbox/preflight sonst
+                 in einer anderen Version mit als unser pdfbox (Sicherheitskorrekturen, API-Gleichstand) -->
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>pdfbox</artifactId>
+                <version>${pdfbox.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>pdfbox-io</artifactId>
+                <version>${pdfbox.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>fontbox</artifactId>
+                <version>${pdfbox.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>xmpbox</artifactId>
+                <version>${pdfbox.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>preflight</artifactId>
+                <version>${pdfbox.version}</version>
+            </dependency>
+            <!-- Rhino kommt über Mustang-Validator → veraPDF (nur PDF/A-Prüfung, von Faktura nicht
+                 genutzt); 1.7.13 hat CVE-2025-66453 (CVSS 7.5), behoben ab 1.7.15.1 -->
+            <dependency>
+                <groupId>org.mozilla</groupId>
+                <artifactId>rhino</artifactId>
+                <version>1.7.15.1</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
