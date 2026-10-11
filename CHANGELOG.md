@@ -4,7 +4,7 @@ Alle nennenswerten Änderungen an Faktura. Das Format folgt
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung
 [Semantic Versioning](https://semver.org/lang/de/).
 
-## [3.1.0-rc.1] — unveröffentlicht
+## [3.1.0-rc.1] — 2026-10-11 (Vorabversion)
 
 - Preise mit eindeutigem deutschem Editorformat; strenge Kalenderprüfung.
 - Persistente Betragssnapshots und historische Steuerrekonstruktion ohne Änderung alter Summen.
@@ -35,12 +35,12 @@ auf langsameren CI-Runnern. Der Release-Workflow prüft die Startzeit deshalb nu
 Regressionswächter (8 s). Diese Version erscheint als Vorabversion; 3.1.0 bleibt gesperrt,
 bis die Startzeit eingehalten wird.
 
-### Portfolio-Aufbereitung (unveröffentlicht)
+### Portfolio-Aufbereitung (Teil von 3.1.0-rc.1)
 
 - Usability ausdrücklich zurückgestellt; spätere Produktfunktionen vom Portfolio-Abschluss getrennt.
 - Dokumentationswidersprüche zu Download, Stornierung und Nachweisen korrigiert; KI-Unterstützung ergänzt.
 - Isolierte Demodaten, Drei-Minuten-Drehbuch und Prüfung eines portablen Windows-Pakets ergänzt.
-- Separater manueller Windows-/MSI-Workflow ohne Veröffentlichung vorbereitet; RC-Gates unverändert.
+- Separater manueller Windows-/MSI-Workflow ohne Veröffentlichung vorbereitet.
 
 ## [3.0.0] — 2026-09-24
 
