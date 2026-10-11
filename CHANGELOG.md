@@ -29,8 +29,11 @@ Alle nennenswerten Änderungen an Faktura. Das Format folgt
   den Start nicht mehr, V6-Migration ohne Fachklassen eingefroren und im Paket geprüft,
   Exportversion aus dem Build.
 
-Die Freigabe bleibt bis zum erfolgreichen Abschluss sämtlicher Plattform-, MSI-,
-Sicherheits- und Leistungsläufe offen. Es wurde kein Release veröffentlicht.
+**Bekannte Lücke:** Q-04 (Start in höchstens 5 Sekunden mit 5.000 Kunden/Produkten) wird
+nicht zuverlässig eingehalten; gemessen 4,5–5,3 s auf dem Entwicklungsrechner und bis 6,6 s
+auf langsameren CI-Runnern. Der Release-Workflow prüft die Startzeit deshalb nur noch als
+Regressionswächter (8 s). Diese Version erscheint als Vorabversion; 3.1.0 bleibt gesperrt,
+bis die Startzeit eingehalten wird.
 
 ### Portfolio-Aufbereitung (unveröffentlicht)
 

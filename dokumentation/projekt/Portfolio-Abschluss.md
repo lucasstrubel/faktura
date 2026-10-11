@@ -12,10 +12,10 @@ nachträglich als bestanden umgedeutet.
 | Preise, Daten, Betrags-/Einheitensnapshots, Exporte, Sicherung | Bestandteil | Regressionen im Modultestbericht, Kapitel 8 |
 | Windows-Demo mit fiktiven Daten | Bestandteil | `tools/portfolio-demo.ps1`, PORT-01 |
 | Portables Windows-Paket mit Laufzeit | Lokal bestanden | `tools/windows-paket-pruefen.ps1`, PORT-02; Details im Testbericht 8.5 |
-| Abhängigkeitsscan | Erforderlicher offener Nachweis | NVD-Abruf erneut HTTP 429; kein NVD-Schlüssel konfiguriert |
+| Abhängigkeitsscan | Bestanden (11.10.2026) | Mit NVD-Schlüssel und NVD-Cache; zuvor gemeldete Funde behoben durch Spring Boot 4.1.1, PDFBox 3.0.8, Rhino 1.7.15.1 |
 | MSI-Installation / Deinstallation | Offener CI-Nachweis | Nur disponibler Windows-Runner; portabler Start ersetzt diesen Test nicht |
-| Startzeit höchstens 5 Sekunden | Weiterhin nicht erfüllt | Letzte Serie 4.709 / 5.085 / 5.972 ms; keine Grenzwertänderung |
-| Linux-/macOS-JAR | Ungeprüfte Zielplattformen des RC | Kein aktueller Plattformnachweis; Portfolio-Demo beschränkt sich auf Windows |
+| Startzeit höchstens 5 Sekunden | Weiterhin nicht zuverlässig erfüllt | Serie 11.10.2026 lokal 4.502 / 4.964 / 5.270 ms; Anforderung unverändert, CI nur noch Regressionswächter (8 s); RC als Vorabversion, 3.1.0 gesperrt |
+| Linux-/macOS-JAR | JAR-Smoke-Test bestanden (11.10.2026) | Dasselbe JAR startet in CI unter Windows, Ubuntu und macOS 14 und besteht dort die XML- und Migrationsprüfung |
 | Usability mit mindestens fünf Personen | Auf Wunsch des Projektverantwortlichen zurückgestellt | Q-05/Q-09 bleiben ohne empirischen Nachweis; keine erfundenen Ergebnisse |
 | Netzwerk-Monitoring | Noch nicht durchgeführt | Spezifizierte Nachweismethode für Q-06 bleibt offen; Codeprüfung ersetzt sie nicht |
 | Steuerbefreiungen/Kleinunternehmer, Mahnwesen, native Linux-/macOS-Pakete | Spätere Erweiterungen | Kein Bestandteil des Portfolio-Abschlusses |

@@ -62,9 +62,9 @@ belegt; **organisatorisch** — nur durch einen Nachweis außerhalb des Codes be
 | Anf. | Inhalt | Codebeleg / Nachweis | Testfall | Status |
 |---|------|--------|---------|---|
 | Q-01 | 5.000 Kunden, 5.000 Produkte, 1.000 Belege mit je 5 Positionen | SQLite mit Spring-Services | `ProduktionsPerformanceTest` PERF-01 | lokal gemessen |
-| Q-02 | Suche/Auflistung ≤ 1 s | SQLite-Produktionspfad | `ProduktionsPerformanceTest` PERF-01 | lokal bestanden; RC-Job offen |
-| Q-03 | PDF ≤ 2 s, 50 Positionen | `PdfBoxPdfExporter` | `ProduktionsPerformanceTest` PERF-01 | lokal bestanden; RC-Job offen |
-| Q-04 | Gepackter Start ≤ 5 s | Fenster plus erster FX-Ereigniszyklus | `tools/paket-pruefen.ps1`, drei frische Starts | lokal überschritten; Freigabe gesperrt |
+| Q-02 | Suche/Auflistung ≤ 1 s | SQLite-Produktionspfad | `ProduktionsPerformanceTest` PERF-01 | lokal und im RC-Job bestanden |
+| Q-03 | PDF ≤ 2 s, 50 Positionen | `PdfBoxPdfExporter` | `ProduktionsPerformanceTest` PERF-01 | lokal und im RC-Job bestanden |
+| Q-04 | Gepackter Start ≤ 5 s | Fenster plus erster FX-Ereigniszyklus | `tools/paket-pruefen.ps1`, drei frische Starts | nicht zuverlässig erfüllt (lokal 4,5–5,3 s); RC als Vorabversion mit dokumentierter Lücke, 3.1.0 gesperrt |
 | Q-05 | Ersterstellung Rechnung < 10 min (≥ 5 Personen) | Wizard `RechnungsWizardController` | Usability-Test | zurückgestellt; Studie nicht durchgeführt |
 | Q-06 | 100 % lokale Datenhaltung | SQLite-Datenbank im Benutzerverzeichnis; Mailversand nur über den lokalen Standard-Client (IF-03) | `FakturaApplicationTest` KTX-02, KTX-06; Code-Inspektion | implementiert; Netzwerk-Monitoring offen |
 | Q-07 | Unveränderlichkeit versendeter Rechnungen | `Dokument.pruefeAenderbar`, Stornorechnung statt Änderung | `DokumentzyklusTest` TC-08, DZ-01 | erfüllt |
