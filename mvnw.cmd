@@ -7,6 +7,7 @@ rem ---------------------------------------------------------------------------
 setlocal
 
 set "MAVEN_VERSION=3.9.9"
+set "MAVEN_SHA512=8beac8d11ef208f1e2a8df0682b9448a9a363d2ad13ca74af43705549e72e74c9378823bf689287801cbbfc2f6ea9596201d19ccacfdfb682ee8a2ff4c4418ba"
 set "WRAPPER_DIR=%USERPROFILE%\.m2\wrapper\dists"
 set "MAVEN_HOME=%WRAPPER_DIR%\apache-maven-%MAVEN_VERSION%"
 
@@ -19,6 +20,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "New-Item -ItemType Directory -Force '%WRAPPER_DIR%' | Out-Null;" ^
   "$zip = Join-Path '%WRAPPER_DIR%' 'apache-maven-%MAVEN_VERSION%-bin.zip';" ^
   "Invoke-WebRequest -Uri 'https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/%MAVEN_VERSION%/apache-maven-%MAVEN_VERSION%-bin.zip' -OutFile $zip;" ^
+  "if ((Get-FileHash -LiteralPath $zip -Algorithm SHA512).Hash -ne '%MAVEN_SHA512%') { Remove-Item -LiteralPath $zip; throw 'Maven-Pruefsumme stimmt nicht ueberein' };" ^
   "Expand-Archive -Path $zip -DestinationPath '%WRAPPER_DIR%' -Force;" ^
   "Remove-Item $zip"
 if errorlevel 1 (

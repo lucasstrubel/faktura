@@ -16,6 +16,7 @@ import de.lucasstrubel.faktura.kunden.KundenService;
 import de.lucasstrubel.faktura.produkte.ProduktService;
 
 import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -76,9 +77,9 @@ public class DokumentAnsichtController {
     @FXML private SplitPane aufteilung;
     @FXML private TableView<Dokument> tabelle;
     @FXML private TableColumn<Dokument, String> nummerSpalte;
-    @FXML private TableColumn<Dokument, String> datumSpalte;
+    @FXML private TableColumn<Dokument, LocalDate> datumSpalte;
     @FXML private TableColumn<Dokument, String> kundeSpalte;
-    @FXML private TableColumn<Dokument, String> bruttoSpalte;
+    @FXML private TableColumn<Dokument, BigDecimal> bruttoSpalte;
     @FXML private TableColumn<Dokument, String> statusSpalte;
     @FXML private Label trefferAnzeige;
     @FXML private VBox detailBereich;
@@ -162,11 +163,11 @@ public class DokumentAnsichtController {
 
     private void richteTabelleEin() {
         nummerSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(z.getValue().getBelegnummer()));
-        datumSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(
-                TabellenFormat.datum(z.getValue().getDatum())));
+        datumSpalte.setCellValueFactory(z -> new ReadOnlyObjectWrapper<>(z.getValue().getDatum()));
+        datumSpalte.setCellFactory(Bausteine.formatierteZelle(TabellenFormat::datum));
         kundeSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(z.getValue().getKundeName()));
-        bruttoSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(
-                TabellenFormat.betrag(z.getValue().getSummeBrutto())));
+        bruttoSpalte.setCellValueFactory(z -> new ReadOnlyObjectWrapper<>(z.getValue().getSummeBrutto()));
+        bruttoSpalte.setCellFactory(Bausteine.formatierteZelle(TabellenFormat::betrag));
         statusSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(
                 Bausteine.anzeigestatus(z.getValue())));
         statusSpalte.setCellFactory(Bausteine.statusZelle());

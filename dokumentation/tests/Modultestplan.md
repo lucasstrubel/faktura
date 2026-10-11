@@ -2,8 +2,8 @@
 title: "Modultestplan"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
 author: "Lucas Strubel"
-date: "24.09.2026"
-version: "3.0"
+date: "10.10.2026"
+version: "3.1"
 lang: de-DE
 ---
 
@@ -24,6 +24,7 @@ Performance-Nachweise).
 | 1.0     | 15.06.2026 | Lucas Strubel  | Initiale Erstellung (ausgegliedert aus dem Pflichtenheft, Teil A) |
 | 2.0     | 15.06.2026 | Lucas Strubel  | Konsolidierung aller Komponenten-Testfälle (A–D, gemeinsame Infrastruktur, Performance) in einen projektweiten Modultestplan |
 | 3.0     | 24.09.2026 | Lucas Strubel  | Kapitel 3: ergänzte Testfälle der Versionen 2.0 und 3.0 (164 Testmethoden, 201 Ausführungen); Testumfang-Übersicht auf Stand 3.0 |
+| 3.1 | 10.10.2026 | Lucas Strubel | Review-Remediation 3.1.0-rc.1; historische Nachweise und offene Freigabeschranken getrennt |
 
 
 ## 1. Einleitung
@@ -460,3 +461,77 @@ Q-04, Q-08, Q-09) ab.
 | PH  | Pflichtenheft |
 | CSV | Comma-Separated Values (offenes Exportformat) |
 | GoBD | Grundsätze zur ordnungsmäßigen Führung und Aufbewahrung von Büchern |
+
+
+# Ergänzung 3.1.0-rc.1 (10.10.2026)
+
+Maßgeblicher RC-Umfang: EN 16931 CII mit eingebetteter Schema-/Schematron-Prüfung;
+XRechnung ist nicht implementiert. Lückenlose Nummernvergabe ist Projektinvariante GR-01,
+keine pauschale Aussage über gesetzliche Anforderungen oder Compliance.
+Historische Beträge und unbekannte Einheiten werden erhalten; nicht reproduzierbares XML
+wird gesperrt. Details zu Snapshots, Migration, Einheiten, CSV und Rücksicherung stehen in
+[Betrieb 3.1](../projekt/Betrieb-3.1.md). Die v1.0-Abnahme bleibt ein historischer Nachweis.
+Aktuelle Ergebnisse, verbleibende Plattformprüfungen und offene Usability-Studien sind im
+[Modultestbericht](../tests/Modultestbericht.md) ausgewiesen. Frühere JSON-Zeitmessungen
+belegen weder SQLite-Performance noch die Startzeit des gepackten Programms.
+
+## RC-Regressionen und Freigabeläufe
+
+| ID | Nachweis |
+|---|---|
+| REM-01 | SQLite-Preisrundreise mit 1,000, 12,500, Dezimal-/Tausenderformaten und Fremdfeldänderung |
+| REM-02 | Kalenderstrenge Kurzformen, Schaltjahre und feldbezogene Fehler |
+| REM-03 | Historische 0,08 EUR, PDF, Storno -0,08 EUR und Neustart |
+| REM-04 | V4-Migration mit verifizierter Sicherung und unveränderten Nummern |
+| REM-05 | Fehlende Beträge, Presets/Aliase und exakte Positionsnegation |
+| REM-06 | Gesamt-CSV, ZIP-Schreibfehler, Wiederherstellung und Integrität |
+| REM-07 | Alter JSON-Import mit fehlenden Geld-/Einheitenfeldern |
+| REM-08 | Fehler der Upgradeprobe erhält V4; Wiederholung gelingt |
+| REM-09 | Geänderte Produkteinheit beeinflusst Folgebelege und Storno auch nach Neustart nicht |
+| REM-10 | Produkt ohne Einheit ergibt Stück/C62; Pauschale (LS) und Monat (MON) bestehen die EN-16931-Prüfung |
+| REM-11 | Eingefrorene V6-Migration: je Steuersatz, alte Positionsrundung und ungeklärt wie `Betragssnapshot`, Steuerzeilen in `dokumentsteuer` |
+| REM-12 | Nicht entfernbare Temp-Verzeichnisse (Upgradeprobe, Gesamtexport) führen nur zu einer Warnung |
+| ERE-09 | Misch- und Nullsteuersätze bestehen Mustang-Prüfung |
+| ERE-10 | Abweichende Beträge/Einheiten und externe Entitäten blockiert |
+| ERE-11 | Normfehler überschreiben kein vorhandenes Ziel |
+| GUI-REM-01 | Ungültiger Datumstext bleibt nach Commit/Fokuswechsel sichtbar |
+| GUI-REM-02 | Numerische/chronologische Sortierung, null stets zuletzt |
+| GUI-REM-03 | Einstellungen: Speichern/Verwerfen/Abbrechen und Validierungsfehler |
+| GUI-REM-04 | Rückfrage beim Beenden auch, wenn die Einstellungen gerade nicht angezeigt werden |
+| PDF-REM-01 | Große Beträge, Stapellayout, Langtexte, Folgeseiten; Zeichenkoordinaten und gerenderte Prüfbilder |
+| PDF-REM-02 | Altpositionen ohne Einheit/Produktnummer ohne Hinweistext; keine Position über einen Seitenwechsel getrennt (Tabelle und Stapel) |
+| PERF-01 | Spring/SQLite mit 5000 Kunden, 5000 Produkten und 1000 Belegen mit fünf Positionen |
+
+GUI- und Leistungstests sind getrennt aktivierbar. Der Release-Workflow verlangt sie
+zusätzlich zum regulären `verify`. Drei frische Starts messen bis zum Readiness-Marker
+nach Fensteranzeige und erstem JavaFX-Ereigniszyklus. Zeiten und Runnerdaten werden
+archiviert. Derselbe JAR-Build wird auf drei Plattformen geprüft. Der MSI-Test installiert,
+startet mit gebündelter Laufzeit und deinstalliert auf einem disponiblen Windows-Runner.
+
+| ID | Nachweis | Ausführung |
+|---|---|---|
+| ERE-12 | Fremde Schemaquellen, Pfadmanipulation und Aufweichen der JAXP-Sperre werden abgelehnt | `KlassenpfadSchemaFactoryTest` |
+| ERE-PAKET-01 | Gültiges XML und ungültiger Käufername mit unverändertem Ziel im gepackten JAR; Flyway findet dort V1–V6 inkl. Java-Migration | `PaketXmlPruefung`, Plattformmatrix |
+
+GUI-REM-03 prüft zusätzlich einen echten Datenbankfehler beim Speichern: Die Anwendung bleibt offen und die bearbeiteten Felder samt Ungespeichert-Anzeige bleiben erhalten.
+
+Abweichend vom historischen Kapitel 2 erwartet PDF-TC-17 ab Version 3.1 unbekannte
+Summen bei unvollständigen Positionen. REM-05 prüft zusätzlich unbekannte Positionssteuer
+und unbekanntes Positionsbrutto; CSV darf daraus keine bekannte Null erzeugen.
+
+
+## Portfolio-Prüfungen (10.10.2026)
+
+Diese ergänzenden Prüfprogramme verwenden das zuvor gebaute JAR und ausschließlich
+isolierte Testdaten. Sie werden getrennt von JUnit ausgeführt und verändern dessen
+Testfallzahl nicht. Befehle und erwarteter Vorführablauf stehen im
+[Portfolio-Abschluss](../projekt/Portfolio-Abschluss.md).
+
+| ID | Prüfung | Erwartetes Ergebnis |
+|---|---|---|
+| PORT-01 | tools/portfolio-demo.ps1, produktive Dienste im gepackten JAR | Neuer isolierter Bestand; Belegkette, Preisänderung ohne Snapshotänderung; PDF, validiertes XML, Gesamt-ZIP und Sicherung |
+| PORT-02 | tools/windows-paket-pruefen.ps1 | Portable EXE startet mit gebündelter Laufzeit ohne JAVA_HOME, isolierte DB und Bereitschaftsmarker; SHA-256 im Bericht |
+
+PORT-02 verwendet 30 Sekunden als reine Smoke-Frist und ersetzt weder die 5-Sekunden-
+Messung noch den installierten MSI-Test. Die Usability-Studie ist derzeit zurückgestellt;
+ihre Akzeptanzkriterien bleiben unbewiesen. Der Netzwerk-Monitoring-Nachweis ist offen.

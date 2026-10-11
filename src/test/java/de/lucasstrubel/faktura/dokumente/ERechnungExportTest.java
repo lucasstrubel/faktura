@@ -60,9 +60,9 @@ class ERechnungExportTest {
         rechnung.setZahlungsziel(LocalDate.of(2026, 6, 23));
         rechnung.setzePositionen(List.of(
                 new Dokumentposition("P-000042", "Beratungsstunde", 2,
-                        new BigDecimal("80.00"), new BigDecimal("0.19")),
+                        new BigDecimal("80.00"), new BigDecimal("0.19"), "Stunde", "HUR"),
                 new Dokumentposition("P-000043", "Fahrtkosten", 1,
-                        new BigDecimal("40.00"), new BigDecimal("0.19"))));
+                        new BigDecimal("40.00"), new BigDecimal("0.19"), "Stück", "C62")));
         return rechnung;
     }
 
@@ -107,7 +107,7 @@ class ERechnungExportTest {
     void steuerJeSatzWieBeleg() throws Exception {
         Rechnung rechnung = rechnung();
         rechnung.setzePositionen(Collections.nCopies(10, new Dokumentposition(
-                "P-000001", "Kleinteil", 1, new BigDecimal("1.10"), new BigDecimal("0.19"))));
+                "P-000001", "Kleinteil", 1, new BigDecimal("1.10"), new BigDecimal("0.19"), "Stück", "C62")));
         // Je Position gerundet wären es 10 × 0,21 = 2,10 EUR
         assertEquals(new BigDecimal("2.09"), rechnung.getSummeSteuer());
         assertEquals(new BigDecimal("13.09"), rechnung.getSummeBrutto());
@@ -175,5 +175,40 @@ class ERechnungExportTest {
         ValidierungsException fehler = assertThrows(ValidierungsException.class,
                 () -> export(null).exportiereXml(rechnung, tempDir.resolve("x.xml")));
         assertEquals("Steuernummer", fehler.getFeldname());
+    }
+
+    @Test
+    @DisplayName("ERE-09: Misch- und Nullsteuersätze bestehen die eingebettete Normprüfung")
+    void gemischteUndNullsteuern() throws Exception {
+        Rechnung r = rechnung();
+        r.setzePositionen(List.of(
+                new Dokumentposition("A", "Normal", 3, new BigDecimal("10"), new BigDecimal("0.19"), "kg", "KGM"),
+                new Dokumentposition("B", "Ermäßigt", 2, new BigDecimal("5"), new BigDecimal("0.07"), "Tag", "DAY"),
+                new Dokumentposition("C", "Nullsatz", 1, new BigDecimal("3"), BigDecimal.ZERO, "Liter", "LTR")));
+        assertTrue(exportiere(r).contains("49.40"));
+    }
+
+    @Test
+    @DisplayName("ERE-10: Unbekannte Einheiten, falsche Beträge und externe Entitäten werden blockiert")
+    void abweichungen() throws Exception {
+        Rechnung r = rechnung();
+        String xml = exportiere(r);
+        ERechnungsPruefung pruefung = new ERechnungsPruefung();
+        assertFalse(pruefung.pruefe(r, xml.replace("238.00", "238.01").getBytes(StandardCharsets.UTF_8)).isEmpty());
+        assertFalse(pruefung.pruefe(r, xml.replace("unitCode=\"HUR\"", "unitCode=\"C62\"").getBytes(StandardCharsets.UTF_8)).isEmpty());
+        assertFalse(pruefung.pruefe(r, "<!DOCTYPE a SYSTEM 'http://127.0.0.1:9/extern'><a/>".getBytes(StandardCharsets.UTF_8)).isEmpty());
+        Path ziel = tempDir.resolve("bestehend.xml"); Files.writeString(ziel, "unverändert");
+        r.setzePositionen(List.of(new Dokumentposition("P", "Historisch", 1, BigDecimal.ONE, BigDecimal.ZERO)));
+        assertThrows(ValidierungsException.class, () -> export(null).exportiereXml(r, ziel));
+        assertEquals("unverändert", Files.readString(ziel));
+    }
+
+    @Test
+    @DisplayName("ERE-11: Fehler der Normprüfung lassen vorhandene Zieldateien unberührt")
+    void schemafehlerVeroeffentlichtNichts() throws Exception {
+        Rechnung r = rechnung(); r.setzeKunde("K", "", "unvollständig");
+        Path ziel = tempDir.resolve("bestehend.xml"); Files.writeString(ziel, "vorher");
+        assertThrows(ValidierungsException.class, () -> export(null).exportiereXml(r, ziel));
+        assertEquals("vorher", Files.readString(ziel));
     }
 }

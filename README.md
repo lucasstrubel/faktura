@@ -4,7 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/lucasstrubel/faktura?label=Release)](https://github.com/lucasstrubel/faktura/releases/latest)
 [![Java 21](https://img.shields.io/badge/Java-21-007396?logo=openjdk&logoColor=white)](https://adoptium.net/temurin/releases/?version=21)
 [![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-green.svg)](LICENSE)
-[![Mit Claude entwickelt](https://img.shields.io/badge/entwickelt%20mit-Claude-D97757?logo=claude&logoColor=white)](https://claude.com/claude-code)
+[![Mit KI-Unterstützung entwickelt](https://img.shields.io/badge/KI--Unterstützung-Claude%20%2B%20Codex-D97757)](dokumentation/projekt/Fallstudie.md)
 
 **Schlanke Desktop-Fakturierung für Freiberufler und Kleinstunternehmen — vollständig lokal,
 ohne Cloud, ohne Abo.**
@@ -12,7 +12,8 @@ ohne Cloud, ohne Abo.**
 Faktura verwaltet Kunden und Produkte und bildet den vollständigen kaufmännischen
 Dokumentenzyklus ab — Angebot → Auftragsbestätigung → Lieferschein → Rechnung —
 einschließlich PDF-Ausgabe, E-Rechnung nach EN 16931, lückenloser Rechnungsnummern und
-unveränderlicher versendeter Belege (GoBD).
+unveränderlicher versendeter Belege. Diese technischen Kontrollen sind keine pauschale
+Bestätigung rechtlicher Compliance.
 
 > **Herkunft:** Faktura ist im Rahmen des Moduls **Software Engineering 1** an der
 > **TH Mannheim** gestartet (Sommersemester 2026). 12 Studierende in vier Gruppen zu je
@@ -35,17 +36,17 @@ warum jeder Umbauschritt nötig war und was ich unterwegs gelernt habe.
   Stammdatenänderungen verändern keine bestehenden Belege
 - **Geführte Rechnungserstellung** — Assistent in fünf Schritten (Kunde → Positionen →
   Daten → Prüfen → Speichern)
-- **Rechtssicher aufgebaut** — lückenlose Rechnungsnummern je Jahr (`R-2026-000124`),
+- **Nachvollziehbare Belege** — lückenlose Rechnungsnummern als Projektinvariante je Jahr (`R-2026-000124`),
   transaktional abgesichert; Belege werden nie gelöscht; versendete Rechnungen werden
   über eine **Stornorechnung** korrigiert; Pflichtangaben nach § 14 UStG einschließlich
   Steuernummer und **Umsatzsteuer je Steuersatz**; Geldbeträge durchgängig `BigDecimal`
 - **Zahlungseingang** — bezahlte Rechnungen verschwinden aus offenem Betrag und
   Überfälligkeit; die Übersicht zeigt Offenes, Überfälliges und den Jahresumsatz
 - **Ausgabe** — PDF (Apache PDFBox, eingebettete Schrift), **E-Rechnung nach EN 16931**
-  (ZUGFeRD/XRechnung-CII über Mustang, Stornorechnung als korrigierte Rechnung),
+  (CII-XML über Mustang mit Schema- und Schematron-Prüfung; keine XRechnung),
   CSV-Export (UTF-8, Excel-tauglich), Druck und E-Mail über das Betriebssystem
 - **Nur lokal** — SQLite-Datenbank im Benutzerverzeichnis, Schema über Flyway, Sicherung
-  per Knopfdruck als ZIP; keine Netzwerkzugriffe (DSGVO)
+  per Knopfdruck als ZIP; XML-Prüfung mit eingebetteten Prüfartefakten ohne Netzabruf
 
 ## Bildschirmfotos
 
@@ -66,25 +67,33 @@ Rechnung als PDF, mit Steuernummer im Briefkopf und Umsatzsteuer je Steuersatz:
 
 *Alle gezeigten Daten sind erfundene Demodaten.*
 
+## Aktueller Stand und Portfolio-Demo
+
+**3.1.0-rc.1 ist ein unveröffentlichter Arbeitsstand.** Die Windows-Demo und ihre
+Vorbereitung stehen im [Portfolio-Abschluss](dokumentation/projekt/Portfolio-Abschluss.md).
+Usability ist ausdrücklich zurückgestellt. Sicherheits-, MSI- und weitere RC-Nachweise
+sind offen; Details stehen im aktuellen Testbericht. Dies ist keine Produktivfreigabe.
+
 ## Download und Start
 
-**Windows-Installer (MSI):** unter
-[Releases](https://github.com/lucasstrubel/faktura/releases/latest) herunterladen —
-installiert je Benutzer ohne Administratorrechte, mit Startmenü-Eintrag und eigener
-Java-Laufzeit.
+**Bereits veröffentlichte Versionen:** unter
+[Releases](https://github.com/lucasstrubel/faktura/releases) stehen die jeweils dort
+ausgewiesenen Artefakte. Die folgenden Befehle beziehen sich auf den lokalen RC-Build,
+nicht auf einen bereits verfügbaren Download von 3.1.0-rc.1.
 
-**JAR (Windows, Linux, macOS mit Apple Silicon):** `faktura-3.0.0.jar` aus demselben
-Release laden und mit Java 21 oder neuer starten:
+**Lokaler RC-Build mit JDK 21:** `./mvnw.cmd verify` unter Windows ausführen.
+Die Portfolio-Demo ist auf Windows ausgerichtet; Linux x64 und macOS arm64 sind
+Zielplattformen mit noch offenen RC-Smoke-Tests. Das gebaute JAR starten:
 
 ```bash
-java -jar faktura-3.0.0.jar
+java -jar target/faktura-3.1.0-rc.1.jar
 ```
 
 Die Daten liegen unter `<Benutzerverzeichnis>/Faktura/daten`. Ein anderes Verzeichnis
 lässt sich beim Start angeben:
 
 ```bash
-java -jar faktura-3.0.0.jar --faktura.daten-verzeichnis=/pfad/zu/daten
+java -jar faktura-3.1.0-rc.1.jar --faktura.daten-verzeichnis=/pfad/zu/daten
 ```
 
 Vor der ersten Rechnung unter **Einstellungen** das Firmenprofil hinterlegen — Name,
@@ -104,12 +113,14 @@ cd faktura
 ./mvnw verify      # Tests + Abdeckungsschwelle + SpotBugs (wie die CI)
 ./mvnw package     # ausführbares JAR unter target/
 
-java -jar target/faktura-3.0.0.jar
+java -jar target/faktura-3.1.0-rc.1.jar
 ```
 
-Unter Windows ohne Git Bash `mvnw.cmd` statt `./mvnw` verwenden. Ein Release entsteht durch
-einen Versions-Tag (`git tag v3.0.0 && git push origin v3.0.0`): Der Workflow prüft Tag und
-Projektversion, baut MSI und JAR und veröffentlicht beide.
+Unter Windows ohne Git Bash `mvnw.cmd` statt `./mvnw` verwenden. Dieser Stand ist
+unveröffentlicht. Der Release-Workflow verlangt erfolgreiche Plattform-, MSI-, Leistungs-
+und Sicherheitspr?fungen; Veröffentlichung durch einen Versions-Tag bleibt ein eigener Schritt.
+
+[Upgrade, historische XML-Einschr?nkungen, CSV-Format und Wiederherstellung](dokumentation/projekt/Betrieb-3.1.md).
 
 ## Technik
 
@@ -143,12 +154,14 @@ Tests: [`src/test/java/de/lucasstrubel/faktura/`](src/test/java/de/lucasstrubel/
 
 ## Qualität
 
-- **201 automatisierte Tests** (164 Testmethoden), alle grün; zur Abnahme der Version 1.0
-  waren es 71
+- **Release Candidate 3.1.0-rc.1:** Regressionen für historische Beträge, Einheiten,
+  Preise, Daten, XML, CSV und Sicherungen. Aktuelle Ergebnisse und offene Freigaben im
+  [Testbericht](dokumentation/tests/Modultestbericht.md); v1.0 bleibt historisch dokumentiert.
 - **Abdeckungsschwelle im Build:** 85 % Anweisungen, 70 % Zweige im nicht-grafischen Code
-- **SpotBugs:** keine Befunde, im Build erzwungen
-- **Performance als Test:** 5.000 Kunden, 5.000 Produkte, 1.000 Belege gegen die
-  Grenzwerte des Lastenhefts (Start ≤ 5 s, Suche ≤ 1 s, PDF ≤ 2 s)
+- **SpotBugs:** Build-Schranke mit begründeten, klassen-/methodenspezifischen Ausnahmen
+- **Performance:** separater SQLite-Messlauf mit 5.000 Kunden, 5.000 Produkten und
+  1.000 Belegen; drei frische JAR-Starts (≤ 5 s), Suche/Listen (≤ 1 s),
+  50-Positionen-PDF (≤ 2 s), Gesamt-ZIP (≤ 30 s). Die RC-Freigabe erfordert alle Messungen.
 - **Nachvollziehbarkeit:** jede Anforderung ist im
   [Anforderungsabgleich](dokumentation/anforderungen/Anforderungsabgleich.md) auf Code und
   Testfall abgebildet
@@ -161,10 +174,10 @@ Die vollständige Software-Engineering-Dokumentation liegt unter
 | Dokument | Inhalt | PDF |
 |----------|--------|-----|
 | [Lastenheft](dokumentation/anforderungen/Lastenheft.md) | Anforderungen aus Sicht des Auftraggebers (Version 1.0) | [PDF](dokumentation/pdf/Lastenheft.pdf) |
-| [Pflichtenheft](dokumentation/anforderungen/Pflichtenheft.md) | Systemanforderungen, Teile A–D, fortgeschrieben bis Version 3.0 | [PDF](dokumentation/pdf/Pflichtenheft.pdf) |
+| [Pflichtenheft](dokumentation/anforderungen/Pflichtenheft.md) | Systemanforderungen, Teile A–D, mit Ergänzungen bis 3.1.0-rc.1 | [PDF](dokumentation/pdf/Pflichtenheft.pdf) |
 | [Anforderungsabgleich](dokumentation/anforderungen/Anforderungsabgleich.md) | Traceability-Matrix Anforderung ↔ Code ↔ Test | [PDF](dokumentation/pdf/Anforderungsabgleich.pdf) |
 | [Modultestplan](dokumentation/tests/Modultestplan.md) | Testfälle der Version 1.0 und aller Ergänzungen | [PDF](dokumentation/pdf/Modultestplan.pdf) |
-| [Modultestbericht](dokumentation/tests/Modultestbericht.md) | Abnahmetest 1.0 und Nachtest 3.0 | [PDF](dokumentation/pdf/Modultestbericht.pdf) |
+| [Modultestbericht](dokumentation/tests/Modultestbericht.md) | Historische Tests und aktueller RC-Nachweisstand | [PDF](dokumentation/pdf/Modultestbericht.pdf) |
 | [Projektübersicht](dokumentation/projekt/Projektuebersicht.md) | Ziele, Verlauf, Roadmap, offene Punkte | [PDF](dokumentation/pdf/Projektuebersicht.pdf) |
 | [Fallstudie](dokumentation/projekt/Fallstudie.md) | Entscheidungen und Erkenntnisse der Weiterentwicklung | [PDF](dokumentation/pdf/Fallstudie.pdf) |
 | [Abschlusspräsentation](dokumentation/projekt/Praesentation.md) | Foliensatz der Abnahme im Modul SE1 (historischer Stand 1.0) | [PDF](dokumentation/pdf/Praesentation.pdf) |
@@ -182,18 +195,18 @@ Erledigt:
 - [x] **SQLite** — Spring JDBC und Flyway hinter den bestehenden Repository-Schnittstellen
 - [x] **JavaFX** — vollständiger Neubau der Oberfläche mit Seitennavigation, Übersicht, Dunkelmodus
 - [x] **E-Rechnung** — EN 16931 (ZUGFeRD-CII), Firmenprofil, Datensicherung
-- [x] **Auslieferung** — Windows-Installer und plattformübergreifendes JAR per Release-Workflow
-- [x] **Rechtssicherheit** — transaktionale Nummernvergabe, Stornorechnung, Zahlungseingang,
+- [x] **Auslieferungsautomation** — Installer- und JAR-Workflows implementiert; aktuelle RC-Ausführung noch offen
+- [x] **Fachliche Schutzregeln** — transaktionale Nummernvergabe, Stornorechnung, Zahlungseingang,
       Steuer je Steuersatz, Aussteller-Snapshot
 
-Offen:
+Bewusst zurückgestellt bzw. spätere Erweiterungen:
 
-- [ ] Usability-Test mit fünf Personen (einziges Abnahmekriterium, das Code nicht belegen kann)
+- [ ] Usability-Test mit fünf Personen (derzeit nicht realisierbar; Q-05/Q-09 nicht empirisch nachgewiesen)
 - [ ] Steuerbefreiungen und Kleinunternehmerregelung (§ 19 UStG) mit Pflichthinweis
 - [ ] Mahnwesen
 - [ ] Installationspakete für Linux und macOS
 
-## Mit Claude entwickelt
+## Mit KI-Unterstützung entwickelt
 
 Faktura ist mit [Claude Code](https://claude.com/claude-code) als Werkzeug entstanden, und es
 erscheint mir redlicher, das zu sagen, als es offen zu lassen. Das Werkzeug hat die
@@ -203,6 +216,11 @@ Die Entscheidungen lagen bei mir: welche Regeln Invarianten sind, dass die Numme
 die Transaktion gehört, was aus Version 1.0 bleibt und was verschwindet, und ob eine Änderung
 wirklich fertig war. Jede Änderung musste dieselben Hürden nehmen — Tests,
 Abdeckungsschwelle, SpotBugs —, und alles Sichtbare wurde durch Starten und Hinsehen geprüft.
+
+Die anschließende Review-Remediation, Regressionen und Portfolio-Aufbereitung wurden
+zusätzlich mit **OpenAI Codex** erarbeitet. Automatisiert erzeugte Änderungen sind keine
+alleinige menschliche Implementierungsleistung; entscheidend ist, die übernommenen
+Regeln, Tests und Grenzen selbst nachvollziehen und erklären zu können.
 
 Wo das gut funktioniert hat und wo nachgebessert werden musste, beschreibt die
 [Fallstudie](dokumentation/projekt/Fallstudie.md#arbeiten-mit-claude-code).

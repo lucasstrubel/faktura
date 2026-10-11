@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 /**
@@ -114,7 +115,7 @@ public class ProduktVerwaltungsService implements ProduktService {
     private static void bereinige(Produkt produkt) {
         produkt.setBezeichnung(Validierung.bereinige(produkt.getBezeichnung()));
         produkt.setBeschreibung(Validierung.bereinige(produkt.getBeschreibung()));
-        produkt.setEinheit(Validierung.bereinige(produkt.getEinheit()));
+        produkt.setEinheit(Einheiten.normalisiere(produkt.getEinheit()));
     }
 
     /** Pflichtfeld- und Wertebereichsprüfung (F-03, F-04); benennt das betroffene Feld (Q-09). */
@@ -135,6 +136,7 @@ public class ProduktVerwaltungsService implements ProduktService {
             throw new ValidierungsException("Einzelpreis",
                     "Der 'Einzelpreis (netto)' darf höchstens 2 Nachkommastellen haben.");
         }
+        produkt.setEinzelpreisNetto(preis.setScale(2, RoundingMode.UNNECESSARY));
         BigDecimal steuersatz = produkt.getSteuersatz();
         if (steuersatz == null) {
             throw new ValidierungsException("Steuersatz",

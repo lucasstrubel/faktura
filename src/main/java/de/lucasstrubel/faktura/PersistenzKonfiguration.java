@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import de.lucasstrubel.faktura.gemeinsam.UpgradeSicherung;
 
 /**
  * Verdrahtung der Persistenzschicht (IF-01): SQLite-Datenbank im lokalen
@@ -59,7 +60,9 @@ public class PersistenzKonfiguration {
         konfiguration.setBusyTimeout(SPERR_ZEITSCHRANKE_MS);
         SQLiteDataSource dataSource = new SQLiteDataSource(konfiguration);
         dataSource.setUrl("jdbc:sqlite:" + verzeichnis.resolve("faktura.db"));
-        Flyway.configure().dataSource(dataSource).load().migrate();
+        Flyway flyway = Flyway.configure().dataSource(dataSource).load();
+        UpgradeSicherung.pruefe(dataSource, verzeichnis, flyway);
+        flyway.migrate();
         return dataSource;
     }
 

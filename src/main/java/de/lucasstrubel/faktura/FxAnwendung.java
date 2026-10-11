@@ -16,6 +16,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 
 import java.io.InputStream;
 import java.net.URL;
+import de.lucasstrubel.faktura.gui.SchliessSchutz;
+import javafx.application.Platform;
 
 /**
  * JavaFX-Einstieg (Komponente D): {@code init()} startet den
@@ -54,8 +56,18 @@ public class FxAnwendung extends Application {
         buehne.setScene(szene);
         // Größe und Position aus der letzten Sitzung wiederherstellen
         erscheinungsbild.bindeFenster(buehne);
+        buehne.setOnCloseRequest(ereignis -> {
+            if (!kontext.getBean(SchliessSchutz.class).darfSchliessen()) {
+                ereignis.consume();
+            }
+        });
         buehne.show();
-        LOG.info("Faktura ist bedienbereit (Q-04)");
+        Platform.runLater(() -> {
+            LOG.info("FAKTURA_READY: Fenster angezeigt und erster Ereigniszyklus verarbeitet (Q-04)");
+            if (Boolean.getBoolean("faktura.smoke")) {
+                Platform.exit();
+            }
+        });
     }
 
     /**
@@ -69,7 +81,7 @@ public class FxAnwendung extends Application {
             LOG.error("Unbehandelter Fehler im Faden {}", faden.getName(), fehler);
             // Immer nachgelagert anzeigen: Ein showAndWait() mitten in einem
             // Layout- oder Animationsdurchlauf würde selbst scheitern
-            javafx.application.Platform.runLater(
+            Platform.runLater(
                     () -> FxMeldung.zeige(FxMeldung.zuMeldung(fehler), null));
         });
     }

@@ -33,7 +33,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 /**
- * Performance-Nachweise (Q-01 bis Q-04, Q-08) gemäß Lastenheft.
+ * Historische JSON-Lastregressionen; keine Nachweise für den SQLite-Produktionspfad.
+ * Aktuelle Freigabemessungen: {@link ProduktionsPerformanceTest} und tools/paket-pruefen.ps1.
  *
  * <p>Referenzgröße Q-01: 5.000 Kunden und 5.000 Produkte. Die Grenzwerte sind
  * laufzeitabhängig; gemessen werden ausschließlich die Fachoperationen, das
@@ -83,7 +84,7 @@ class PerformanceTest {
 
     @Test
     @DisplayName("Q-04: Laden der drei Repositories (5.000/5.000/1.000) in ≤ 5 s")
-    void q04Anwendungsstart() {
+    void q04JsonRepositoriesLaden() {
         assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
             new JsonKundenRepository(kundenDatei);
             new JsonProduktRepository(produkteDatei);

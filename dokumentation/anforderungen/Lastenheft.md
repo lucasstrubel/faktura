@@ -2,8 +2,8 @@
 title: "Lastenheft"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
 author: "Lucas Strubel"
-date: "24.09.2026"
-version: "1.4"
+date: "10.10.2026"
+version: "1.5"
 lang: de-DE
 ---
 
@@ -13,7 +13,7 @@ lang: de-DE
 | Lucas Strubel | Verfasser für das SE1-Projektteam (Repository-Verwaltung, Projektdokumentation) | 09.06.2026 (Anforderungen), 24.09.2026 (redaktionell) |
 
 > **Stand:** Dieses Lastenheft beschreibt die Anforderungen des Hochschulprojekts
-> (Version 1.0) und wird inhaltlich unverändert geführt. Anforderungen, die mit der
+> (Version 1.0); redaktionelle Präzisierungen vermeiden pauschale Compliance-Aussagen. Anforderungen, die mit der
 > Weiterentwicklung hinzukamen — etwa E-Rechnung, Zahlungseingang und Stornorechnung —,
 > sind im Pflichtenheft ab Version 2.1 spezifiziert.
 
@@ -26,6 +26,7 @@ lang: de-DE
 | 1.2     | 14.05.2026 | Ergänzung + Überarbeitung Anforderungen Komponenten A–C |
 | 1.3     | 09.06.2026 | Überarbeitung nach Feedback |
 | 1.4     | 24.09.2026 | Redaktionell: Teamzusammensetzung, Belegnummern-Beispiele mit Jahresangabe, Hinweis auf den Stand; Anforderungen unverändert |
+| 1.5 | 10.10.2026 | Review-Remediation 3.1.0-rc.1; historische Nachweise und offene Freigabeschranken getrennt |
 
 ## 1. Einleitung und Zielbestimmung
 
@@ -43,7 +44,7 @@ Die folgenden Projektziele beschreiben den angestrebten Nutzen der Anwendung und
 | PZ-01 | Digitale Verwaltung von Kunden- und Produktstammdaten | CRUD-Operationen für beide Module vollständig und funktionsfähig |
 | PZ-02 | Vollständige Abbildung des kaufmännischen Dokumentenzyklus | Alle 4 Dokumenttypen (Angebot, Auftragsbestätigung, Lieferschein, Rechnung) erstellbar und untereinander verknüpfbar |
 | PZ-03 | Bedienbarkeit ohne technische Vorkenntnisse | Erstmaliger Anwender erstellt eine Rechnung im ersten Versuch ohne externe Hilfe in unter 10 Minuten |
-| PZ-04 | Lokale, datenschutzkonforme Datenhaltung | Keine Datenübertragung an externe Dienste; Speicherung ausschließlich auf dem Anwender-PC |
+| PZ-04 | Lokale Datenhaltung | Keine Datenübertragung an externe Dienste; Speicherung ausschließlich auf dem Anwender-PC |
 
 ### 1.4 Nichtziele
 Die folgenden Punkte sind ausdrücklich **nicht** Gegenstand dieses Projekts:
@@ -52,7 +53,7 @@ Die folgenden Punkte sind ausdrücklich **nicht** Gegenstand dieses Projekts:
 - Vollständiges Buchhaltungsmodul (keine Bilanzierung, kein Mahnwesen)
 - Webshop-Anbindung (z. B. WooCommerce, Gambio)
 - Mobile Clients oder Web-Applikation
-- Unterstützung von E-Rechnungsformaten (ZUGFeRD, XRechnung) – als bekannte Anforderung dokumentiert, jedoch außerhalb des Scopes
+- Im ursprünglichen Hochschulprojekt: E-Rechnungsformate. Die Weiterentwicklung implementiert EN 16931 CII; XRechnung bleibt außerhalb des Umfangs.
 - Garantierter kommerzieller Support oder Service Level Agreements (SLAs)
 
 ---
@@ -72,10 +73,10 @@ Die Anwendung weist folgende Merkmale auf:
 - **Plattform:** Desktop-Betriebssystem (technologieneutrale Spezifikation in diesem Dokument)
 - **Betrieb:** Einzelplatz, ohne Mehrbenutzerfähigkeit
 - **Datenhaltung:** ausschließlich lokal, kein Cloud-Zwang
-- **Datenschutz:** DSGVO-konform; Kundendaten werden nicht an Dritte übertragen
+- **Datenschutz:** lokale Speicherung; eine vollständige Datenschutzbewertung einschließlich des Betriebs ist nicht Teil der technischen Abnahme.
 - **Regulatorisch (bekannt, dokumentiert, nicht vollständig umgesetzt):**
   - **GoBD** – Versendete Rechnungen dürfen nachträglich nicht mehr inhaltlich verändert werden; alle Geschäftsvorfälle sind lückenlos zu erfassen.
-  - **E-Rechnungspflicht (B2B) ab 01.01.2025** – strukturierte Formate (ZUGFeRD, XRechnung) gesetzlich vorgeschrieben; Umsetzung in diesem Projekt explizit Nichtziel.
+  - **Strukturierte Rechnungen:** EN 16931 CII wird in der Weiterentwicklung technisch validiert. Anwendbare gesetzliche Pflichten und Übergangsregelungen werden hier nicht abschließend bewertet.
 - **Lehrkontext:** Studentisches Projekt im Modul Software Engineering 1 (SoSe 2026), Teamgröße 12 Personen in vier Gruppen zu je drei (je Gruppe eine Komponente A–D), ca. 2 Stunden/Woche pro Person.
 
 ---
@@ -253,7 +254,7 @@ Eine Anbindung an externe Online-Dienste, Cloud-Speicher oder Buchhaltungssystem
 ### 6.3 Geschäftsregeln
 
 **GR-01 – Lückenlose Rechnungsnummern**
-Wenn eine neue Rechnung erzeugt wird, dann vergibt das System eine fortlaufende, lückenlose Rechnungsnummer auf Basis der höchsten bisher vergebenen Nummer (GoBD).
+Wenn eine neue Rechnung erzeugt wird, dann vergibt das System eine fortlaufende, lückenlose Rechnungsnummer auf Basis der höchsten bisher vergebenen Nummer (Projektinvariante GR-01).
 
 **GR-02 – Unveränderlichkeit versendeter Dokumente**
 Wenn ein Dokument den Status „versendet“ hat, dann sind sämtliche inhaltlichen Änderungen ausgeschlossen; Korrekturen erfolgen ausschließlich über neue Dokumente (Storno, Korrekturrechnung).
@@ -376,3 +377,16 @@ Das Projekt gilt als abgenommen, wenn:
 | SH | Stakeholder |
 | CRS | Customer Requirements Specification (Lastenheft) |
 | SRS | System Requirements Specification (Pflichtenheft) |
+
+
+# Ergänzung 3.1.0-rc.1 (10.10.2026)
+
+Maßgeblicher RC-Umfang: EN 16931 CII mit eingebetteter Schema-/Schematron-Prüfung;
+XRechnung ist nicht implementiert. Lückenlose Nummernvergabe ist Projektinvariante GR-01,
+keine pauschale Aussage über gesetzliche Anforderungen oder Compliance.
+Historische Beträge und unbekannte Einheiten werden erhalten; nicht reproduzierbares XML
+wird gesperrt. Details zu Snapshots, Migration, Einheiten, CSV und Rücksicherung stehen in
+[Betrieb 3.1](../projekt/Betrieb-3.1.md). Die v1.0-Abnahme bleibt ein historischer Nachweis.
+Aktuelle Ergebnisse, verbleibende Plattformprüfungen und offene Usability-Studien sind im
+[Modultestbericht](../tests/Modultestbericht.md) ausgewiesen. Frühere JSON-Zeitmessungen
+belegen weder SQLite-Performance noch die Startzeit des gepackten Programms.

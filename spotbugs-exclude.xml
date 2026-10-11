@@ -1,31 +1,66 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Ausschlussfilter für SpotBugs.
+    Ausschlussfilter für SpotBugs — bewusst eng: jede Ausnahme nennt Klasse,
+    möglichst Methode und genau ein Muster. Neue Befunde werden behoben, nicht
+    pauschal ausgeschlossen.
 
-    EI_EXPOSE_REP / EI_EXPOSE_REP2 melden jede Übergabe veränderlicher Objekte
-    (Listen, Datumswerte) über Konstruktoren und Getter. Die Fachobjekte dieser
-    Anwendung sind bewusst als einfache, veränderliche JavaBeans mit
-    Jackson-Field-Zugriff entworfen (Einzelplatz, ein Thread pro Vorgang);
-    defensive Kopien an jeder Schnittstelle stünden in keinem Verhältnis zum
-    Risiko. Wo Unveränderlichkeit fachlich gefordert ist (GR-02), wird sie in
-    der Fachlogik erzwungen (Dokument.pruefeAenderbar).
+    EI_EXPOSE_REP / EI_EXPOSE_REP2 melden die Übergabe veränderlicher Objekte.
+    Ausgenommen sind nur Konstruktoren, die Spring-Infrastruktur (JdbcTemplate)
+    entgegennehmen, und das Formularmodell des Rechnungs-Wizards. Fachobjekte
+    werden nicht mehr pauschal ausgenommen; wo Unveränderlichkeit fachlich
+    gefordert ist (GR-02), erzwingt sie die Fachlogik (Dokument.pruefeAenderbar).
+
+    CT_CONSTRUCTOR_THROW warnt vor "Finalizer-Angriffen", wenn ein Konstruktor
+    werfen kann. Die Json*Repositories laden den Bestand bewusst im Konstruktor
+    (Fail-Fast beim Programmstart, IF-01), der PDF-Exporter lädt seine Schriften,
+    der Wizard-Dialog prüft seine Parameter. Finalizer sind seit Java 18
+    deprecated, Unterklassen dieser Klassen werden nicht von außen geladen.
 -->
 <FindBugsFilter>
+    <!-- FXML ruft diese beiden Handler über onAction auf; GUI-REM-03 lädt die FXML. -->
+    <Match>
+        <Class name="de.lucasstrubel.faktura.gui.EinstellungenAnsichtController"/>
+        <Method name="~exportiereSteuern|exportiereFirmenprofil"/>
+        <Bug pattern="UPM_UNCALLED_PRIVATE_METHOD"/>
+    </Match>
+    <!-- Spring injiziert dieselbe threadsichere JdbcTemplate-Instanz; eine Kopie würde
+         Transaktionsbindung und Konfiguration unnötig duplizieren. Nur Konstruktoren. -->
     <Match>
         <Or>
-            <Bug pattern="EI_EXPOSE_REP"/>
-            <Bug pattern="EI_EXPOSE_REP2"/>
+            <Class name="de.lucasstrubel.faktura.JsonDatenUebernahme"/>
+            <Class name="de.lucasstrubel.faktura.dokumente.JdbcDokumentRepository"/>
+            <Class name="de.lucasstrubel.faktura.firma.JdbcFirmenprofilRepository"/>
+            <Class name="de.lucasstrubel.faktura.gemeinsam.Datensicherung"/>
+            <Class name="de.lucasstrubel.faktura.gemeinsam.GesamtExport"/>
+            <Class name="de.lucasstrubel.faktura.gemeinsam.JdbcNummernkreis"/>
+            <Class name="de.lucasstrubel.faktura.kunden.JdbcKundenRepository"/>
+            <Class name="de.lucasstrubel.faktura.produkte.JdbcProduktRepository"/>
         </Or>
+        <Method name="&lt;init&gt;"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
     </Match>
-    <!--
-        CT_CONSTRUCTOR_THROW warnt vor "Finalizer-Angriffen", wenn ein
-        Konstruktor werfen kann. Die Json*Repositories laden den Bestand bewusst
-        im Konstruktor (Fail-Fast beim Programmstart, IF-01), die JavaFX-Dialoge
-        validieren Parameter im Konstruktor. Finalizer sind seit Java 18
-        deprecated und die Anwendung verarbeitet keine nicht vertrauenswürdigen
-        Eingaben über diese Konstruktoren.
-    -->
+    <!-- Der Wizard arbeitet absichtlich auf einem gemeinsamen editierbaren Formularmodell. -->
     <Match>
+        <Class name="de.lucasstrubel.faktura.gui.RechnungsWizardController"/>
+        <Method name="~getModel|getGespeicherteRechnung"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="de.lucasstrubel.faktura.gui.RechnungsWizardModel"/>
+        <Method name="getPositionen"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <!-- Fail-fast beim Laden lokaler Dateien/Schriften bzw. Aufbau des eigenen Dialogs.
+         Keine fremden Unterklassen oder Finalizer werden als Erweiterung geladen. -->
+    <Match>
+        <Or>
+            <Class name="de.lucasstrubel.faktura.dokumente.JsonDokumentRepository"/>
+            <Class name="de.lucasstrubel.faktura.kunden.JsonKundenRepository"/>
+            <Class name="de.lucasstrubel.faktura.produkte.JsonProduktRepository"/>
+            <Class name="de.lucasstrubel.faktura.dokumente.PdfBoxPdfExporter"/>
+            <Class name="de.lucasstrubel.faktura.gui.RechnungsWizardDialog"/>
+        </Or>
+        <Method name="&lt;init&gt;"/>
         <Bug pattern="CT_CONSTRUCTOR_THROW"/>
     </Match>
 </FindBugsFilter>

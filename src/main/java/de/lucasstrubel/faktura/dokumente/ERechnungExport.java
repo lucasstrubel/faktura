@@ -22,6 +22,9 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
+import de.lucasstrubel.faktura.gemeinsam.AtomareDatei;
+import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * E-Rechnung nach EN 16931: erzeugt aus einer {@link Rechnung} das
@@ -39,13 +42,17 @@ import java.util.Date;
 @Component
 public class ERechnungExport {
 
-    /** Einheit "Stück" nach UN/ECE Recommendation 20. */
-    private static final String EINHEIT_STUECK = "C62";
-
     private final FirmenprofilService firmenprofilService;
+    private final ERechnungsPruefung pruefung;
 
     public ERechnungExport(FirmenprofilService firmenprofilService) {
+        this(firmenprofilService, new ERechnungsPruefung());
+    }
+
+    @Autowired
+    public ERechnungExport(FirmenprofilService firmenprofilService, ERechnungsPruefung pruefung) {
         this.firmenprofilService = firmenprofilService;
+        this.pruefung = pruefung;
     }
 
     /** Schreibt das EN-16931-XML der Rechnung in die Zieldatei. */
@@ -54,11 +61,26 @@ public class ERechnungExport {
             throw new ValidierungsException("Beleg", "Die Rechnung " + rechnung.getBelegnummer()
                     + " ist storniert und wird nicht mehr als E-Rechnung ausgestellt.");
         }
+        if (rechnung.getBetragssnapshot().berechnungsart() != Berechnungsart.JE_STEUERSATZ) {
+            throw new ValidierungsException("Beträge", "Die historischen Beträge können nicht unverändert als EN-16931-XML ausgegeben werden. Der PDF-Export bleibt verfügbar.");
+        }
+        for (Dokumentposition position : rechnung.getPositionen()) {
+            if (position.getEinheitCode() == null) {
+                throw new ValidierungsException("Einheit", "Für die Position '" + position.getBezeichnung()
+                        + "' ist keine verlässliche XML-Einheit gespeichert. Der PDF-Export bleibt verfügbar.");
+            }
+        }
         ZUGFeRD2PullProvider provider = new ZUGFeRD2PullProvider();
         provider.setProfile(Profiles.getByName("EN16931"));
         provider.generateXML(baueInvoice(rechnung));
         try {
-            Files.write(zielDatei, provider.getXML());
+            byte[] xml = provider.getXML();
+            var fehler = pruefung.pruefe(rechnung, xml);
+            if (!fehler.isEmpty()) {
+                throw new ValidierungsException(fehler.get(0).feld(), "Die E-Rechnung wurde nicht gespeichert: "
+                        + fehler.stream().map(ERechnungsPruefung.Fehler::meldung).collect(Collectors.joining("\n")));
+            }
+            AtomareDatei.schreibe(zielDatei, temp -> Files.write(temp, xml));
         } catch (IOException e) {
             throw new UncheckedIOException("E-Rechnung-Export fehlgeschlagen: " + zielDatei, e);
         }
@@ -105,7 +127,7 @@ public class ERechnungExport {
                     ? BigDecimal.ZERO
                     : position.getSteuersatz().multiply(new BigDecimal("100"));
             Product produkt = new Product(position.getBezeichnung(), "",
-                    EINHEIT_STUECK, steuersatzProzent);
+                    position.getEinheitCode(), steuersatzProzent);
             invoice.addItem(new Item(produkt,
                     position.getEinzelpreisNetto() == null
                             ? BigDecimal.ZERO : position.getEinzelpreisNetto(),

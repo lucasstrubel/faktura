@@ -2,6 +2,7 @@ package de.lucasstrubel.faktura.gui;
 
 import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 import de.lucasstrubel.faktura.produkte.Produkt;
+import de.lucasstrubel.faktura.produkte.Einheiten;
 import de.lucasstrubel.faktura.produkte.ProduktVerwaltungsService;
 
 import javafx.geometry.Insets;
@@ -39,7 +40,8 @@ public class ProduktFormularDialog extends Stage {
     private final TextField beschreibungFeld = new TextField();
     private final TextField preisFeld = new TextField();
     private final ComboBox<String> steuersatzWahl = new ComboBox<>();
-    private final TextField einheitFeld = new TextField();
+    private final ComboBox<String> einheitWahl = new ComboBox<>();
+    private final TextField einheitFeld = einheitWahl.getEditor();
     private final Label liveMeldung = new Label();
     private final Map<String, Control> felder = new LinkedHashMap<>();
 
@@ -54,6 +56,9 @@ public class ProduktFormularDialog extends Stage {
 
         steuersatzWahl.getItems().addAll(STEUERSAETZE);
         steuersatzWahl.getSelectionModel().selectFirst();
+        einheitWahl.setEditable(true);
+        einheitWahl.getItems().addAll(Einheiten.VORGABEN);
+        einheitWahl.setValue(Einheiten.STANDARD);
 
         felder.put("Bezeichnung", bezeichnungFeld);
         felder.put("Einzelpreis", preisFeld);
@@ -86,7 +91,7 @@ public class ProduktFormularDialog extends Stage {
         zeile = formularZeile(formular, zeile, "Beschreibung:", beschreibungFeld);
         zeile = formularZeile(formular, zeile, "Einzelpreis (netto): *", preisFeld);
         zeile = formularZeile(formular, zeile, "Steuersatz: *", steuersatzWahl);
-        zeile = formularZeile(formular, zeile, "Einheit:", einheitFeld);
+        zeile = formularZeile(formular, zeile, "Einheit:", einheitWahl);
         Label legende = new Label("* Pflichtfeld");
         legende.getStyleClass().add("pflichtfeld-legende");
         formular.add(legende, 0, zeile, 2, 1);
@@ -129,14 +134,14 @@ public class ProduktFormularDialog extends Stage {
     private void fuelleFelder(Produkt produkt) {
         bezeichnungFeld.setText(produkt.getBezeichnung());
         beschreibungFeld.setText(produkt.getBeschreibung() == null ? "" : produkt.getBeschreibung());
-        preisFeld.setText(produkt.getEinzelpreisNetto().toPlainString());
+        preisFeld.setText(TabellenFormat.betragFuerEingabe(produkt.getEinzelpreisNetto()));
         steuersatzWahl.getSelectionModel().select(
                 switch (produkt.getSteuersatz().stripTrailingZeros().toPlainString()) {
                     case "0.19" -> 0;
                     case "0.07" -> 1;
                     default -> 2;
                 });
-        einheitFeld.setText(produkt.getEinheit() == null ? "" : produkt.getEinheit());
+        einheitWahl.setValue(produkt.getEinheit() == null ? "" : produkt.getEinheit());
     }
 
     /** Erst nach dem Vorbefüllen anmelden, damit nur Nutzereingaben zählen. */
@@ -169,6 +174,15 @@ public class ProduktFormularDialog extends Stage {
     }
 
     private void speichere() {
+        // Leer bedeutet "Stück" (C62); nur freie Einheiten ohne Code sperren die E-Rechnung (A-F-33)
+        String einheit = Einheiten.normalisiere(einheitFeld.getText());
+        if (einheit != null && Einheiten.code(einheit) == null
+                && !FxMeldung.bestaetige("Einheit bestätigen",
+                "Für die Einheit „" + einheit + "“ gibt es keinen E-Rechnungs-Code. "
+                        + "Belege mit diesem Produkt lassen sich nur als PDF ausgeben, "
+                        + "nicht als E-Rechnung. Einheit trotzdem übernehmen?")) {
+            return;
+        }
         boolean erfolgreich = FxMeldung.mitFehlerbehandlung(felder, () -> {
             Produkt produkt = vorhandeneNummer == null
                     ? new Produkt()

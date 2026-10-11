@@ -39,17 +39,45 @@ public class DokumentCsvExport {
                 "gueltigBis", "lieferdatum", "leistungsdatum", "zahlungsziel",
                 "storniertAm", "storniertVon", "bezahltAm", "stornoZu",
                 "produktnummer", "bezeichnung", "menge",
-                "einzelpreisNetto", "steuersatz", "positionssummeNetto", "positionssummeBrutto"));
+                "einzelpreisNetto", "steuersatz", "positionssummeNetto", "positionssummeBrutto",
+                "ausstellerName", "ausstellerStrasse", "ausstellerPlz", "ausstellerOrt",
+                "ausstellerUstIdNr", "ausstellerSteuernummer", "ausstellerTelefon", "ausstellerEMail",
+                "ausstellerIban", "ausstellerBic", "ausstellerBank", "einheit", "einheitCode", "berechnungsart"));
         for (Dokument dokument : repository.alle()) {
             if (dokument.getPositionen().isEmpty()) {
-                zeilen.add(belegFelder(dokument) + TRENNZEICHEN + leerePositionsFelder());
+                zeilen.add(belegFelder(dokument) + TRENNZEICHEN + leerePositionsFelder() + TRENNZEICHEN + ergaenzung(dokument, null));
             } else {
                 for (Dokumentposition position : dokument.getPositionen()) {
-                    zeilen.add(belegFelder(dokument) + TRENNZEICHEN + positionsFelder(position));
+                    zeilen.add(belegFelder(dokument) + TRENNZEICHEN + positionsFelder(position) + TRENNZEICHEN + ergaenzung(dokument, position));
                 }
             }
         }
         Csv.schreibe(zielDatei, zeilen);
+    }
+
+    public void exportiereSteuern(Path zielDatei) {
+        List<String> zeilen = new ArrayList<>();
+        zeilen.add("belegnummer;steuersatz;netto;steuer;berechnungsart");
+        for (Dokument dokument : repository.alle()) {
+            for (Steuerzeile zeile : dokument.steueraufschluesselung()) {
+                zeilen.add(String.join(TRENNZEICHEN, feld(dokument.getBelegnummer()),
+                        zahl(betrag(zeile.steuersatz())), zahl(betrag(zeile.netto())), zahl(betrag(zeile.steuer())),
+                        dokument.getBetragssnapshot().berechnungsart().name()));
+            }
+        }
+        Csv.schreibe(zielDatei, zeilen);
+    }
+
+    private static String ergaenzung(Dokument dokument, Dokumentposition position) {
+        var firma = dokument.getAussteller();
+        return String.join(TRENNZEICHEN,
+                feld(firma == null ? null : firma.name()), feld(firma == null ? null : firma.strasse()),
+                feld(firma == null ? null : firma.plz()), feld(firma == null ? null : firma.ort()),
+                feld(firma == null ? null : firma.ustIdNr()), feld(firma == null ? null : firma.steuernummer()),
+                feld(firma == null ? null : firma.telefon()), feld(firma == null ? null : firma.eMail()),
+                feld(firma == null ? null : firma.iban()), feld(firma == null ? null : firma.bic()),
+                feld(firma == null ? null : firma.bank()), feld(position == null ? null : position.getEinheit()),
+                feld(position == null ? null : position.getEinheitCode()), dokument.getBetragssnapshot().berechnungsart().name());
     }
 
     private static String belegFelder(Dokument dokument) {

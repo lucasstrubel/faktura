@@ -9,7 +9,7 @@ skinparam linetype ortho
 hide empty members
 left to right direction
 
-title UML-Klassendiagramm — Dokumentenzyklus (Komponente A), Stand 3.0
+title UML-Klassendiagramm — Dokumentenzyklus (Komponente A), Stand 3.1 RC
 
 ' ===================== Domänenmodell =====================
 
@@ -25,6 +25,7 @@ abstract class Dokument {
   - summeNetto : BigDecimal
   - summeSteuer : BigDecimal
   - summeBrutto : BigDecimal
+  - betragssnapshot : Betragssnapshot
   + {abstract} belegtyp() : Belegtyp
   + setzePositionen(positionen : List<Dokumentposition>)
   + berechneSummen()
@@ -58,6 +59,8 @@ class Rechnung {
 }
 
 class Dokumentposition {
+  - einheit : String
+  - einheitCode : String
   - produktReferenz : String
   - bezeichnung : String
   - menge : int
@@ -79,6 +82,22 @@ enum DokumentStatus {
   VERSENDET
   STORNIERT
 }
+
+class Betragssnapshot <<record>> {
+  + netto : BigDecimal
+  + steuer : BigDecimal
+  + brutto : BigDecimal
+  + berechnungsart : Berechnungsart
+  + negiert() : Betragssnapshot
+}
+enum Berechnungsart {
+  JE_STEUERSATZ
+  ALTE_POSITIONSRUNDUNG
+  UNGEKLAERT
+}
+Dokument *-- Betragssnapshot
+Betragssnapshot *-- Steuerzeile
+Betragssnapshot --> Berechnungsart
 
 ' Vererbung der vier Belegtypen
 Dokument <|-- Angebot

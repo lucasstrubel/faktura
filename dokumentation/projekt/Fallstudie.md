@@ -2,8 +2,8 @@
 title: "Fallstudie"
 subtitle: "Faktura — vom Hochschulprojekt zur auslieferbaren Fakturierungsanwendung"
 author: "Lucas Strubel"
-date: "24.09.2026"
-version: "1.1"
+date: "10.10.2026"
+version: "1.2"
 lang: de-DE
 numbersections: true
 ---
@@ -14,6 +14,7 @@ numbersections: true
 |----|------|------------------------------|
 | 1.0     | 29.07.2026 | Erstfassung: Fallstudie zur Weiterentwicklung vom Hochschulprojekt zum Produkt |
 | 1.1     | 24.09.2026 | Abschluss der Version 3.0: Steuer je Steuersatz, Stornorechnung, Zahlungseingang, Aussteller-Snapshot; deutsche Fassung ist die einzige Fassung |
+| 1.2 | 10.10.2026 | Review-Remediation 3.1.0-rc.1; historische Nachweise und offene Freigabeschranken getrennt |
 
 # Überblick
 
@@ -22,9 +23,9 @@ numbersections: true
 | **Gegenstand** | Faktura — lokal betriebene Fakturierungsanwendung für Freiberufler und Kleinstunternehmen |
 | **Ursprung** | Gestartet im Rahmen des Moduls *Software Engineering 1* an der TH Mannheim (Sommersemester 2026): 12 Studierende in vier Gruppen à drei, je Gruppe eine Komponente (A–D) |
 | **Rolle** | Version 1.0: Verwaltung des Repositorys und Verfassen sämtlicher Projektdokumente (Lastenheft, Pflichtenheft, Modultestplan und -bericht). Version 2.0 und 3.0: Neubau und Weiterentwicklung als Einzelentwickler |
-| **Umfang** | rund 12.600 Zeilen Java (99 Produktiv-, 22 Testklassen), 6 FXML-Ansichten, 4 Datenbankmigrationen, rund 2.800 Zeilen deutschsprachige Spezifikation |
+| **Umfang** | Java-Domänenmodell und Services, JavaFX/FXML-Oberfläche, sechs Flyway-Migrationen, automatisierte Regressionen und deutschsprachige Spezifikation |
 | **Technik** | Java 21 · Spring Boot · JavaFX · SQLite + Flyway · PDFBox · Mustang (EN 16931) · Maven · JUnit 5 |
-| **Stand** | 201 Tests grün, Abdeckungsschwelle (85 % / 70 %) und SpotBugs im Build erzwungen, Windows-Installer und plattformübergreifendes JAR per Git-Tag veröffentlicht |
+| **Stand** | RC 3.1.0-rc.1 unveröffentlicht; aktuelle Nachweise und ausstehende Freigaben im Modultestbericht |
 
 # Das Problem
 
@@ -33,31 +34,28 @@ interessantere.
 
 ## Fakturierung ist ein Compliance-Problem im CRUD-Gewand
 
-Wer in Deutschland freiberuflich Rechnungen schreibt, hat drei naheliegende Möglichkeiten
-— und alle drei taugen nicht. Tabellenkalkulationen sind kostenlos, aber nicht
-rechtssicher: Die **GoBD** verlangen lückenlose Rechnungsnummern und die
-Unveränderbarkeit versendeter Rechnungen; beides erzwingt eine Tabelle nicht.
-SaaS-Lösungen sind rechtssicher, kosten aber dauerhaft Miete für wenige Belege im Monat
-und legen Kundendaten auf fremde Server. Open-Source-Alternativen wie *Fakturama* sind
-funktional stark, verlangen aber Einrichtungs- und Wartungsaufwand von jemandem, dessen
-Beruf nicht IT ist.
+Rechnungssoftware muss Beträge, Nummern und historische Angaben nachvollziehbar
+halten. Faktura setzt dafür transaktionale Nummernvergabe, Änderungssperren und
+gespeicherte Kunden-, Aussteller-, Einheiten- und Betragssnapshots ein.
+Die lückenlose Nummernfolge ist eine bewusst streng gewählte Projektinvariante.
+Diese Kontrollen ersetzen weder eine rechtliche Prüfung noch organisatorische
+Aufbewahrungs- und Verfahrensregeln. Aus dem Speichermedium oder Betriebsmodell
+allein folgt keine Rechtssicherheit.
 
-Hinzu kommt: Strukturierte elektronische Rechnungen (ZUGFeRD / XRechnung nach EN 16931)
-werden im inländischen B2B-Bereich schrittweise verpflichtend. Seit dem **01.01.2025** muss
-jedes Unternehmen sie *empfangen* und verarbeiten können; die Pflicht zum *Ausstellen* greift
-ab 2027 für größere Unternehmen und ab 2028 für alle übrigen. Ein PDF genügt dann nicht mehr.
-Die Zielgruppe braucht damit Software für etwas, das sie von Hand nicht mehr leisten kann.
+Faktura ergänzt die PDF-Ausgabe um strukturiertes EN-16931-CII-XML. Der Export
+muss dieselben Beträge und Einheiten wie der gespeicherte Beleg wiedergeben. Die Prüfung
+ist eine technische Validierung dieses Formats und keine rechtliche Gesamtbewertung.
 
 Das macht die Fachlichkeit trügerisch schwer. Die Masken sehen aus wie gewöhnliches CRUD,
 darunter liegen jedoch Regeln, die **immer** gelten müssen, nicht meistens:
 
 | Regel | Was sie tatsächlich verlangt |
 |---|------|
-| GoBD — Lückenlosigkeit | Keine Rechnungsnummer darf ausgelassen werden, auch nicht bei einem Fehler beim Speichern |
-| GoBD — Unveränderbarkeit | Eine versendete Rechnung wird nie geändert oder gelöscht, sondern durch eine Stornorechnung ausgeglichen |
+| Projektinvariante GR-01 | Eine fehlgeschlagene Speicherung verbraucht keine Nummer |
+| Änderungssperre GR-02 | Eine versendete Rechnung wird durch eine Stornorechnung ausgeglichen |
 | § 14 UStG | Jede Rechnung trägt einen festen Satz Pflichtangaben — darunter Steuernummer oder USt-IdNr. und die Steuer je Steuersatz |
 | EN 16931 | Strukturiertes XML zusätzlich zur menschenlesbaren PDF-Fassung — mit denselben Beträgen |
-| DSGVO | Kundendaten bleiben auf dem Rechner — keine Cloud, keine Telemetrie |
+| Lokale Datenhaltung | Kundendaten bleiben auf dem Rechner; dies allein belegt keine vollständige DSGVO-Konformität |
 
 ## Ein abgenommenes Projekt ist noch kein Produkt
 
@@ -211,29 +209,32 @@ daneben.
 | Build und Qualität | **Maven · JUnit 5 · JaCoCo · SpotBugs · GitHub Actions** | `verify` führt Tests, Abdeckungsschwelle und statische Analyse aus; die CI ruft denselben Befehl auf |
 | Auslieferung | **jpackage** | MSI je Benutzer, dadurch weder Administratorrechte noch vorinstalliertes JDK nötig; daneben ein JAR mit den nativen JavaFX-Bibliotheken für Windows, Linux und macOS |
 
-Geldbeträge sind durchgängig `BigDecimal` mit Scale 2 und Rundung `HALF_UP`. Bezeichner,
+Neue Produktpreise werden verlustfrei auf zwei Nachkommastellen normalisiert. Neue
+Belegsteuern werden je Satz mit `HALF_UP` gerundet; historische Beträge bleiben unverändert. Bezeichner,
 Kommentare, Spezifikationen und die gesamte Projektdokumentation sind deutsch — die
 Sprache der Fachlichkeit und ihrer Regularien.
 
 # Ergebnisse
 
-- **201 automatisierte Tests**, kein Fehlschlag; zur Abnahme der Version 1.0 waren es 71.
+- **Historischer Stand 3.0: 201 automatisierte Tests**, kein Fehlschlag; zur Abnahme der Version 1.0 waren es 71.
 - **Abdeckungsschwelle im Build**: `verify` bricht unterhalb von 85 % Anweisungs- und 70 %
   Zweigabdeckung im nicht-grafischen Code ab. FXML-gebundene Ansichtsklassen sind
   ausgenommen, da ihre Dialogführung in eigenen GUI-freien Controller-Klassen liegt, die
   mitgezählt werden.
 - **SpotBugs: keine Befunde**, und zwar erzwungen statt berichtet und ignoriert.
-- **Performance-Anforderungen sind Zusicherungen, keine Anekdoten.** `PerformanceTest`
-  fährt die Referenzgröße des Lastenhefts — 5.000 Kunden, 5.000 Produkte, 1.000 Belege —
-  gegen die spezifizierten Grenzwerte (Start ≤ 5 s, Suche ≤ 1 s, PDF mit 50 Positionen
-  ≤ 2 s, Vollexport ≤ 30 s). Macht eine Änderung die Anwendung langsamer als gefordert,
-  meldet es die CI.
+- **Performance wird am Produktionspfad geprüft.** SQLite-Suche, Belegliste, Dashboard,
+  50-Positionen-PDF und vollständiger ZIP-Export wurden lokal gemessen. Die drei gepackten
+  Starts des ersten Laufs überschritten die Fünf-Sekunden-Grenze; zuletzt waren es zwei von drei.
+  Damit ist die RC-Freigabe offen.
+  Die früheren JSON-Tests belegen diese Startzeit nicht. Messwerte und Runner stehen im
+  Modultestbericht, Kapitel 8.
 - **Vollständige Nachvollziehbarkeit**: `Anforderungsabgleich.md` bildet jede Anforderung
-  auf den umsetzenden Code und den belegenden Testfall ab. Zwei Punkte sind ehrlich als
-  *nicht* durch Code belegbar gekennzeichnet — die Usability-Tests brauchen fünf echte
-  Personen.
-- **Auslieferung auf Knopfdruck**: Ein Tag `v*` prüft die Version, baut und veröffentlicht
-  Windows-Installer und JAR.
+  auf den umsetzenden Code und vorhandene Nachweise ab. Usability braucht echte
+  Testpersonen; Netzwerk-Monitoring und externe Release-Prüfungen sind zusätzlich
+  noch offen. Implementierter Code allein belegt diese Anforderungen nicht.
+- **Veröffentlichung mit Freigabeschranken**: Ein Tag `v*` darf erst nach erfolgreichen
+  Qualitäts-, Sicherheits-, Performance-, Plattform- und Installerprüfungen veröffentlichen.
+  Für den aktuellen Kandidaten sind die externen Läufe noch offen.
 
 # Was ich gelernt habe
 
@@ -318,8 +319,8 @@ Dinge zu zerbrechen.
 
 # Ausblick
 
-- **Usability-Tests mit fünf Personen** — das einzige Abnahmekriterium (Q-05 / AC-11), das
-  Code nicht belegen kann, und weiterhin offen.
+- **Usability-Tests mit fünf Personen** — derzeit bewusst zurückgestellt; Q-05/Q-09
+  bleiben ohne empirischen Nachweis. Diese Grenze wird in der Vorführung benannt.
 - **Steuerbefreiungen und Kleinunternehmerregelung (§ 19 UStG)** — heute werden 0-%-Positionen
   ohne Befreiungsgrund ausgewiesen; für den Einsatz durch Kleinunternehmer fehlt der
   Pflichthinweis auf der Rechnung.
@@ -327,3 +328,32 @@ Dinge zu zerbrechen.
   nachdem Zahlungsziele und Zahlungseingänge existieren.
 - **Installationspakete für Linux und macOS** — das JAR läuft bereits unter Windows, Linux und macOS (Apple Silicon); Intel-Macs bauen aus den Quellen. Nur der Installer ist
   heute Windows-spezifisch.
+
+
+# Ergänzung 3.1.0-rc.1 (10.10.2026)
+
+Maßgeblicher RC-Umfang: EN 16931 CII mit eingebetteter Schema-/Schematron-Prüfung;
+XRechnung ist nicht implementiert. Lückenlose Nummernvergabe ist Projektinvariante GR-01,
+keine pauschale Aussage über gesetzliche Anforderungen oder Compliance.
+Historische Beträge und unbekannte Einheiten werden erhalten; nicht reproduzierbares XML
+wird gesperrt. Details zu Snapshots, Migration, Einheiten, CSV und Rücksicherung stehen in
+[Betrieb 3.1](../projekt/Betrieb-3.1.md). Die v1.0-Abnahme bleibt ein historischer Nachweis.
+Aktuelle Ergebnisse, verbleibende Plattformprüfungen und offene Usability-Studien sind im
+[Modultestbericht](../tests/Modultestbericht.md) ausgewiesen. Frühere JSON-Zeitmessungen
+belegen weder SQLite-Performance noch die Startzeit des gepackten Programms.
+
+
+## Ergänzende Review- und Portfolio-Arbeit mit Codex
+
+Die Review-Remediation 3.1.0-rc.1 wurde zusätzlich mit OpenAI Codex erarbeitet:
+Code- und Dokumentationsprüfung, Umsetzung der vereinbarten Korrekturen, Regressionen,
+Messungen und Aufbereitung der Ergebnisse. Dies ist KI-unterstützte Entwicklungsarbeit;
+die bestehenden Aussagen zur ursprünglichen Claude-Phase beschreiben nicht allein
+die Herkunft des heutigen Codes. Persönliche Eigenleistung sollte anhand tatsächlich
+getroffener Entscheidungen und selbst nachvollzogener Beispiele erläutert werden.
+
+Der Portfolio-Schwerpunkt liegt auf Datenintegrität, nachvollziehbaren Fehlerfällen und
+einer reproduzierbaren Vorführung. Zusätzliche Produktfunktionen und die derzeit nicht
+realisierbare Usability-Studie sind zurückgestellt. Das
+[Demo-Drehbuch und die Abschlussgrenzen](Portfolio-Abschluss.md) sind maßgeblich
+für diese Darstellung; sie ersetzen keine technische RC-Freigabe.

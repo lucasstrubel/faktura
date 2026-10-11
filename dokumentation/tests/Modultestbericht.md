@@ -2,8 +2,8 @@
 title: "Modultestbericht"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
 author: "Lucas Strubel"
-date: "24.09.2026"
-version: "1.1"
+date: "10.10.2026"
+version: "1.2"
 lang: de-DE
 ---
 
@@ -17,12 +17,17 @@ Modultests des Gesamtsystems *Desktop-Fakturierungsanwendung* (Komponenten A–D
 Infrastruktur sowie Performance-Nachweise) gemäß Modultestplan v2.0. Es ist nach Prüfung und
 Freigabe durch den Modulverantwortlichen verbindlicher Nachweis des durchgeführten Modultests.
 
+**Aktueller Freigabestand (10.10.2026):** 3.1.0-rc.1 ist noch nicht freigegeben.
+Die historische Abnahme bleibt unten erhalten. Kapitel 8 trennt aktuelle Regressionen
+von offenen Leistungs-, Plattform-, Installations- und Sicherheitsnachweisen.
+
 ## Dokumentenhistorie
 
 | Version | Datum      | Autor                       | Grund der Änderung  |
 |----|------|--------|------------------------------|
 | 1.0     | 24.06.2026 | Lucas Strubel  | Initiale Erstellung; Dokumentation der Modultest-Durchführung auf Basis des Modultestplans v2.0 |
 | 1.1     | 24.09.2026 | Lucas Strubel  | Kapitel 5: Nachtest Version 3.0 (201 Ausführungen, 0 Fehlschläge, Abdeckung und SpotBugs); Kapitel 1–4 unverändert |
+| 1.2 | 10.10.2026 | Lucas Strubel | Review-Remediation 3.1.0-rc.1; historische Nachweise und offene Freigabeschranken getrennt |
 
 
 ## 1. Einleitung
@@ -349,3 +354,148 @@ Q-08, Q-09) sind nachgewiesen.
 | Surefire | Maven-Plugin zur Testausführung (Berichte unter `target/surefire-reports/`) |
 | Bestanden | Testfall erfolgreich: tatsächliches = erwartetes Ergebnis |
 | Fehlgeschlagen | Testfall nicht erfolgreich (*Failure* oder *Error*) |
+
+## 8. Review-Remediation 3.1.0-rc.1 (10.10.2026)
+
+### 8.1 Gegenstand und Umgebung
+
+Dieser Lauf prüft Preiseingabe, kalenderstrenge Datumsfelder, persistente Betrags- und
+Einheitensnapshots, V4-Upgrade und ältere JSON-Importe, PDF/XML/CSV, Einstellungen,
+Sicherung und Wiederherstellung. V1 bis V4 der Migrationen bleiben unverändert.
+Die historischen Kapitel 1–6 werden nicht als Nachweis der neuen Funktionen gewertet.
+
+Lokale Umgebung: Windows 11, Build 10.0.26300, x64; AMD Ryzen 5 7530U,
+12 logische Prozessoren, rund 16 GB RAM; Temurin 21.0.12.1+1; Maven 3.9.9.
+Die Maschine ist ein Entwicklungsrechner, kein disponibler CI-Runner.
+
+### 8.2 Funktionale und technische Regressionen
+
+Prüfbefehl: `mvnw.cmd verify -Dfaktura.gui.tests=true` mit JDK 21.
+Ergebnis (Stand 11.10.2026, nach den Review-Korrekturen): **224 Testfälle, 223 ausgeführt,
+0 Fehler, 1 bewusst separat aktivierbarer Leistungstest übersprungen; BUILD SUCCESS**. JaCoCo-Schwellen erfüllt, SpotBugs ohne Befund.
+Die Ergebnisdatei ist `target/verify-abschluss.log`; die einzelnen Testfälle stehen
+in `target/surefire-reports`. Die Produktions-Leistungsmessung wird getrennt und ohne
+JaCoCo aktiviert. Die Abdeckungsschwellen bleiben 85 % Anweisungen und 70 % Zweige.
+
+Zusätzlich besteht ERE-PAKET-01 unter Windows: Dasselbe gepackte JAR erzeugt gültiges
+EN-16931-CII, führt Schema- und Schematronregeln aus und lehnt einen fehlenden Käufernamen
+ab, ohne das bestehende XML-Ziel zu überschreiben. Die Ressourcenauflösung funktioniert
+auch aus verschachtelten JARs. ERE-12 sperrt fremde Schemaquellen und Pfadmanipulation.
+Unbekannte Positionssteuer und Positionsbrutto bleiben auch im CSV leer; TC-17 erwartet
+ab 3.1 unbekannte Summen statt der historischen Nullersetzung.
+GUI-REM-03 deckt sowohl fachliche Validierungsfehler als auch einen echten Datenbankfehler
+beim Speichern ab; das Schließen bleibt in beiden Fällen gesperrt.
+
+REM-03 hält den historischen Betrag 0,08 EUR über Speicherung, PDF, Stornierung zu
+-0,08 EUR und Neustart unverändert. REM-04/07/08 prüfen V4, ältere JSON-Daten, fehlende
+Felder sowie eine fehlgeschlagene Upgradeprobe mit erfolgreichem Wiederholungsversuch.
+REM-09 prüft die Einheitenkopie durch den gesamten Belegzyklus nach einer Produktänderung.
+REM-10 zeigt, dass Produkte ohne Einheit Positionen mit Stück/C62 erzeugen und die neuen
+Codes LS (Pauschale) und MON (Monat) die Mustang-Prüfung bestehen. REM-11 belegt, dass die
+eingefrorene V6-Migration Altbestände genauso einordnet wie `Betragssnapshot` und die
+Steuerzeilen schreibt. REM-12: Nicht entfernbare Temp-Verzeichnisse erzeugen nur eine
+Warnung. GUI-REM-04 prüft die Rückfrage beim Beenden, während die Einstellungen nicht
+angezeigt werden (zuvor NullPointerException im Schließen-Ereignis).
+
+PDF-REM-01 erzeugt normale, millionenschwere und extrem große Beträge mit Langtexten und
+freien Einheiten. Alle gerenderten Seiten werden visuell kontrolliert; Zeichenkoordinaten
+prüfen zusätzlich seitliche Grenzen und Überlappungen. Prüfbilder liegen unter
+`target/pdf-pruefung`. Die separat gemessenen Summen bleiben vollständig lesbar;
+bei ungeklärter Historie steht die fehlende Steueraufschlüsselung ausdrücklich im PDF.
+PDF-REM-02 druckt Altpositionen ohne Einheit und ohne Produktnummer ohne zusätzlichen
+Hinweistext und prüft für 40 mehrzeilige Positionen in Tabellen- und Stapellayout, dass
+keine Position über einen Seitenwechsel getrennt wird.
+
+ERE-PAKET-01 prüft im gepackten JAR zusätzlich, dass Flyway alle Migrationen V1–V6
+einschließlich der Java-Migration findet; ein Smoke-Start desselben JARs wendete auf einer
+leeren Datenbank sechs Migrationen an und erreichte den Readiness-Marker nach 4,0 s.
+
+### 8.3 Produktionspfade und Startzeit
+
+SQLite-Referenzbestand: 5.000 Kunden, 5.000 Produkte und 1.000 Belege mit je fünf
+Positionen. Die abschließende Messung vom 10.10.2026 nutzt Spring-Dienste und die produktiven Exporte,
+ohne JaCoCo. Aufbau des Bestands liegt außerhalb der Messung.
+
+| Operation | Gemessen | Grenze | Lokales Ergebnis |
+|---|---:|---:|---|
+| Kundensuche | 69 ms | 1.000 ms | bestanden |
+| Produktsuche | 34 ms | 1.000 ms | bestanden |
+| Belegliste | 104 ms | 1.000 ms | bestanden |
+| Dashboard | 80 ms | 1.000 ms | bestanden |
+| PDF mit 50 Positionen | 379 ms | 2.000 ms | bestanden |
+| Gesamt-ZIP | 575 ms | 30.000 ms | bestanden |
+
+Erster gepackter Startlauf vom 10.10.2026: **11.730 / 10.462 / 9.337 ms**.
+Alle drei Läufe überschreiten 5.000 ms. Eine geerbte DEBUG-Umgebungsvariable aktivierte
+zusätzliche Spring-Ausgaben; das Messskript entfernt sie jetzt aus dem Kindprozess.
+Die bereinigte Serie ergab **6.711 / 5.271 / 9.490 ms**; auch sie erfüllt die
+Freigabegrenze nicht. Die ursprünglichen Messungen bleiben erhalten. Das Skript archiviert neue Serien in
+eigenen Zeitstempelordnern und misst weiterhin vom Prozessstart bis nach Fensteranzeige
+und erstem JavaFX-Ereigniszyklus. Ein Profilinglauf bestätigt Aufwand in JVM-/Klassenladen,
+Spring-Initialisierung und JavaFX-Layout; er wird nicht als Freigabemessung gewertet.
+
+Nach Beseitigung der doppelten Flyway-Metadatenabfrage ergab die letzte Serie
+**4.709 / 5.085 / 5.972 ms**. Ein Lauf unterschreitet die Grenze; zwei überschreiten sie.
+Die RC-Freigabe bleibt deshalb offen. Alle Serien bleiben im Prüfverzeichnis erhalten.
+
+### 8.4 Offene Freigabeschranken
+
+- Die Startzeitgrenze ist lokal nicht nachgewiesen. Der dedizierte RC-Job muss drei frische
+  Starts und alle Produktionsoperationen mit den unveränderten Grenzwerten bestehen.
+- Windows-JAR-Start und gepackte XML-Prüfung wurden lokal ausgeführt. Linux x64 und macOS
+  arm64 mit demselben JAR sowie JDK 21 sind automatisiert eingerichtet, aber hier nicht
+  ausgeführt. Die Plattformmatrix ist noch kein erfolgreicher Plattformnachweis.
+- Der MSI-Test installiert, startet mit gebündelter Laufzeit, prüft isolierte Daten und
+  deinstalliert ausschließlich auf einem disponiblen Windows-CI-Runner. Er wurde auf dem
+  Entwicklungsrechner bewusst nicht als Ersatz für diesen Nachweis ausgeführt.
+- Der volle Dependency-Check 12.2.2 wurde am 10.10.2026 gestartet und scheiterte beim
+  NVD-Update mit HTTP 429. Damit liegt **kein vollständiger Sicherheitsnachweis** vor.
+  CI muss den Scan mit NVD-API-Schlüssel erfolgreich ausführen; High/Critical blockieren.
+  Es gibt keine dokumentierte Ausnahme für offene Befunde.
+- Usability-Studien mit mindestens fünf Personen sind auf Wunsch des Projektverantwortlichen
+  derzeit zurückgestellt; die Kriterien bleiben unbewiesen. Eine rechtliche Gesamtbewertung
+  ist nicht durchgeführt und gehört nicht zum Portfolio-Abschluss.
+- Der in Q-06 spezifizierte Netzwerk-Monitoring-Nachweis ist noch nicht dokumentiert.
+
+Es wurde kein Release veröffentlicht oder getaggt. Produktionsdatenbanken wurden nicht
+verändert; Migrationen, Sicherungen und Fehlerfälle liefen ausschließlich mit Testbeständen.
+
+### 8.5 Portfolio-Abschlussrunde (10.10.2026)
+
+PORT-01 wurde mit `tools/portfolio-demo.ps1` gegen das gebaute 3.1.0-rc.1-JAR erfolgreich
+ausgeführt. Es entstanden ausschließlich fiktive Daten: ein Kunde, zwei Produkte,
+fünf Belege, Beispiel-PDF, schema-/schematrongeprüftes XML, Gesamt-CSV-ZIP und Sicherung.
+Eine Produktpreisänderung von 80,00 auf 95,00 EUR änderte die bestehende Rechnung nicht:
+185,00 EUR netto, 35,15 EUR Steuer und 220,15 EUR brutto bleiben erhalten.
+Anschließend wurde die JavaFX-Anwendung mit einer Kopie dieses Bestands gestartet;
+Bereitschaftsmarker, erfolgreicher Prozessabschluss und isolierte Datenbank wurden geprüft.
+Das ist eine technische Demo-Prüfung, keine Usability-Studie oder aufgezeichnete Vorführung.
+Die beiden Demo-ZIPs bestanden außerdem die CRC-Prüfung. Eine aus der Sicherung in
+eine neue Datei wiederhergestellte Datenbank bestand `integrity_check` und
+`foreign_key_check`; alle sieben Geschäftstabellen einschließlich Nummernkreisen
+stimmten mit dem Ausgangsbestand überein. Protokoll: `target/portfolio-ausgaben-pruefung.log`.
+
+PORT-02 bestand lokal auf Windows 11 x64: `jpackage --type app-image` erzeugte ein
+portables Paket mit Temurin 21.0.12.1+1. Das offizielle JDK-Archiv wurde vor dem Entpacken
+gegen die veröffentlichte SHA-256 geprüft und ausschließlich im Build-Verzeichnis abgelegt.
+Die EXE startete mit ihrer gebündelten Laufzeit, ohne JAVA_HOME und mit isoliertem Datenpfad.
+Die Testdatenbank und der Bereitschaftsmarker waren vorhanden; im Programmverzeichnis lag
+keine Datenbank. Dies belegt weder MSI-Installation noch die 5-Sekunden-Startgrenze.
+
+Geprüftes JAR (SHA-256):
+`9AD2AEDE4D421A126731720C2E1F974F1E7AB201332DA01957A9A01F4E92CC92`.
+Lokale Protokolle: `target/portfolio-demo.log`, `target/portfolio-start.log`,
+`target/windows-paket.log`; das Paketverzeichnis enthält zusätzlich `pruefbericht.txt`.
+Die damals 219 JUnit-Fälle aus Kapitel 8.2 wurden durch diese zwei separaten
+Prüfprogramme nicht erweitert. Anwendungscode wurde in dieser Portfolio-Runde nicht geändert.
+
+Der erneute vollständige Dependency-Check scheiterte nach 4:25 Minuten erneut mit
+NVD HTTP 429 und fehlender vollständiger Datenbasis (`target/dependency-scan-portfolio.log`).
+Es gibt weiterhin keinen erfolgreichen Vollscan. GitHub-Anmeldung ist vorhanden,
+aber kein NVD_API_KEY-Secret und kein Remote-Stand dieser neuen Workflows.
+Der unabhängige manuelle Workflow `portfolio.yml` ist lokal vorbereitet; er veröffentlicht
+nichts. MSI- und externe Plattformnachweise bleiben offen. Es wurde nichts gepusht,
+installiert, getaggt oder veröffentlicht.
+
+Die [Portfolio-Abgrenzung](../projekt/Portfolio-Abschluss.md) benennt zurückgestellte
+Usability, spätere Produktfunktionen sowie die verbleibenden Abschlussnachweise.

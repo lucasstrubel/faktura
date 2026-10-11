@@ -2,8 +2,8 @@
 title: "Projektübersicht"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
 author: "Lucas Strubel"
-date: "24.09.2026"
-version: "3.0"
+date: "10.10.2026"
+version: "3.1"
 lang: de-DE
 numbersections: true
 ---
@@ -15,6 +15,7 @@ numbersections: true
 | 1.0–1.3 | 04–05/2026 | Project Charter des Hochschulprojekts (Software Engineering 1, TH Mannheim) |
 | 2.0     | 18.07.2026 | Überarbeitung zur Projektübersicht des weitergeführten Einzelprojekts |
 | 3.0     | 24.09.2026 | Abschluss der Version 3.0 (Phase 12), offene Punkte, Teamzusammensetzung ergänzt |
+| 3.1 | 10.10.2026 | Review-Remediation 3.1.0-rc.1; historische Nachweise und offene Freigabeschranken getrennt |
 
 # Projektübersicht
 
@@ -66,7 +67,7 @@ sind Gegenstand der Weiterentwicklung (Kapitel „Roadmap der Weiterentwicklung�
 - Vollständiges Buchhaltungsmodul (keine Bilanzierung)
 - Webshop-Anbindung (z. B. WooCommerce, Gambio Connectoren)
 - Mobile Clients oder Web-Applikation
-- Unterstützung von E-Rechnungsformaten (ZUGFeRD / XRechnung) → *in Version 2.0 umgesetzt*
+- Unterstützung von E-Rechnungsformaten (EN 16931 CII) → *in Version 2.0 umgesetzt*
 - Mahnwesen und automatisiertes Forderungsmanagement
 - Garantierter kommerzieller Support oder Service Level Agreements (SLAs)
 
@@ -85,17 +86,12 @@ Datenhaltung ohne Cloud-Zwang, geringer Einrichtungsaufwand.
 Folgende regulatorische Rahmenbedingungen sind für Fakturierungssoftware in Deutschland
 relevant:
 
-- **GoBD** (Grundsätze zur ordnungsmäßigen Führung und Aufbewahrung von Büchern):
-  Erstellte Rechnungen dürfen nach Versand nicht mehr verändert werden; alle
-  Geschäftsvorfälle müssen lückenlos erfasst werden. *In Version 1.0 umgesetzt
-  (unveränderliche versendete Belege, lückenlose Rechnungsnummern), seit Version 3.0
-  transaktional abgesichert und um Stornorechnung und Aussteller-Snapshot ergänzt.*
-- **E-Rechnungspflicht ab 01.01.2025**: Im B2B-Bereich sind strukturierte elektronische
-  Rechnungsformate (ZUGFeRD, XRechnung) gesetzlich vorgeschrieben. *In Version 1.0
-  bewusst ausgeklammert; seit Version 2.0 umgesetzt (EN 16931, CII-XML), seit 3.0 mit
-  Stornorechnung als korrigierter Rechnung.*
-- **DSGVO**: Kundendaten werden ausschließlich lokal gespeichert; es erfolgt keine
-  Übertragung an Dritte.
+- **Belegschutz:** Änderungssperren, Stornobelege und transaktionale Nummernvergabe
+  setzen definierte Projektregeln um. Daraus folgt keine pauschale GoBD-Bestätigung.
+- **E-Rechnung:** Implementiert ist EN 16931 CII XML mit technischer Prüfung;
+  XRechnung gehört nicht zum Umfang.
+- **Lokale Speicherung:** Keine Cloud-Datenhaltung; eine vollständige Datenschutzbewertung
+  und betriebliche Verfahrensregeln bleiben gesonderte Aufgaben.
 
 # Projektverlauf Version 1.0 (V-Modell)
 
@@ -124,7 +120,7 @@ bestanden (siehe *Modultestbericht.md*), Anwendung abgenommen und präsentiert.
 3. **Oberfläche:** Neuentwicklung der GUI mit JavaFX (FXML, moderne Themes,
    Live-Validierung in Formularen)
 4. **Fachlichkeit:** konfigurierbares Firmenprofil (Briefkopf, Bankverbindung),
-   E-Rechnung nach EN 16931 (ZUGFeRD / XRechnung), Datensicherung
+   E-Rechnung nach EN 16931 (EN 16931 CII), Datensicherung
 5. **Auslieferung:** nativer Windows-Installer (jpackage), Releases über GitHub
 
 ## Abgeschlossen: Version 3.0 (Phasen 8–11)
@@ -173,9 +169,9 @@ und die Anwendung mit realistischen Demodaten durchgespielt. Ergebnis:
     Silicon), Versionsprüfung im Release-Workflow, Dokumentation vollständig auf Deutsch
     und als PDF.
 
-## Offene Punkte
+## Bewusst zurückgestellt / spätere Erweiterungen
 
-- Usability-Test mit fünf Personen (Q-05, AC-11) — nicht durch Code belegbar
+- Usability-Test mit fünf Personen (Q-05/Q-09, AC-11): derzeit nicht realisierbar; empirischer Nachweis bleibt aus
 - Steuerbefreiungen und Kleinunternehmerregelung (§ 19 UStG) mit Pflichthinweis
 - Mahnwesen
 - Installationspakete für Linux und macOS
@@ -187,3 +183,25 @@ und die Anwendung mit realistischen Demodaten durchgespielt. Ergebnis:
 | R-01 | Technische Komplexität unterschätzt | M/H | Frühzeitige Spikes, Scope-Reduktion      |
 | R-02 | Anforderungsänderungen              | N/M | Anforderungen versioniert im Pflichtenheft |
 | R-03 | Regressionsfehler bei Umbauten      | M/H | Automatisierte Testsuite als Sicherheitsnetz, CI |
+
+
+# Ergänzung 3.1.0-rc.1 (10.10.2026)
+
+Maßgeblicher RC-Umfang: EN 16931 CII mit eingebetteter Schema-/Schematron-Prüfung;
+XRechnung ist nicht implementiert. Lückenlose Nummernvergabe ist Projektinvariante GR-01,
+keine pauschale Aussage über gesetzliche Anforderungen oder Compliance.
+Historische Beträge und unbekannte Einheiten werden erhalten; nicht reproduzierbares XML
+wird gesperrt. Details zu Snapshots, Migration, Einheiten, CSV und Rücksicherung stehen in
+[Betrieb 3.1](../projekt/Betrieb-3.1.md). Die v1.0-Abnahme bleibt ein historischer Nachweis.
+Aktuelle Ergebnisse, verbleibende Plattformprüfungen und offene Usability-Studien sind im
+[Modultestbericht](../tests/Modultestbericht.md) ausgewiesen. Frühere JSON-Zeitmessungen
+belegen weder SQLite-Performance noch die Startzeit des gepackten Programms.
+
+
+## Portfolio-Abschluss statt weiterer Funktionsausbau
+
+Die nächste Abschlussrunde konzentriert sich auf eine reproduzierbare Windows-Demo,
+konsistente Nachweise und verständliche Darstellung der eigenen und KI-unterstützten
+Arbeit. Kein zusätzlicher Funktionsausbau ist dafür erforderlich. Vorgehen, Demo-Drehbuch,
+Prüfbefehle und offene Grenzen stehen im [Portfolio-Abschluss](Portfolio-Abschluss.md).
+Die vollständige RC-Freigabe bleibt separat und aktuell offen.

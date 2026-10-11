@@ -2,8 +2,8 @@
 title: "Pflichtenheft"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
 author: "Lucas Strubel"
-date: "24.09.2026"
-version: "2.4"
+date: "10.10.2026"
+version: "2.5"
 lang: de-DE
 seitenumbruch: kapitel
 ---
@@ -19,6 +19,7 @@ seitenumbruch: kapitel
 | 2.2     | 19.07.2026 | Teil D: Systemarchitektur auf JavaFX-Oberfläche (FXML, Spring-Controller-Factory, Spring Application Events) aktualisiert |
 | 2.3     | 21.07.2026 | Teil D: Oberflächenumbau nachgezogen — F-01 (Seitennavigation, fünf Bereiche) und F-06 (Belegliste ohne Typ-Spalte, dafür Suche) geändert, F-07 und F-17 ergänzt, neuer Abschnitt 4.7 mit F-18 bis F-23 (Übersicht, Detailbereich, Hintergrundausführung, Erscheinungsbild, Tastenkürzel, Leerzustände), Abnahmekriterien AC-D-07 bis AC-D-10 |
 | 2.4     | 24.09.2026 | Abschluss Version 3.0 — Teil A: F-19 (Storno auch versendeter Rechnungen), neuer Abschnitt 4.8 mit F-25 bis F-32 (Steuer je Steuersatz, Pflichtprofil, Aussteller-Snapshot, Zahlungseingang, Stornorechnung, E-Rechnung, Leistungsdatum, Datumsprüfung), Datenmodell und AC-A-08 bis AC-A-11. Teil B: F-03 (zwei Nachkommastellen). Teil C: F-17 (EU-USt-IdNr.), F-19/F-20. Teil D: F-06, F-14, F-19, F-22 angepasst, F-24/F-25 ergänzt. Teile A–D: Persistenz SQLite statt JSON, Diagramme auf Stand 3.0 |
+| 2.5 | 10.10.2026 | Review-Remediation 3.1.0-rc.1; historische Nachweise und offene Freigabeschranken getrennt |
 
 
 ## Einführung
@@ -209,14 +210,15 @@ DANN MUSS das System jede inhaltliche Änderung ablehnen; Korrekturen erfolgen a
 ### 4.8 Weiterentwicklung ab Version 3.0
 
 Die folgenden Anforderungen gehen über das Lastenheft hinaus. Sie schließen Lücken, die
-für den produktiven Einsatz nach § 14 UStG, GoBD und EN 16931 bestehen; sie sind durch die
+bei Ausstellerdaten, Zahlungszustand, Stornierung und strukturiertem Export bestehen.
+Dies ist kein Nachweis vollständiger rechtlicher Konformität. Die Funktionen sind durch die
 Testfälle DZ-01 bis DZ-10, ERE-01 bis ERE-08, PDF-01 bis PDF-06, FP-01 bis FP-09 und
 KZ-06 belegt (Modultestplan, Kapitel 3).
 
 **F-25 (Umsatzsteuer je Steuersatz):** Das System MUSS die Umsatzsteuer eines Belegs je
 Steuersatz berechnen — die Nettosumme aller Positionen eines Satzes, einmal mit dem Satz
 multipliziert und kaufmännisch auf zwei Nachkommastellen gerundet — und nicht je Position.
-Beleg-PDF und E-Rechnung MÜSSEN Entgelt und Steuerbetrag je Steuersatz ausweisen
+Neue Beleg-PDFs und E-Rechnungen MÜSSEN Entgelt und Steuerbetrag je Steuersatz ausweisen
 (§ 14 Abs. 4 Nr. 7/8 UStG) und dieselben Beträge enthalten (EN 16931, BR-CO-17).
 
 **F-26 (Pflichtprofil):** WENN noch kein Firmenprofil gespeichert ist, DANN MUSS das System
@@ -403,7 +405,7 @@ und Datentypen sind dem Komponentenentwurf bzw. dem Modultestplan (eigenständig
 - **Belegnummernvergabe (GR-01):** liefert je Belegtyp und Jahr die nächste fortlaufende,
   lückenlose Belegnummer im festen Format mit Präfix und führenden Nullen (z. B. `R-2026-000124`).
 - **Belegpersistenz (IF-01):** speichert Belege in der lokalen SQLite-Datenbank, liefert einen
-  Beleg zur Belegnummer und alle Belege; Belege werden nie gelöscht (GoBD). Die Summen
+  Beleg zur Belegnummer und alle Belege; Belege werden im Programm nie gelöscht (GR-02). Die Summen
   versendeter und stornierter Belege werden beim Laden aus der Datenbank übernommen und
   nicht neu berechnet.
 - **PDF-Export (IF-01):** exportiert einen Beleg als PDF in das lokale Dateisystem.
@@ -1661,9 +1663,10 @@ Hilfe im ersten Versuch.
 Vorbedingung: Eine Rechnung im Status `OFFEN` und eine im Status `VERSENDET` existieren.\
 Aktion: Anwender:in öffnet die Dokumentliste, prüft die angebotenen Aktionen und
 storniert die offene Rechnung nach Bestätigung.\
-Erwartet: *Stornieren* wird nur für die offene Rechnung angeboten; der
-Bestätigungsdialog zeigt Rechnungsnummer und Bruttosumme; nach Bestätigung erscheint die
-Rechnung mit Status `STORNIERT` in der Liste.
+Erwartet: *Stornieren* wird für offene und versendete, unbezahlte Rechnungen angeboten,
+sofern diese selbst keine Stornorechnungen sind. Der Bestätigungsdialog nennt Nummer
+und Betrag. Nach Bestätigung ist das Original `STORNIERT`; bei zuvor versendeter
+Rechnung entsteht zusätzlich eine Stornorechnung (A-F-29).
 
 **AC-D-06 (zu F-06–F-08)** — *Dokumentliste, Statusfilter, deaktivierte Aktionen*\
 Vorbedingung: Belege in den Status `ENTWURF`, `OFFEN`, `VERSENDET`, `STORNIERT` existieren.\
@@ -1798,11 +1801,13 @@ Eingabe: `speichern()`.
 Erwartetes Ergebnis: keine Erfolgsmeldung; `Meldung(FEHLER, "Rechnungsdatum", ...)`
 wird dargestellt (F-05/F-16).
 
-**TC-10 — Storno-Aktion nur für offene Rechnungen**
+**TC-10 — Storno-Aktion gemäß aktuellem Belegzustand**
 Abgedeckte PH-Anforderung: F-14.\
 Vorbedingung: Dokumentliste mit Rechnungen in `OFFEN`, `VERSENDET`, `STORNIERT`.\
 Eingabe: verfügbare Aktionen je Rechnung ermitteln.
-Erwartetes Ergebnis: *Stornieren* ist nur bei Status `OFFEN` aktiviert.
+Erwartetes Ergebnis: *Stornieren* ist bei `OFFEN` oder `VERSENDET` aktiviert, sofern
+die Rechnung unbezahlt und selbst keine Stornorechnung ist (A-F-29). Bezahlte,
+stornierte Rechnungen und Stornorechnungen bieten diese Aktion nicht an.
 
 **TC-11 — Stornierung nur nach Bestätigung**
 Abgedeckte PH-Anforderung: F-15.\
@@ -1863,3 +1868,61 @@ F-16) abdecken.
 ## Glossar
 
 Es gilt das Glossar des Lastenhefts (§ 8.1) unverändert.
+
+
+# Ergänzung 3.1.0-rc.1 (10.10.2026)
+
+Maßgeblicher RC-Umfang: EN 16931 CII mit eingebetteter Schema-/Schematron-Prüfung;
+XRechnung ist nicht implementiert. Lückenlose Nummernvergabe ist Projektinvariante GR-01,
+keine pauschale Aussage über gesetzliche Anforderungen oder Compliance.
+Historische Beträge und unbekannte Einheiten werden erhalten; nicht reproduzierbares XML
+wird gesperrt. Details zu Snapshots, Migration, Einheiten, CSV und Rücksicherung stehen in
+[Betrieb 3.1](../projekt/Betrieb-3.1.md). Die v1.0-Abnahme bleibt ein historischer Nachweis.
+Aktuelle Ergebnisse, verbleibende Plattformprüfungen und offene Usability-Studien sind im
+[Modultestbericht](../tests/Modultestbericht.md) ausgewiesen. Frühere JSON-Zeitmessungen
+belegen weder SQLite-Performance noch die Startzeit des gepackten Programms.
+
+## Verbindliche RC-Anforderungen
+
+- **RC-01 Eingaben:** Der Preis-Editor MUSS Dezimalkomma und genau zwei Stellen ohne
+  Tausendertrennung ausgeben. Speichern MUSS verlustfrei auf Scale 2 normalisieren und
+  weitere von Null verschiedene Nachkommastellen ablehnen. Datumsfelder MÜSSEN strikt
+  auflösbare Kalendertage verlangen und ungültigen Text bis zur Korrektur erhalten.
+- **RC-02 Betragsstand:** Neue Belege MÜSSEN einen unveränderlichen Betragssnapshot mit
+  Steuern je Satz und Herkunft speichern. Laden, Export und Statuswechsel DÜRFEN ihn
+  NICHT neu berechnen. Stornos MÜSSEN ihn exakt negieren. Altbestände behalten ihre Summen;
+  Rekonstruktion ist nur bei exakter Übereinstimmung mit einer belegten Rundungsregel erlaubt.
+  Fehlende Werte bleiben unbekannt. V1 bis V4 und bestehende Nummernkreise bleiben erhalten.
+- **RC-03 Einheiten:** Positionen MÜSSEN Einheitentext und optionalen Exportcode speichern.
+  Folgebelege und Stornos übernehmen den Snapshot. Historische Einheiten DÜRFEN NICHT aus
+  heutigen Produkten abgeleitet werden. Freitext bleibt im PDF nutzbar; neue Produkte
+  bieten Stück explizit an. Produkte ohne Einheit ergeben neue Positionen mit Stück (C62);
+  freie Einheiten ohne Code verlangen beim Speichern des Produkts Bestätigung.
+- **RC-04 XML:** EN 16931 CII MUSS mit gebündelten, versionsgleichen Mustang-Artefakten
+  offline per Schema und Schematron geprüft werden. Summen, Steuersätze, Mengen und
+  Einheiten MÜSSEN dem Beleg entsprechen. Fehler oder ungeklärte Historie sperren XML;
+  bestehende Zieldateien bleiben erhalten. XRechnung ist nicht implementiert.
+- **RC-05 PDF:** Gespeicherte Summen sind maßgeblich. Fehlende Steueraufschlüsselungen
+  und historische Einheiten MÜSSEN sichtbar gekennzeichnet werden. Gemessene Zahlenkolumnen
+  halten mindestens 8 pt Abstand; bei Platzmangel werden Positionen gestapelt. Texte
+  umbrechen; Tabellenköpfe wiederholen sich auf Folgeseiten.
+- **RC-06 Export und Sicherung:** Alle Geschäftsfelder MÜSSEN im versionierten CSV-ZIP aus
+  einer gemeinsamen Lesetransaktion vertreten sein. Datenbanksicherungen verwenden
+  VACUUM INTO, verifiziertes temporäres ZIP und ausschließlich atomaren Austausch.
+  Ein Upgrade eines bestehenden Bestands verlangt eine geprüfte Sicherung und eine
+  erfolgreiche Migration auf restaurierter Kopie; Rücksicherung erfolgt bei beendeter Anwendung.
+- **RC-07 Oberfläche:** Beträge und Daten sortieren nach Fachwerten, leere Daten zuletzt.
+  Ungespeicherte Firmenprofiländerungen bleiben bei Navigation erhalten. Schließen bietet
+  Speichern, Verwerfen und Abbrechen; Validierungs- oder Speicherfehler verhindern das Schließen.
+- **RC-08 Freigabe:** Produktionspfade, drei gepackte Starts, dasselbe JAR auf Windows x64,
+  Linux x64 und macOS arm64 sowie ein installierter MSI-Start sind mit JDK 21 zu prüfen.
+  Die bestehenden Zeitgrenzen bleiben bindend. Vollständiger Sicherheitsscan und
+  Qualitätsgates MÜSSEN erfolgreich sein. Noch offene Nachweise stehen im Testbericht.
+
+
+### Portfolio-Abgrenzung
+
+Die Usability-Studie ist derzeit zurückgestellt, nicht bestanden. Der spezifizierte
+Netzwerk-Monitoring-Nachweis ist offen. Windows-Vorführung und spätere Erweiterungen
+sind im [Portfolio-Abschluss](../projekt/Portfolio-Abschluss.md) abgegrenzt.
+Die Anforderungen Q-04, Q-05, Q-09 und RC-08 bleiben unverändert.
