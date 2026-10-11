@@ -503,7 +503,9 @@ belegen weder SQLite-Performance noch die Startzeit des gepackten Programms.
 | PERF-01 | Spring/SQLite mit 5000 Kunden, 5000 Produkten und 1000 Belegen mit fünf Positionen |
 
 GUI- und Leistungstests sind getrennt aktivierbar. Der Release-Workflow verlangt sie
-zusätzlich zum regulären `verify`. Drei frische Starts messen bis zum Readiness-Marker
+zusätzlich zum regulären `verify`. Im Release-Workflow gilt für die Startzeit eine
+Regressionsgrenze von 8 Sekunden, weil gehostete Runner wechselnde Hardware erhalten;
+der Q-04-Nachweis (≤ 5 s) erfolgt getrennt auf dem Referenzrechner. Drei frische Starts messen bis zum Readiness-Marker
 nach Fensteranzeige und erstem JavaFX-Ereigniszyklus. Zeiten und Runnerdaten werden
 archiviert. Derselbe JAR-Build wird auf drei Plattformen geprüft. Der MSI-Test installiert,
 startet mit gebündelter Laufzeit und deinstalliert auf einem disponiblen Windows-Runner.

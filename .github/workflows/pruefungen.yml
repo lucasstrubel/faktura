@@ -81,9 +81,12 @@ jobs:
       - name: JavaFX-Regressionen
         shell: pwsh
         run: ./mvnw.cmd test '-Dtest=GuiRegressionTest' '-Dfaktura.gui.tests=true' '-Djacoco.skip=true' --no-transfer-progress
+      # Regressionswächter, kein Q-04-Nachweis: Gehostete Runner bekommen zufällig
+      # unterschiedliche CPUs (gemessen 3,9–4,6 s gegenüber 5,8–6,6 s mit demselben JAR).
+      # Q-04 (≤ 5 s) bleibt unverändert und wird separat gemessen, siehe Modultestbericht 8.3.
       - name: Drei frische Starts mit Referenzbestand
         shell: pwsh
-        run: ./tools/paket-pruefen.ps1 -Jar (Get-ChildItem paket/*.jar).FullName -Datenquelle (Get-Content target/performance/datenpfad.txt) -Laeufe 3 -GrenzeMs 5000
+        run: ./tools/paket-pruefen.ps1 -Jar (Get-ChildItem paket/*.jar).FullName -Datenquelle (Get-Content target/performance/datenpfad.txt) -Laeufe 3 -GrenzeMs 8000
       - uses: actions/upload-artifact@v4
         if: always()
         with:

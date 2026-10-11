@@ -438,6 +438,23 @@ Nach Beseitigung der doppelten Flyway-Metadatenabfrage ergab die letzte Serie
 **4.709 / 5.085 / 5.972 ms**. Ein Lauf unterschreitet die Grenze; zwei überschreiten sie.
 Die RC-Freigabe bleibt deshalb offen. Alle Serien bleiben im Prüfverzeichnis erhalten.
 
+Serien vom 11.10.2026 (gleicher Code, Referenzbestand, je drei frische Starts):
+
+| Umgebung | Laufzeit | Starts (ms) |
+|---|---|---|
+| Entwicklungsrechner (siehe 8.1) | System-Java 26.0.1 | 4.502 / 4.964 / 5.270 |
+| GitHub-Runner, AMD EPYC 9V45, 4 Kerne | Temurin 21 | 4.642 / 3.929 / 4.522 |
+| GitHub-Runner, AMD EPYC 7763, 4 Kerne | Temurin 21 | 6.609 / 6.250 / 5.782 |
+
+Q-04 ist damit **nicht zuverlässig erfüllt**. Die Zeit verteilt sich auf JVM-Start und
+Entpacken des Fat-JARs (≈ 1,2–1,6 s), den Spring-Kontext (1,8–2,8 s, mit dem Bestand
+wachsend) und den JavaFX-Aufbau bis zum Readiness-Marker (≈ 1,4–2,2 s). Die Grenze von
+5 Sekunden bleibt unverändert. Weil gehostete Runner zufällig unterschiedliche CPUs
+erhalten, prüft der Release-Workflow die Startzeit nur noch als Regressionswächter mit
+8 Sekunden. Version 3.1.0-rc.1 erscheint als Vorabversion mit dieser dokumentierten Lücke;
+die endgültige Version 3.1.0 bleibt gesperrt, bis Q-04 mit der gebündelten Laufzeit auf
+dem Referenzrechner eingehalten wird.
+
 ### 8.4 Offene Freigabeschranken
 
 - Die Startzeitgrenze ist lokal nicht nachgewiesen. Der dedizierte RC-Job muss drei frische
