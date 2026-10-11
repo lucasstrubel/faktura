@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.StringJoiner;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -65,14 +66,6 @@ public class PdfBoxPdfExporter implements PdfExporter {
     /** Spaltenraster der Positionstabelle: Textspalten linksbündig ... */
     private static final float SPALTE_POS = RAND;
     private static final float SPALTE_PRODUKT = 80;
-    private static final float SPALTE_BEZEICHNUNG = 155;
-    /** ... Zahlenspalten rechtsbündig an ihrer rechten Kante. */
-    private static final float SPALTE_MENGE = 385;
-    private static final float SPALTE_EINZELPREIS = 460;
-    private static final float SPALTE_UST = 497;
-    private static final float SPALTE_SUMME = RECHTS;
-    /** Die Bezeichnung endet mit Abstand vor der (rechtsbündigen) Mengenspalte. */
-    private static final float BREITE_BEZEICHNUNG = SPALTE_MENGE - 45 - SPALTE_BEZEICHNUNG;
 
     private static final String SCHRIFT_NORMAL = "/schrift/LiberationSans-Regular.ttf";
     private static final String SCHRIFT_FETT = "/schrift/LiberationSans-Bold.ttf";
@@ -211,46 +204,106 @@ public class PdfBoxPdfExporter implements PdfExporter {
         schreiber.leer();
     }
 
-    /** Positionstabelle im festen Spaltenraster; Kopf wird je Seite wiederholt. */
+    /**
+     * Positionstabelle mit gemessenen Zahlenspalten; reicht der Platz für die
+     * Leistungsbeschreibung nicht, werden die Positionen gestapelt. Der Kopf
+     * wird je Folgeseite wiederholt, eine Position nicht über einen
+     * Seitenwechsel zerrissen (F-03).
+     */
     private void schreibePositionstabelle(Schreiber schreiber, Dokument dokument) throws IOException {
-        schreibeTabellenkopf(schreiber);
+        String[] titel = {"Menge", "Einzelpreis", "USt", "Summe"};
+        float[] breiten = new float[4];
+        for (int i = 0; i < 4; i++) {
+            breiten[i] = schreiber.breite(schreiber.fett, 10, titel[i]);
+        }
+        for (Dokumentposition position : dokument.getPositionen()) {
+            String[] werte = zahlen(position);
+            for (int i = 0; i < 4; i++) {
+                breiten[i] = Math.max(breiten[i], schreiber.breite(schreiber.normal, 10, werte[i]));
+            }
+        }
+        float[] kanten = new float[4];
+        kanten[3] = RECHTS;
+        for (int i = 2; i >= 0; i--) {
+            kanten[i] = kanten[i + 1] - breiten[i + 1] - 8;
+        }
+        float textBreite = kanten[0] - breiten[0] - 8 - SPALTE_PRODUKT;
+        boolean gestapelt = textBreite < 140;
+        schreiber.folgekopf = () -> schreibeTabellenkopf(schreiber, titel, kanten, gestapelt);
+        schreibeTabellenkopf(schreiber, titel, kanten, gestapelt);
         int pos = 1;
         for (Dokumentposition position : dokument.getPositionen()) {
-            List<String> bezeichnung = schreiber.umbreche(schreiber.normal, 10,
-                    position.getBezeichnung(), BREITE_BEZEICHNUNG);
-            // Eine Position wird nicht über einen Seitenwechsel zerrissen
-            if (!schreiber.passtNoch(Math.max(1, bezeichnung.size()))) {
-                schreiber.neueSeite();
-                schreibeTabellenkopf(schreiber);
+            String beschreibung = beschreibung(position);
+            String[] werte = zahlen(position);
+            if (gestapelt) {
+                List<String> absaetze = new ArrayList<>();
+                absaetze.add(beschreibung);
+                for (int i = 0; i < 4; i++) {
+                    absaetze.add(titel[i] + ": " + werte[i]);
+                }
+                int zeilen = 1;
+                for (String absatz : absaetze) {
+                    zeilen += schreiber.umbreche(schreiber.normal, 10, absatz, SATZBREITE).size();
+                }
+                schreiber.halteZusammen(zeilen);
+                schreiber.absatz(schreiber.fett, 10, "Position " + pos++);
+                for (String absatz : absaetze) {
+                    schreiber.absatz(schreiber.normal, 10, absatz);
+                }
+                schreiber.leer();
+                continue;
             }
+            List<String> bezeichnung = schreiber.umbreche(schreiber.normal, 10, beschreibung, textBreite);
+            schreiber.halteZusammen(Math.max(1, bezeichnung.size()));
             schreiber.beginneZeile();
             schreiber.text(schreiber.normal, 10, String.valueOf(pos++), SPALTE_POS);
-            schreiber.text(schreiber.normal, 10, position.getProduktReferenz(), SPALTE_PRODUKT);
             schreiber.text(schreiber.normal, 10,
-                    bezeichnung.isEmpty() ? "" : bezeichnung.get(0), SPALTE_BEZEICHNUNG);
-            schreiber.textRechts(schreiber.normal, 10, String.valueOf(position.getMenge()), SPALTE_MENGE);
-            schreiber.textRechts(schreiber.normal, 10, betrag(position.getEinzelpreisNetto()), SPALTE_EINZELPREIS);
-            schreiber.textRechts(schreiber.normal, 10, prozent(position.getSteuersatz()) + " %", SPALTE_UST);
-            schreiber.textRechts(schreiber.normal, 10, betrag(position.getPositionssummeNetto()), SPALTE_SUMME);
+                    bezeichnung.isEmpty() ? "" : bezeichnung.get(0), SPALTE_PRODUKT);
+            for (int i = 0; i < 4; i++) {
+                schreiber.textRechts(schreiber.normal, 10, werte[i], kanten[i]);
+            }
             schreiber.beendeZeile();
             for (String folgezeile : bezeichnung.subList(Math.min(1, bezeichnung.size()), bezeichnung.size())) {
                 schreiber.beginneZeile();
-                schreiber.text(schreiber.normal, 10, folgezeile, SPALTE_BEZEICHNUNG);
+                schreiber.text(schreiber.normal, 10, folgezeile, SPALTE_PRODUKT);
                 schreiber.beendeZeile();
             }
         }
+        schreiber.folgekopf = null;
         schreiber.linie();
     }
 
-    private void schreibeTabellenkopf(Schreiber schreiber) throws IOException {
+    /**
+     * Produktnummer, Bezeichnung und Einheit, soweit vorhanden. Eine unbekannte
+     * Einheit (Altbestand vor 3.1) entfällt, damit ein erneut gedrucktes PDF
+     * eines ausgestellten Belegs keinen neuen Hinweistext trägt (GR-02).
+     */
+    private static String beschreibung(Dokumentposition position) {
+        StringJoiner teile = new StringJoiner(" · ");
+        for (String teil : new String[]{position.getProduktReferenz(), position.getBezeichnung(),
+                position.getEinheit()}) {
+            if (teil != null && !teil.isBlank()) {
+                teile.add(teil.strip());
+            }
+        }
+        return teile.toString();
+    }
+
+    private static String[] zahlen(Dokumentposition position) {
+        return new String[]{String.valueOf(position.getMenge()), betrag(position.getEinzelpreisNetto()),
+                prozent(position.getSteuersatz()) + " %", betrag(position.getPositionssummeNetto())};
+    }
+
+    private void schreibeTabellenkopf(Schreiber schreiber, String[] titel, float[] kanten,
+                                      boolean gestapelt) throws IOException {
         schreiber.beginneZeile();
-        schreiber.text(schreiber.fett, 10, "Pos", SPALTE_POS);
-        schreiber.text(schreiber.fett, 10, "Produkt", SPALTE_PRODUKT);
-        schreiber.text(schreiber.fett, 10, "Bezeichnung", SPALTE_BEZEICHNUNG);
-        schreiber.textRechts(schreiber.fett, 10, "Menge", SPALTE_MENGE);
-        schreiber.textRechts(schreiber.fett, 10, "Einzelpreis", SPALTE_EINZELPREIS);
-        schreiber.textRechts(schreiber.fett, 10, "USt", SPALTE_UST);
-        schreiber.textRechts(schreiber.fett, 10, "Summe", SPALTE_SUMME);
+        schreiber.text(schreiber.fett, 10, gestapelt ? "Positionen" : "Pos", SPALTE_POS);
+        if (!gestapelt) {
+            schreiber.text(schreiber.fett, 10, "Leistung / Einheit", SPALTE_PRODUKT);
+            for (int i = 0; i < 4; i++) {
+                schreiber.textRechts(schreiber.fett, 10, titel[i], kanten[i]);
+            }
+        }
         schreiber.beendeZeile();
         schreiber.linie();
     }
@@ -261,6 +314,11 @@ public class PdfBoxPdfExporter implements PdfExporter {
      */
     private void schreibeSummenblock(Schreiber schreiber, Dokument dokument) throws IOException {
         summenzeile(schreiber, schreiber.normal, 10, "Summe netto:", dokument.getSummeNetto());
+        if (dokument.getBetragssnapshot().berechnungsart() == Berechnungsart.UNGEKLAERT) {
+            summenzeile(schreiber, schreiber.normal, 10, "Umsatzsteuer gesamt:", dokument.getSummeSteuer());
+            schreiber.absatz(schreiber.normal, 10,
+                    "Historischer Beleg: Aufschlüsselung nach Steuersätzen nicht verfügbar.");
+        }
         for (Steuerzeile zeile : dokument.steueraufschluesselung()) {
             summenzeile(schreiber, schreiber.normal, 10, "Umsatzsteuer " + prozent(zeile.steuersatz())
                     + " % auf " + betrag(zeile.netto()) + " EUR:", zeile.steuer());
@@ -271,10 +329,21 @@ public class PdfBoxPdfExporter implements PdfExporter {
 
     private void summenzeile(Schreiber schreiber, PDFont font, float groesse,
                              String beschriftung, BigDecimal wert) throws IOException {
-        schreiber.beginneZeile();
-        schreiber.textRechts(font, groesse, beschriftung, SPALTE_EINZELPREIS);
-        schreiber.textRechts(font, groesse, betrag(wert) + " EUR", SPALTE_SUMME);
-        schreiber.beendeZeile();
+        String betragstext = betrag(wert) + " EUR";
+        float wertBreite = schreiber.breite(font, groesse, betragstext);
+        float labelBreite = SATZBREITE - wertBreite - 8;
+        if (labelBreite < 140) {
+            schreiber.absatz(font, groesse, beschriftung);
+            schreiber.rechtsbuendig(font, groesse, betragstext, RECHTS);
+        } else {
+            List<String> zeilen = schreiber.umbreche(font, groesse, beschriftung, labelBreite);
+            for (int i = 0; i < zeilen.size(); i++) {
+                schreiber.beginneZeile();
+                schreiber.textRechts(font, groesse, zeilen.get(i), RECHTS - wertBreite - 8);
+                if (i == zeilen.size() - 1) { schreiber.textRechts(font, groesse, betragstext, RECHTS); }
+                schreiber.beendeZeile();
+            }
+        }
     }
 
     /** Belegtyp-spezifischer Hinweistext am Ende des Dokuments. */
@@ -352,6 +421,13 @@ public class PdfBoxPdfExporter implements PdfExporter {
         private final Map<PDFont, Map<Integer, Boolean>> darstellbar = new HashMap<>();
         private PDPageContentStream inhalt;
         private float y;
+        /** Tabellenkopf, den {@link #neueSeite()} auf Folgeseiten wiederholt; sonst {@code null}. */
+        private Kopf folgekopf;
+
+        @FunctionalInterface
+        private interface Kopf {
+            void schreibe() throws IOException;
+        }
 
         Schreiber(PDDocument pdf, PDFont normal, PDFont fett) throws IOException {
             this.pdf = pdf;
@@ -368,6 +444,21 @@ public class PdfBoxPdfExporter implements PdfExporter {
             pdf.addPage(seite);
             inhalt = new PDPageContentStream(pdf, seite);
             y = PDRectangle.A4.getHeight() - RAND;
+            if (folgekopf != null) {
+                folgekopf.schreibe();
+            }
+        }
+
+        /**
+         * Beginnt eine neue Seite, wenn die folgenden Zeilen nicht mehr auf die
+         * aktuelle passen — aber nur, wenn sie auf einer leeren Seite Platz hätten.
+         */
+        void halteZusammen(int zeilen) throws IOException {
+            boolean passtAufLeereSeite = PDRectangle.A4.getHeight() - RAND
+                    - (zeilen - 1) * ZEILENHOEHE >= RAND + ZEILENHOEHE;
+            if (!passtNoch(zeilen) && passtAufLeereSeite) {
+                neueSeite();
+            }
         }
 
         boolean passtNoch(int zeilen) {
@@ -411,9 +502,11 @@ public class PdfBoxPdfExporter implements PdfExporter {
 
         /** Einzelne rechtsbündige Zeile (z. B. Absenderblock). */
         void rechtsbuendig(PDFont font, float groesse, String text, float xRechts) throws IOException {
-            beginneZeile();
-            textRechts(font, groesse, text, xRechts);
-            beendeZeile();
+            for (String zeile : umbreche(font, groesse, text, xRechts - RAND)) {
+                beginneZeile();
+                textRechts(font, groesse, zeile, xRechts);
+                beendeZeile();
+            }
         }
 
         /** Horizontale Trennlinie über die volle Satzspiegelbreite. */

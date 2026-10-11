@@ -20,15 +20,11 @@ public class DokumentReferenzPruefung implements KundenReferenzPruefung, Produkt
 
     @Override
     public int anzahlVerknuepfterDokumente(String kundennummer) {
-        return (int) repository.alle().stream()
-                .filter(d -> kundennummer.equals(d.getKundenReferenz()))
-                .count();
+        return repository.anzahlFuerKunde(kundennummer);
     }
 
     @Override
     public boolean istProduktReferenziert(String produktnummer) {
-        return repository.alle().stream()
-                .flatMap(d -> d.getPositionen().stream())
-                .anyMatch(p -> produktnummer.equals(p.getProduktReferenz()));
+        return repository.istProduktReferenziert(produktnummer);
     }
 }

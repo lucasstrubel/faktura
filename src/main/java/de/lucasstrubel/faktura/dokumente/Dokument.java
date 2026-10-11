@@ -7,13 +7,10 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import de.lucasstrubel.faktura.firma.Firmenprofil;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * Abstrakte Oberklasse aller Belege (Komponente A, Kapitel 6.1).
@@ -48,9 +45,11 @@ public abstract class Dokument {
     private List<Dokumentposition> positionen = new ArrayList<>();
     private DokumentStatus status = DokumentStatus.ENTWURF;
     private String vorgaengerNr;
-    private BigDecimal summeNetto = BigDecimal.ZERO.setScale(2);
-    private BigDecimal summeSteuer = BigDecimal.ZERO.setScale(2);
-    private BigDecimal summeBrutto = BigDecimal.ZERO.setScale(2);
+    // Alte JSON-Felder bleiben lesbar; null bedeutet ausdrücklich unbekannt.
+    private BigDecimal summeNetto;
+    private BigDecimal summeSteuer;
+    private BigDecimal summeBrutto;
+    private Betragssnapshot betragssnapshot;
 
     public abstract Belegtyp belegtyp();
 
@@ -66,6 +65,9 @@ public abstract class Dokument {
     /** Ersetzt die Positionen und berechnet die Summen neu (F-23). */
     public void setzePositionen(List<Dokumentposition> neuePositionen) {
         pruefeAenderbar();
+        if (this instanceof Rechnung rechnung && rechnung.istStornorechnung()) {
+            throw new IllegalStateException("Die Positionen einer Stornorechnung bleiben unverändert (A-F-29).");
+        }
         this.positionen = new ArrayList<>(neuePositionen);
         berechneSummen();
     }
@@ -79,15 +81,11 @@ public abstract class Dokument {
      * denselben Betrag ausweisen.
      */
     public void berechneSummen() {
-        BigDecimal netto = BigDecimal.ZERO;
-        BigDecimal steuer = BigDecimal.ZERO;
-        for (Steuerzeile zeile : steueraufschluesselung()) {
-            netto = netto.add(zeile.netto());
-            steuer = steuer.add(zeile.steuer());
+        pruefeAenderbar();
+        if (this instanceof Rechnung rechnung && rechnung.istStornorechnung()) {
+            throw new IllegalStateException("Die Beträge einer Stornorechnung bleiben unverändert (A-F-29).");
         }
-        this.summeNetto = netto.setScale(2, RoundingMode.HALF_UP);
-        this.summeSteuer = steuer.setScale(2, RoundingMode.HALF_UP);
-        this.summeBrutto = this.summeNetto.add(this.summeSteuer);
+        stelleBetragssnapshotWiederHer(Betragssnapshot.berechne(positionen));
     }
 
     /**
@@ -96,19 +94,25 @@ public abstract class Dokument {
      * (IF-01) zählen als 0 statt zu scheitern.
      */
     public List<Steuerzeile> steueraufschluesselung() {
-        Map<BigDecimal, BigDecimal> nettoJeSatz = new TreeMap<>();
-        for (Dokumentposition position : positionen) {
-            BigDecimal satz = position.getSteuersatz() == null
-                    ? BigDecimal.ZERO : position.getSteuersatz().stripTrailingZeros();
-            BigDecimal netto = position.getPositionssummeNetto() == null
-                    ? BigDecimal.ZERO : position.getPositionssummeNetto();
-            nettoJeSatz.merge(satz, netto, BigDecimal::add);
-        }
-        List<Steuerzeile> zeilen = new ArrayList<>();
-        nettoJeSatz.forEach((satz, netto) -> zeilen.add(new Steuerzeile(satz,
-                netto.setScale(2, RoundingMode.HALF_UP),
-                netto.multiply(satz).setScale(2, RoundingMode.HALF_UP))));
-        return zeilen;
+        return getBetragssnapshot().steuerzeilen();
+    }
+
+    public Betragssnapshot getBetragssnapshot() {
+        return betragssnapshot != null ? betragssnapshot
+                : Betragssnapshot.ausAltbestand(positionen, summeNetto, summeSteuer, summeBrutto);
+    }
+
+    /** Ausschließlich für Repository und kontrollierte Stornierung (GR-02). */
+    void stelleBetragssnapshotWiederHer(Betragssnapshot snapshot) {
+        this.betragssnapshot = snapshot;
+        this.summeNetto = snapshot.netto();
+        this.summeSteuer = snapshot.steuer();
+        this.summeBrutto = snapshot.brutto();
+    }
+
+    /** Laden übernimmt Positionssnapshots ohne eine Berechnung auszulösen. */
+    void stellePositionenWiederHer(List<Dokumentposition> gespeichert) {
+        this.positionen = new ArrayList<>(gespeichert);
     }
 
     /**
@@ -119,9 +123,7 @@ public abstract class Dokument {
      */
     void stelleSummenWiederHer(BigDecimal netto, BigDecimal steuer, BigDecimal brutto) {
         if (netto != null && steuer != null && brutto != null) {
-            this.summeNetto = netto;
-            this.summeSteuer = steuer;
-            this.summeBrutto = brutto;
+            stelleBetragssnapshotWiederHer(Betragssnapshot.ausAltbestand(positionen, netto, steuer, brutto));
         }
     }
 
@@ -213,14 +215,14 @@ public abstract class Dokument {
     }
 
     public BigDecimal getSummeNetto() {
-        return summeNetto;
+        return getBetragssnapshot().netto();
     }
 
     public BigDecimal getSummeSteuer() {
-        return summeSteuer;
+        return getBetragssnapshot().steuer();
     }
 
     public BigDecimal getSummeBrutto() {
-        return summeBrutto;
+        return getBetragssnapshot().brutto();
     }
 }

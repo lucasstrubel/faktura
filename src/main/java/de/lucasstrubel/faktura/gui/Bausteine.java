@@ -14,6 +14,8 @@ import javafx.util.Callback;
 
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
+import java.util.function.Function;
+import javafx.collections.FXCollections;
 
 /**
  * Wiederkehrende Bausteine der Oberfläche (Q-05): Statusabzeichen,
@@ -124,8 +126,39 @@ public final class Bausteine {
      * Fenster einen waagerechten Rollbalken einzublenden und die letzte Spalte
      * abzuschneiden. Die Spaltenbreiten im FXML wirken dabei als Gewichtung.
      */
-    public static void passeSpaltenAn(TableView<?> tabelle) {
+    public static <T> void passeSpaltenAn(TableView<T> tabelle) {
         tabelle.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+        tabelle.setSortPolicy(t -> {
+            FXCollections.sort(t.getItems(), (a, b) -> {
+                for (TableColumn<T, ?> spalte : t.getSortOrder()) {
+                    int vergleich = vergleicheSpalte(spalte, a, b);
+                    if (vergleich != 0) { return vergleich; }
+                }
+                return 0;
+            });
+            return true;
+        });
+    }
+
+    private static <T, V> int vergleicheSpalte(TableColumn<T, V> spalte, T a, T b) {
+        V links = spalte.getCellData(a);
+        V rechts = spalte.getCellData(b);
+        if (links == null) { return rechts == null ? 0 : 1; }
+        if (rechts == null) { return -1; }
+        return spalte.getSortType() == TableColumn.SortType.ASCENDING
+                ? spalte.getComparator().compare(links, rechts)
+                : spalte.getComparator().compare(rechts, links);
+    }
+
+    public static <T, V> Callback<TableColumn<T, V>, TableCell<T, V>> formatierteZelle(
+            Function<V, String> format) {
+        return spalte -> new TableCell<>() {
+            @Override
+            protected void updateItem(V wert, boolean leer) {
+                super.updateItem(wert, leer);
+                setText(leer || wert == null ? null : format.apply(wert));
+            }
+        };
     }
 
     /** Belegnummernspalte in Festbreitenschrift, damit Nummern untereinander stehen. */

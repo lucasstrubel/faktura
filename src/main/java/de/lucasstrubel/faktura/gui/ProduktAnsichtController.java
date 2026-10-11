@@ -7,6 +7,7 @@ import de.lucasstrubel.faktura.produkte.ProduktCsvExport;
 import de.lucasstrubel.faktura.produkte.ProduktVerwaltungsService;
 
 import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -40,8 +41,8 @@ public class ProduktAnsichtController {
     @FXML private TableView<Produkt> tabelle;
     @FXML private TableColumn<Produkt, String> nummerSpalte;
     @FXML private TableColumn<Produkt, String> bezeichnungSpalte;
-    @FXML private TableColumn<Produkt, String> preisSpalte;
-    @FXML private TableColumn<Produkt, String> steuersatzSpalte;
+    @FXML private TableColumn<Produkt, BigDecimal> preisSpalte;
+    @FXML private TableColumn<Produkt, BigDecimal> steuersatzSpalte;
     @FXML private TableColumn<Produkt, String> einheitSpalte;
     @FXML private Label trefferAnzeige;
     @FXML private Button bearbeitenKnopf;
@@ -63,10 +64,10 @@ public class ProduktAnsichtController {
     private void initialize() {
         nummerSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(z.getValue().getProduktnummer()));
         bezeichnungSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(z.getValue().getBezeichnung()));
-        preisSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(
-                TabellenFormat.betrag(z.getValue().getEinzelpreisNetto())));
-        steuersatzSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(
-                prozent(z.getValue().getSteuersatz())));
+        preisSpalte.setCellValueFactory(z -> new ReadOnlyObjectWrapper<>(z.getValue().getEinzelpreisNetto()));
+        preisSpalte.setCellFactory(Bausteine.formatierteZelle(TabellenFormat::betrag));
+        steuersatzSpalte.setCellValueFactory(z -> new ReadOnlyObjectWrapper<>(z.getValue().getSteuersatz()));
+        steuersatzSpalte.setCellFactory(Bausteine.formatierteZelle(ProduktAnsichtController::prozent));
         einheitSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(
                 z.getValue().getEinheit() == null ? "" : z.getValue().getEinheit()));
 

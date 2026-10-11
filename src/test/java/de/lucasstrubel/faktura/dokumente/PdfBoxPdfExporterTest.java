@@ -18,6 +18,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -59,16 +60,17 @@ class PdfBoxPdfExporterTest {
     }
 
     @Test
-    @DisplayName("TC-17: Summenberechnung behandelt null-Positionssummen als 0")
-    void summenberechnungToleriertNullPositionen() {
+    @DisplayName("TC-17: Fehlende historische Positionssummen bleiben unbekannt (ab 3.1)")
+    void summenberechnungErhaeltUnbekanntePositionen() {
         Rechnung rechnung = new Rechnung();
         rechnung.setBelegnummer("R-2026-000098");
 
         rechnung.setzePositionen(List.of(new Dokumentposition()));
 
-        assertEquals(new BigDecimal("0.00"), rechnung.getSummeNetto());
-        assertEquals(new BigDecimal("0.00"), rechnung.getSummeSteuer());
-        assertEquals(new BigDecimal("0.00"), rechnung.getSummeBrutto());
+        assertNull(rechnung.getSummeNetto());
+        assertNull(rechnung.getSummeSteuer());
+        assertNull(rechnung.getSummeBrutto());
+        assertEquals(Berechnungsart.UNGEKLAERT, rechnung.getBetragssnapshot().berechnungsart());
     }
 
     @Test

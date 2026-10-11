@@ -79,6 +79,7 @@
                         <TextField fx:id="bankFeld" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
                     </GridPane>
                     <HBox spacing="8" alignment="CENTER_RIGHT">
+                        <Label fx:id="ungespeichertAnzeige" styleClass="feld-meldung"/>
                         <Label text="* Pflichtfeld" styleClass="pflichtfeld-legende"/>
                         <Button text="Firmenprofil speichern" onAction="#speichere"
                                 defaultButton="true"/>
@@ -93,6 +94,15 @@
                         <Button fx:id="sicherungsKnopf" text="Datensicherung erstellen…"
                                 onAction="#sichere"/>
                     </HBox>
+                </VBox>
+
+                <VBox spacing="10" styleClass="abschnitt-karte">
+                    <Label text="Datenexport" styleClass="abschnitt-titel"/>
+                    <Label text="Exportiert den gespeicherten Bestand als CSV-Dateien. Alle Daten enthält zusätzlich die Nummernkreise und eine Formatbeschreibung in einer ZIP-Datei. Ungespeicherte Änderungen am Firmenprofil werden nicht exportiert."
+                           styleClass="abschnitt-hinweis" wrapText="true"/>
+                    <Button fx:id="exportKnopf" text="Alle Daten exportieren…" onAction="#exportiereAlles"/>
+                    <Button fx:id="steuerExportKnopf" text="Steueraufschlüsselung exportieren…" onAction="#exportiereSteuern"/>
+                    <Button fx:id="profilExportKnopf" text="Gespeichertes Firmenprofil exportieren…" onAction="#exportiereFirmenprofil"/>
                 </VBox>
 
             </VBox>

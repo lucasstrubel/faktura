@@ -18,10 +18,8 @@ import de.lucasstrubel.faktura.gemeinsam.ValidierungsException;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoField;
 import java.util.Optional;
+import java.util.Objects;
 
 /**
  * Gemeinsame Bausteine der modalen Dialoge — das Gegenstück zu
@@ -42,11 +40,6 @@ public final class Dialoge {
      * {@code 01.11.26} und {@code 01.11.2026} meinen dasselbe Datum.
      * Zweistellige Jahre werden als 20JJ gelesen.
      */
-    private static final DateTimeFormatter EINGABE = new DateTimeFormatterBuilder()
-            .appendPattern("d.M.")
-            .optionalStart().appendPattern("uuuu").optionalEnd()
-            .optionalStart().appendValueReduced(ChronoField.YEAR, 2, 2, 2000).optionalEnd()
-            .toFormatter();
 
     private Dialoge() {
     }
@@ -88,33 +81,44 @@ public final class Dialoge {
 
     /**
      * Datumsfeld mit Kalenderauswahl und deutschem Format. Getippte Daten
-     * werden tolerant gelesen ({@link #EINGABE}). Früher setzte ein nicht
+     * werden kalenderstreng gelesen ({@link Datumseingabe}). Früher setzte ein nicht
      * lesbarer Text das Feld stillschweigend auf "kein Datum" — und der
      * Service setzte dann seinen Standardwert ein, ohne dass es auffiel. Jetzt
-     * springt die Anzeige sichtbar auf den bisherigen Wert zurück, und
-     * {@link #datum(DatePicker, String)} meldet noch nicht übernommenen,
-     * unlesbaren Text als Fehler.
+     * bleibt der unlesbare Text auch bei Fokuswechsel sichtbar, und
+     * {@link #datum(DatePicker, String)} meldet ihn mit dem Feldnamen als Fehler.
      *
      * @param vorgabe vorbelegtes Datum; {@code null} lässt das Feld leer
      */
     public static DatePicker datumsfeld(LocalDate vorgabe) {
         final DatePicker feld = new DatePicker(vorgabe);
         feld.setConverter(new StringConverter<>() {
+            private String ungueltigerText;
+            private LocalDate bisherigesDatum;
+
             @Override
             public String toString(LocalDate datum) {
+                if (ungueltigerText != null && Objects.equals(datum, bisherigesDatum)) {
+                    return ungueltigerText;
+                }
+                ungueltigerText = null;
                 return datum == null ? "" : DATUM.format(datum);
             }
 
             @Override
             public LocalDate fromString(String text) {
                 if (text == null || text.isBlank()) {
+                    ungueltigerText = null;
                     return null;
                 }
                 try {
-                    return LocalDate.parse(text.strip(), EINGABE);
-                } catch (DateTimeParseException e) {
-                    // Unlesbar: bisherigen Wert behalten; die Anzeige springt
-                    // sichtbar darauf zurück, statt das Feld zu leeren
+                    LocalDate datum = Datumseingabe.parse(text, "Datum");
+                    ungueltigerText = null;
+                    return datum;
+                } catch (ValidierungsException e) {
+                    // DatePicker formatiert nach Fokuswechsel seinen alten Wert.
+                    // Die fehlerhafte Eingabe bleibt sichtbar und wird beim Speichern abgelehnt.
+                    ungueltigerText = text;
+                    bisherigesDatum = feld.getValue();
                     return feld.getValue();
                 }
             }
@@ -135,6 +139,7 @@ public final class Dialoge {
     public static LocalDate datum(DatePicker feld, String feldname) {
         try {
             LocalDate wert = liesText(feld);
+            feld.getConverter().fromString(feld.getEditor().getText());
             feld.setValue(wert);
             return wert;
         } catch (ValidierungsException e) {
@@ -185,10 +190,6 @@ public final class Dialoge {
         if (text == null || text.isBlank()) {
             return null;
         }
-        try {
-            return LocalDate.parse(text.strip(), EINGABE);
-        } catch (DateTimeParseException e) {
-            throw new ValidierungsException("Datum", "Kein gültiges Datum: " + text);
-        }
+        return Datumseingabe.parse(text, "Datum");
     }
 }

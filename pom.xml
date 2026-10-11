@@ -6,7 +6,7 @@
 
     <groupId>de.lucasstrubel</groupId>
     <artifactId>faktura</artifactId>
-    <version>3.0.0</version>
+    <version>3.1.0-rc.1</version>
     <packaging>jar</packaging>
 
     <name>Faktura — Desktop-Fakturierungsanwendung</name>
@@ -39,6 +39,7 @@
         <javafx.version>21.0.11</javafx.version>
         <pdfbox.version>3.0.5</pdfbox.version>
         <ikonli.version>12.3.1</ikonli.version>
+        <mustang.version>2.24.0</mustang.version>
     </properties>
 
     <dependencyManagement>
@@ -94,11 +95,16 @@
             <version>${pdfbox.version}</version>
         </dependency>
 
-        <!-- E-Rechnung nach EN 16931 (ZUGFeRD/XRechnung-CII) mit Mustang -->
+        <!-- E-Rechnung nach EN 16931 CII mit Mustang; kein XRechnung-Profil -->
         <dependency>
             <groupId>org.mustangproject</groupId>
             <artifactId>library</artifactId>
-            <version>2.24.0</version>
+            <version>${mustang.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mustangproject</groupId>
+            <artifactId>validator</artifactId>
+            <version>${mustang.version}</version>
         </dependency>
 
         <!-- JavaFX-Oberfläche (Q-05: Bedienbarkeit); AtlantaFX liefert das moderne Theme -->
@@ -220,6 +226,24 @@
     </dependencies>
 
     <build>
+        <!-- Nur faktura-version.properties wird gefiltert (Projektversion zur Laufzeit);
+             alle übrigen Ressourcen, auch Schriften, bleiben unverändert. -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>faktura-version.properties</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>faktura-version.properties</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -311,7 +335,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Ausführbares Fat-JAR: java -jar target/faktura-3.0.0.jar -->
+            <!-- Ausführbares Fat-JAR: java -jar target/faktura-3.1.0-rc.1.jar -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

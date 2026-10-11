@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import de.lucasstrubel.faktura.kunden.Kunde;
 import de.lucasstrubel.faktura.kunden.KundenService;
+import de.lucasstrubel.faktura.produkte.Einheiten;
 import de.lucasstrubel.faktura.produkte.Produkt;
 import de.lucasstrubel.faktura.produkte.ProduktService;
 
@@ -258,6 +259,7 @@ public class StandardDokumentService implements DokumentService {
         storno.setzePositionen(original.getPositionen().stream()
                 .map(Dokumentposition::negiert)
                 .toList());
+        storno.stelleBetragssnapshotWiederHer(original.getBetragssnapshot().negiert());
         storno.setVorgaengerNr(original.getBelegnummer());
         storno.setStornoZu(original.getBelegnummer());
         storno.setLeistungsdatum(original.getLeistungsdatum());
@@ -365,9 +367,12 @@ public class StandardDokumentService implements DokumentService {
                 throw new ValidierungsException("Produkt",
                         "Das Produkt " + angabe.produktnummer() + " existiert nicht.");
             }
-            // Snapshot von Bezeichnung, Einzelpreis und Steuersatz (GR-03, F-23)
+            // Snapshot von Bezeichnung, Einzelpreis, Steuersatz und Einheit (GR-03, F-23, A-F-33);
+            // ohne Produkteinheit gilt "Stück" (C62) wie vor 3.1
+            String einheit = Einheiten.fuerBeleg(produkt.getEinheit());
             ergebnis.add(new Dokumentposition(produkt.getProduktnummer(), produkt.getBezeichnung(),
-                    angabe.menge(), produkt.getEinzelpreisNetto(), produkt.getSteuersatz()));
+                    angabe.menge(), produkt.getEinzelpreisNetto(), produkt.getSteuersatz(),
+                    einheit, Einheiten.code(einheit)));
         }
         return ergebnis;
     }

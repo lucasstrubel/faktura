@@ -14,4 +14,13 @@ public interface DokumentRepository {
     Dokument findeNachNummer(String belegnummer);
 
     List<Dokument> alle();
+
+    default int anzahlFuerKunde(String kundennummer) {
+        return (int) alle().stream().filter(d -> kundennummer.equals(d.getKundenReferenz())).count();
+    }
+
+    default boolean istProduktReferenziert(String produktnummer) {
+        return alle().stream().flatMap(d -> d.getPositionen().stream())
+                .anyMatch(p -> produktnummer.equals(p.getProduktReferenz()));
+    }
 }

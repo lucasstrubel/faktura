@@ -11,6 +11,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Comparator;
+import org.springframework.jdbc.core.RowCallbackHandler;
 
 /**
  * SQLite-Persistenz der Belege über Spring JDBC (IF-01). Die
@@ -25,8 +30,8 @@ import java.util.List;
  * Wiederherstellen versendeter oder stornierter Belege nicht blockiert.
  * Deren Summen werden aus der Datenbank übernommen, nicht neu berechnet —
  * ein ausgestellter Betrag bleibt, wie er ausgestellt wurde (GR-02).
- * Positionen ohne Preis-Snapshot (Altdaten, IF-01) werden mit 0,00
- * übernommen — dieselbe Semantik wie {@code Dokument.berechneSummen()}.
+ * Fehlende historische Preis- und Summenwerte bleiben unbekannt (IF-01);
+ * beim Laden wird keine Berechnung ausgelöst.
  */
 @Repository
 public class JdbcDokumentRepository implements DokumentRepository {
@@ -79,8 +84,8 @@ public class JdbcDokumentRepository implements DokumentRepository {
                 dokument.getBelegnummer(), dokument.belegtyp().name(), text(dokument.getDatum()),
                 dokument.getKundenReferenz(), dokument.getKundeName(), dokument.getKundeAnschrift(),
                 dokument.getStatus().name(), dokument.getVorgaengerNr(),
-                text(dokument.getSummeNetto()), text(dokument.getSummeSteuer()),
-                text(dokument.getSummeBrutto()),
+                summenText(dokument.getSummeNetto()), summenText(dokument.getSummeSteuer()),
+                summenText(dokument.getSummeBrutto()),
                 dokument instanceof Angebot angebot ? text(angebot.getGueltigBis()) : null,
                 dokument instanceof Lieferschein lieferschein ? text(lieferschein.getLieferdatum()) : null,
                 rechnung == null ? null : text(rechnung.getLeistungsdatum()),
@@ -106,31 +111,58 @@ public class JdbcDokumentRepository implements DokumentRepository {
         for (Dokumentposition p : dokument.getPositionen()) {
             jdbc.update("""
                     INSERT INTO dokumentposition (belegnummer, position, produkt_referenz,
-                                                  bezeichnung, menge, einzelpreis_netto, steuersatz)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                                                  bezeichnung, menge, einzelpreis_netto, steuersatz, einheit, einheit_code, positionssumme_netto)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     dokument.getBelegnummer(), position++, p.getProduktReferenz(), p.getBezeichnung(),
-                    p.getMenge(), text(p.getEinzelpreisNetto()), text(p.getSteuersatz()));
+                    p.getMenge(), text(p.getEinzelpreisNetto()), text(p.getSteuersatz()), p.getEinheit(), p.getEinheitCode(), text(p.getPositionssummeNetto()));
+        }
+        Betragssnapshot snapshot = dokument.getBetragssnapshot();
+        jdbc.update("UPDATE dokument SET berechnungsart = ? WHERE belegnummer = ?",
+                snapshot.berechnungsart().name(), dokument.getBelegnummer());
+        jdbc.update("DELETE FROM dokumentsteuer WHERE belegnummer = ?", dokument.getBelegnummer());
+        for (Steuerzeile steuer : snapshot.steuerzeilen()) {
+            jdbc.update("INSERT INTO dokumentsteuer (belegnummer, steuersatz, netto, steuer) VALUES (?, ?, ?, ?)",
+                    dokument.getBelegnummer(), text(steuer.steuersatz().stripTrailingZeros()), text(steuer.netto()), text(steuer.steuer()));
         }
         return dokument;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Dokument findeNachNummer(String belegnummer) {
+        Map<String, List<Dokumentposition>> positionen = ladePositionen(" WHERE belegnummer = ?", belegnummer);
+        Map<String, List<Steuerzeile>> steuern = ladeSteuern(" WHERE belegnummer = ?", belegnummer);
         List<Dokument> treffer = jdbc.query(
                 "SELECT * FROM dokument WHERE belegnummer = ?",
-                (rs, zeilenNr) -> baueDokument(rs), belegnummer);
+                (rs, zeilenNr) -> baueDokument(rs, positionen, steuern), belegnummer);
         return treffer.isEmpty() ? null : treffer.get(0);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Dokument> alle() {
+        Map<String, List<Dokumentposition>> positionen = ladePositionen("");
+        Map<String, List<Steuerzeile>> steuern = ladeSteuern("");
         return jdbc.query("SELECT * FROM dokument ORDER BY belegnummer",
-                (rs, zeilenNr) -> baueDokument(rs));
+                (rs, zeilenNr) -> baueDokument(rs, positionen, steuern));
+    }
+
+    @Override
+    public int anzahlFuerKunde(String kundennummer) {
+        Integer anzahl = jdbc.queryForObject("SELECT COUNT(*) FROM dokument WHERE kunden_referenz = ?", Integer.class, kundennummer);
+        return anzahl == null ? 0 : anzahl;
+    }
+
+    @Override
+    public boolean istProduktReferenziert(String produktnummer) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM dokumentposition WHERE produkt_referenz = ?)",
+                Boolean.class, produktnummer));
     }
 
     /** Stellt den Beleg samt Positionen wieder her; Status zuletzt (GR-02). */
-    private Dokument baueDokument(ResultSet rs) throws SQLException {
+    private Dokument baueDokument(ResultSet rs, Map<String, List<Dokumentposition>> positionen,
+                                  Map<String, List<Steuerzeile>> steuern) throws SQLException {
         String belegnummer = rs.getString("belegnummer");
         Dokument dokument = switch (Belegtyp.valueOf(rs.getString("typ"))) {
             case ANGEBOT -> {
@@ -148,7 +180,6 @@ public class JdbcDokumentRepository implements DokumentRepository {
                 Rechnung rechnung = new Rechnung();
                 rechnung.setLeistungsdatum(datum(rs.getString("leistungsdatum")));
                 rechnung.setZahlungsziel(datum(rs.getString("zahlungsziel")));
-                rechnung.setStornoZu(rs.getString("storno_zu"));
                 yield rechnung;
             }
         };
@@ -158,15 +189,19 @@ public class JdbcDokumentRepository implements DokumentRepository {
                 rs.getString("kunde_anschrift"));
         dokument.setzeAussteller(aussteller(rs));
         dokument.setVorgaengerNr(rs.getString("vorgaenger_nr"));
-        dokument.setzePositionen(ladePositionen(belegnummer));
+        dokument.stellePositionenWiederHer(positionen.getOrDefault(belegnummer, List.of()));
+        if (dokument instanceof Rechnung rechnung) {
+            rechnung.setStornoZu(rs.getString("storno_zu"));
+        }
 
         DokumentStatus status = DokumentStatus.valueOf(rs.getString("status"));
-        if (status == DokumentStatus.VERSENDET || status == DokumentStatus.STORNIERT) {
-            // Ausgestellte Beträge bleiben, wie sie gespeichert wurden (GR-02)
-            dokument.stelleSummenWiederHer(betragOderNull(rs.getString("summe_netto")),
-                    betragOderNull(rs.getString("summe_steuer")),
-                    betragOderNull(rs.getString("summe_brutto")));
-        }
+        String art = rs.getString("berechnungsart");
+        BigDecimal netto = betragOderNull(rs.getString("summe_netto"));
+        BigDecimal steuer = betragOderNull(rs.getString("summe_steuer"));
+        BigDecimal brutto = betragOderNull(rs.getString("summe_brutto"));
+        dokument.stelleBetragssnapshotWiederHer(art == null
+                ? Betragssnapshot.ausAltbestand(dokument.getPositionen(), netto, steuer, brutto)
+                : new Betragssnapshot(netto, steuer, brutto, steuern.getOrDefault(belegnummer, List.of()), Berechnungsart.valueOf(art)));
         LocalDate bezahltAm = datum(rs.getString("bezahlt_am"));
         if (status == DokumentStatus.STORNIERT && dokument instanceof Rechnung rechnung) {
             rechnung.setzeStatus(DokumentStatus.OFFEN);
@@ -194,15 +229,27 @@ public class JdbcDokumentRepository implements DokumentRepository {
                 rs.getString("aussteller_bank"));
     }
 
-    private List<Dokumentposition> ladePositionen(String belegnummer) {
-        return jdbc.query("""
-                SELECT * FROM dokumentposition WHERE belegnummer = ? ORDER BY position
-                """,
-                (rs, zeilenNr) -> new Dokumentposition(
-                        rs.getString("produkt_referenz"), rs.getString("bezeichnung"),
-                        rs.getInt("menge"), betrag(rs.getString("einzelpreis_netto")),
-                        betrag(rs.getString("steuersatz"))),
-                belegnummer);
+    private Map<String, List<Dokumentposition>> ladePositionen(String filter, Object... argumente) {
+        Map<String, List<Dokumentposition>> ergebnis = new HashMap<>();
+        jdbc.query("SELECT * FROM dokumentposition" + filter + " ORDER BY belegnummer, position",
+                (RowCallbackHandler) rs -> ergebnis
+                        .computeIfAbsent(rs.getString("belegnummer"), n -> new ArrayList<>())
+                        .add(Dokumentposition.wiederhergestellt(rs.getString("produkt_referenz"), rs.getString("bezeichnung"),
+                                rs.getInt("menge"), betragOderNull(rs.getString("einzelpreis_netto")),
+                                betragOderNull(rs.getString("steuersatz")), rs.getString("einheit"), rs.getString("einheit_code"),
+                                betragOderNull(rs.getString("positionssumme_netto")))), argumente);
+        return ergebnis;
+    }
+
+    private Map<String, List<Steuerzeile>> ladeSteuern(String filter, Object... argumente) {
+        Map<String, List<Steuerzeile>> ergebnis = new HashMap<>();
+        jdbc.query("SELECT * FROM dokumentsteuer" + filter,
+                (RowCallbackHandler) rs -> ergebnis
+                        .computeIfAbsent(rs.getString("belegnummer"), n -> new ArrayList<>())
+                        .add(new Steuerzeile(new BigDecimal(rs.getString("steuersatz")),
+                                new BigDecimal(rs.getString("netto")), new BigDecimal(rs.getString("steuer")))), argumente);
+        ergebnis.values().forEach(zeilen -> zeilen.sort(Comparator.comparing(Steuerzeile::steuersatz)));
+        return ergebnis;
     }
 
     private static String text(LocalDate datum) {
@@ -218,11 +265,11 @@ public class JdbcDokumentRepository implements DokumentRepository {
     }
 
     private static BigDecimal betragOderNull(String wert) {
-        return wert == null ? null : new BigDecimal(wert);
+        return wert == null || wert.isBlank() ? null : new BigDecimal(wert);
     }
 
-    /** Altdaten ohne Preis-Snapshot zählen als 0,00 (wie {@code berechneSummen}). */
-    private static BigDecimal betrag(String wert) {
-        return wert == null ? BigDecimal.ZERO : new BigDecimal(wert);
+    /** Leerer TEXT erhält unbekannte JSON-Summen trotz historischem NOT NULL. */
+    private static String summenText(BigDecimal wert) {
+        return wert == null ? "" : wert.toPlainString();
     }
 }

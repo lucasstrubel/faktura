@@ -49,12 +49,11 @@ public class KennzahlenDienst {
                 .filter(rechnung -> istUeberfaellig(rechnung, heute))
                 .toList();
 
-        BigDecimal umsatzJahr = rechnungen.stream()
+        BigDecimal umsatzJahr = summe(rechnungen.stream()
                 .filter(beleg -> beleg.getStatus() != DokumentStatus.STORNIERT)
                 .filter(beleg -> beleg.getDatum() != null
                         && beleg.getDatum().getYear() == heute.getYear())
-                .map(Rechnung::getSummeBrutto)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .toList());
 
         List<Dokument> letzte = alle.stream()
                 .sorted(Comparator.comparing(Dokument::getDatum,
@@ -78,6 +77,7 @@ public class KennzahlenDienst {
     }
 
     private static BigDecimal summe(List<Rechnung> rechnungen) {
+        if (rechnungen.stream().anyMatch(r -> r.getSummeBrutto() == null)) { return null; }
         return skaliere(rechnungen.stream()
                 .map(Dokument::getSummeBrutto)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
@@ -85,6 +85,6 @@ public class KennzahlenDienst {
 
     /** Geldbeträge stets mit Scale 2 und kaufmännischer Rundung. */
     private static BigDecimal skaliere(BigDecimal betrag) {
-        return betrag.setScale(2, RoundingMode.HALF_UP);
+        return betrag == null ? null : betrag.setScale(2, RoundingMode.HALF_UP);
     }
 }

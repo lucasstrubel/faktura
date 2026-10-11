@@ -1,6 +1,7 @@
 package de.lucasstrubel.faktura.gui;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -50,6 +51,12 @@ public final class TabellenFormat {
             return new BigDecimal(wert);
         }
         throw new NumberFormatException("Kein eindeutiger Betrag: " + text);
+    }
+
+    /** Verlustfreie Wiedereingabe ohne mehrdeutigen Tausenderpunkt (B-F-03). */
+    public static String betragFuerEingabe(BigDecimal wert) {
+        return wert == null ? "" : wert.setScale(2, RoundingMode.UNNECESSARY)
+                .toPlainString().replace('.', ',');
     }
 
     /** Betrag mit deutschem Zahlenformat und Währung, z. B. {@code 1.234,56 €}. */

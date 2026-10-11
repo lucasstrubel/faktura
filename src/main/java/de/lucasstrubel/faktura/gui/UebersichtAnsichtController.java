@@ -11,6 +11,7 @@ import de.lucasstrubel.faktura.kunden.KundenVerwaltungsService;
 import de.lucasstrubel.faktura.produkte.ProduktService;
 
 import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -25,6 +26,7 @@ import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 
 /**
  * Übersichtsansicht (D-F-18): beantwortet beim Öffnen die Fragen, die ein
@@ -48,9 +50,9 @@ public class UebersichtAnsichtController {
     @FXML private TableView<Dokument> letzteBelege;
     @FXML private TableColumn<Dokument, String> nummerSpalte;
     @FXML private TableColumn<Dokument, String> typSpalte;
-    @FXML private TableColumn<Dokument, String> datumSpalte;
+    @FXML private TableColumn<Dokument, LocalDate> datumSpalte;
     @FXML private TableColumn<Dokument, String> kundeSpalte;
-    @FXML private TableColumn<Dokument, String> bruttoSpalte;
+    @FXML private TableColumn<Dokument, BigDecimal> bruttoSpalte;
     @FXML private TableColumn<Dokument, String> statusSpalte;
     @FXML private Button neueRechnungKnopf;
 
@@ -73,11 +75,11 @@ public class UebersichtAnsichtController {
         nummerSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(z.getValue().getBelegnummer()));
         typSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(
                 Bausteine.belegart(z.getValue())));
-        datumSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(
-                TabellenFormat.datum(z.getValue().getDatum())));
+        datumSpalte.setCellValueFactory(z -> new ReadOnlyObjectWrapper<>(z.getValue().getDatum()));
+        datumSpalte.setCellFactory(Bausteine.formatierteZelle(TabellenFormat::datum));
         kundeSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(z.getValue().getKundeName()));
-        bruttoSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(
-                TabellenFormat.betrag(z.getValue().getSummeBrutto())));
+        bruttoSpalte.setCellValueFactory(z -> new ReadOnlyObjectWrapper<>(z.getValue().getSummeBrutto()));
+        bruttoSpalte.setCellFactory(Bausteine.formatierteZelle(TabellenFormat::betrag));
         statusSpalte.setCellValueFactory(z -> new ReadOnlyStringWrapper(
                 Bausteine.anzeigestatus(z.getValue())));
         statusSpalte.setCellFactory(Bausteine.statusZelle());
