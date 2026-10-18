@@ -14,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -58,6 +60,9 @@ public class HintergrundAufgaben implements AutoCloseable {
 
     /** Anzahl gestarteter, noch nicht beendeter Vorgänge; nur auf dem FX-Thread geändert. */
     private int ausstehend;
+
+    /** Szenen mit Wartezeiger; nach dem letzten Vorgang zurückgesetzt, nur auf dem FX-Thread geändert. */
+    private final Set<Scene> szenenMitWartezeiger = new HashSet<>();
 
     /**
      * Führt {@code arbeit} im Hintergrund aus und meldet das Ergebnis auf dem
@@ -125,28 +130,26 @@ public class HintergrundAufgaben implements AutoCloseable {
         beschreibung.set(titel);
         if (ausloeser != null) {
             ausloeser.setDisable(true);
-            setzeMauszeiger(ausloeser, Cursor.WAIT);
+            Scene szene = ausloeser.getScene();
+            if (szene != null) {
+                szene.setCursor(Cursor.WAIT);
+                szenenMitWartezeiger.add(szene);
+            }
         }
     }
 
     private void beende(Node ausloeser, boolean warGesperrt) {
         ausstehend = Math.max(0, ausstehend - 1);
+        if (ausloeser != null) {
+            ausloeser.setDisable(warGesperrt);
+        }
         if (ausstehend == 0) {
             laeuft.set(false);
             beschreibung.set("");
-        }
-        if (ausloeser != null) {
-            ausloeser.setDisable(warGesperrt);
-            if (ausstehend == 0) {
-                setzeMauszeiger(ausloeser, Cursor.DEFAULT);
-            }
-        }
-    }
-
-    private static void setzeMauszeiger(Node bezug, Cursor zeiger) {
-        Scene szene = bezug.getScene();
-        if (szene != null) {
-            szene.setCursor(zeiger);
+            // Auch wenn der letzte Vorgang keinen Auslöser hatte (etwa die
+            // Aktualisierung der Übersicht nach einem Export)
+            szenenMitWartezeiger.forEach(szene -> szene.setCursor(Cursor.DEFAULT));
+            szenenMitWartezeiger.clear();
         }
     }
 
