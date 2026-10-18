@@ -10,6 +10,15 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      upgrade_von:
+        description: 'Vorversion (Tag) für die Upgrade-Prüfung; leer = neueste endgültige Version'
+        required: false
+        default: ''
+      vorversion_entfernen:
+        description: 'Vorversion vor der Installation entfernen (Weg für Vorabversionen gleicher MSI-Version)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -49,6 +58,37 @@ jobs:
           if ('${{ github.ref_type }}' -eq 'tag' -and '${{ github.ref_name }}' -ne "v$version") { throw 'Tag und POM unterscheiden sich' }
           ./tools/windows-paket-bauen.ps1 -Jar (Get-ChildItem build/paket/*.jar).FullName -Typ msi -Ziel build/installer
           ./tools/msi-pruefen.ps1 -Msi (Get-ChildItem build/installer/*.msi).FullName
+
+      # MSI-UPG-01: Die Vorversion wird installiert, bekommt Daten und wird durch
+      # das neue MSI ersetzt (tools/msi-upgrade-pruefen.ps1). Ohne Vorgabe gilt
+      # die neueste endgültige Version, die nicht gerade gebaut wird; Vorabversionen
+      # lassen sich manuell über upgrade_von prüfen.
+      - name: Upgrade von der Vorversion
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          UPGRADE_VON: ${{ inputs.upgrade_von }}
+          VORVERSION_ENTFERNEN: ${{ inputs.vorversion_entfernen }}
+        run: |
+          $version = ([xml](Get-Content pom.xml)).project.version
+          $von = $env:UPGRADE_VON
+          if (!$von) {
+            $von = gh release list --exclude-pre-releases --exclude-drafts --json tagName --jq '.[].tagName' |
+              Where-Object { $_ -ne "v$version" } | Select-Object -First 1
+          }
+          if (!$von) { throw 'Keine Vorversion für die Upgrade-Prüfung gefunden' }
+          Write-Host "Upgrade-Prüfung: $von -> $version"
+          gh release download $von --pattern '*.msi' --dir build/vorversion
+          if ($LASTEXITCODE -ne 0) { throw "MSI der Vorversion $von nicht verfügbar" }
+          ./tools/msi-upgrade-pruefen.ps1 -AltMsi (Get-ChildItem build/vorversion/*.msi).FullName `
+            -NeuMsi (Get-ChildItem build/installer/*.msi).FullName -NeueVersion $version `
+            -VorversionEntfernen:($env:VORVERSION_ENTFERNEN -eq 'true')
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: msi-upgrade-protokolle
+          path: ${{ runner.temp }}/msi-upgrade/
       - uses: actions/upload-artifact@v7
         with:
           name: gepruefter-installer

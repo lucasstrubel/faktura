@@ -284,7 +284,7 @@ Geführte Rechnungserstellung *(BA-13)* · Navigation, Pflichtfeldhinweise *(Q-0
 
 <small>Deterministische JUnit-5-Tests, Nachbarkomponenten als Stubs/Mocks. Traceability **Anforderung → Code (`@DisplayName`) → Testfall**; spezifiziert in `Modultestplan.md`, nachgewiesen in `Anforderungsabgleich.md`.</small>
 
-> Historische Abnahme v1.0. Für 3.1.0-rc.1 gelten zusätzliche technische Freigabeprüfungen; Usability-Studien sind weiterhin offen.
+> Historische Abnahme v1.0. Für 3.1.0 gelten zusätzliche technische Freigabeprüfungen; Usability-Studien sind weiterhin offen.
 
 ---
 
@@ -320,15 +320,15 @@ Geführte Rechnungserstellung *(BA-13)* · Navigation, Pflichtfeldhinweise *(Q-0
 
 ---
 
-# Release Candidate 3.1.0-rc.1
+# Version 3.1.0
 
 - Historische Beträge und Einheiten als unveränderliche Snapshots
 - EN 16931 CII mit Schema-/Schematron-Prüfung; keine XRechnung
 - Atomare Sicherungen und Upgradeprobe auf restaurierter Kopie
-- CSV-Gesamtexport, Sortierung, Schutz ungespeicherter Einstellungen
-- Freigabe erst nach Plattform-, MSI-, Sicherheits- und Leistungstests
+- Start mit 5.000 Kunden/Produkten in 3,5–3,7 s (Vorgabe ≤ 5 s)
+- Release prüft Plattformen, MSI, Upgrade mit Daten, Sicherheit und Leistung
 
-Stand: 10.10.2026; unveröffentlicht. Ergebnisse im Modultestbericht.
+Stand: 18.10.2026. Ergebnisse im Modultestbericht.
 
 
 ---

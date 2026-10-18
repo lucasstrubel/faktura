@@ -69,33 +69,36 @@ Rechnung als PDF, mit Steuernummer im Briefkopf und Umsatzsteuer je Steuersatz:
 
 ## Aktueller Stand und Portfolio-Demo
 
-**3.1.0-rc.1 ist als [Vorabversion](https://github.com/lucasstrubel/faktura/releases/tag/v3.1.0-rc.1) veröffentlicht** — zum Ausprobieren,
-keine Produktivfreigabe. **Bekannte Lücke:** Mit großem Datenbestand (5.000 Kunden und
-Produkte) überschreitet der Programmstart die Vorgabe von 5 Sekunden (Q-04); die
-endgültige Version 3.1.0 folgt erst, wenn sie eingehalten wird. Die Windows-Demo und ihre
+**[3.1.0](https://github.com/lucasstrubel/faktura/releases/tag/v3.1.0) ist die aktuelle
+Version.** Auch mit großem Datenbestand (5.000 Kunden, 5.000 Produkte, 1.000 Belege) startet
+das Windows-Paket in 3,5–3,7 Sekunden und hält damit die Vorgabe von 5 Sekunden ein (Q-04,
+[Testbericht Kapitel 9](dokumentation/tests/Modultestbericht.md)). Die Windows-Demo und ihre
 Vorbereitung stehen im [Portfolio-Abschluss](dokumentation/projekt/Portfolio-Abschluss.md).
 Usability ist ausdrücklich zurückgestellt; Details stehen im aktuellen Testbericht.
+Der nächste Schritt ist in der [Roadmap 4.0](dokumentation/projekt/Roadmap-4.0.md) skizziert.
 
 ## Download und Start
 
 **Download:** unter [Releases](https://github.com/lucasstrubel/faktura/releases).
-[3.1.0-rc.1](https://github.com/lucasstrubel/faktura/releases/tag/v3.1.0-rc.1) enthält einen Windows-Installer (MSI mit gebündelter
+[3.1.0](https://github.com/lucasstrubel/faktura/releases/tag/v3.1.0) enthält einen Windows-Installer (MSI mit gebündelter
 Java-Laufzeit) und ein plattformübergreifendes JAR, das Java 21 voraussetzt. Dasselbe JAR
 wurde in CI unter Windows, Linux x64 (Ubuntu) und macOS arm64 gestartet und geprüft; die
-Portfolio-Demo ist auf Windows ausgerichtet.
+Portfolio-Demo ist auf Windows ausgerichtet. Der Installer aktualisiert 3.0.0 direkt; wer die
+Vorabversion 3.1.0-rc.1 installiert hat, deinstalliert sie zuerst (die Daten bleiben erhalten,
+siehe [Änderungsprotokoll](CHANGELOG.md)).
 
 **Selbst bauen mit JDK 21:** `./mvnw.cmd verify` unter Windows ausführen. Das gebaute JAR
 starten:
 
 ```bash
-java -jar target/faktura-3.1.0-rc.1.jar
+java -jar target/faktura-3.1.0.jar
 ```
 
 Die Daten liegen unter `<Benutzerverzeichnis>/Faktura/daten`. Ein anderes Verzeichnis
 lässt sich beim Start angeben:
 
 ```bash
-java -jar faktura-3.1.0-rc.1.jar --faktura.daten-verzeichnis=/pfad/zu/daten
+java -jar faktura-3.1.0.jar --faktura.daten-verzeichnis=/pfad/zu/daten
 ```
 
 Vor der ersten Rechnung unter **Einstellungen** das Firmenprofil hinterlegen — Name,
@@ -115,7 +118,7 @@ cd faktura
 ./mvnw verify      # Tests + Abdeckungsschwelle + SpotBugs (wie die CI)
 ./mvnw package     # ausführbares JAR unter target/
 
-java -jar target/faktura-3.1.0-rc.1.jar
+java -jar target/faktura-3.1.0.jar
 ```
 
 Unter Windows ohne Git Bash `mvnw.cmd` statt `./mvnw` verwenden. Der Release-Workflow
@@ -156,14 +159,16 @@ Tests: [`src/test/java/de/lucasstrubel/faktura/`](src/test/java/de/lucasstrubel/
 
 ## Qualität
 
-- **Release Candidate 3.1.0-rc.1:** Regressionen für historische Beträge, Einheiten,
-  Preise, Daten, XML, CSV und Sicherungen. Aktuelle Ergebnisse und offene Freigaben im
+- **Version 3.1.0:** Regressionen für historische Beträge, Einheiten, Preise, Daten, XML,
+  CSV und Sicherungen; Startzeit- und Installer-Upgrade-Nachweise. Ergebnisse im
   [Testbericht](dokumentation/tests/Modultestbericht.md); v1.0 bleibt historisch dokumentiert.
 - **Abdeckungsschwelle im Build:** 85 % Anweisungen, 70 % Zweige im nicht-grafischen Code
 - **SpotBugs:** Build-Schranke mit begründeten, klassen-/methodenspezifischen Ausnahmen
 - **Performance:** separater SQLite-Messlauf mit 5.000 Kunden, 5.000 Produkten und
-  1.000 Belegen; drei frische JAR-Starts (≤ 5 s), Suche/Listen (≤ 1 s),
-  50-Positionen-PDF (≤ 2 s), Gesamt-ZIP (≤ 30 s). Die RC-Freigabe erfordert alle Messungen.
+  1.000 Belegen; drei frische Starts des Windows-Pakets mit gebündelter Laufzeit (≤ 5 s),
+  Suche/Listen (≤ 1 s), 50-Positionen-PDF (≤ 2 s), Gesamt-ZIP (≤ 30 s).
+- **Installer:** jedes Release installiert, startet und entfernt das MSI auf einem
+  Windows-Runner und prüft das Upgrade von der letzten endgültigen Version mit Daten.
 - **Nachvollziehbarkeit:** jede Anforderung ist im
   [Anforderungsabgleich](dokumentation/anforderungen/Anforderungsabgleich.md) auf Code und
   Testfall abgebildet
@@ -179,7 +184,7 @@ Die vollständige Software-Engineering-Dokumentation liegt unter
 | [Pflichtenheft](dokumentation/anforderungen/Pflichtenheft.md) | Systemanforderungen, Teile A–D, mit Ergänzungen bis 3.1.0-rc.1 | [PDF](dokumentation/pdf/Pflichtenheft.pdf) |
 | [Anforderungsabgleich](dokumentation/anforderungen/Anforderungsabgleich.md) | Traceability-Matrix Anforderung ↔ Code ↔ Test | [PDF](dokumentation/pdf/Anforderungsabgleich.pdf) |
 | [Modultestplan](dokumentation/tests/Modultestplan.md) | Testfälle der Version 1.0 und aller Ergänzungen | [PDF](dokumentation/pdf/Modultestplan.pdf) |
-| [Modultestbericht](dokumentation/tests/Modultestbericht.md) | Historische Tests und aktueller RC-Nachweisstand | [PDF](dokumentation/pdf/Modultestbericht.pdf) |
+| [Modultestbericht](dokumentation/tests/Modultestbericht.md) | Historische Tests und Nachweise bis 3.1.0 | [PDF](dokumentation/pdf/Modultestbericht.pdf) |
 | [Projektübersicht](dokumentation/projekt/Projektuebersicht.md) | Ziele, Verlauf, Roadmap, offene Punkte | [PDF](dokumentation/pdf/Projektuebersicht.pdf) |
 | [Fallstudie](dokumentation/projekt/Fallstudie.md) | Entscheidungen und Erkenntnisse der Weiterentwicklung | [PDF](dokumentation/pdf/Fallstudie.pdf) |
 | [Roadmap 4.0](dokumentation/projekt/Roadmap-4.0.md) | Skizze: Desktop und Web (SaaS) aus einer Codebasis | [PDF](dokumentation/pdf/Roadmap-4.0.pdf) |

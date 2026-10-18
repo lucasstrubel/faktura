@@ -3,7 +3,7 @@ title: "Anforderungsabgleich und Traceability-Matrix"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
 author: "Lucas Strubel"
 date: "18.10.2026"
-version: "2.2"
+version: "2.3"
 lang: de-DE
 ---
 
@@ -15,6 +15,7 @@ lang: de-DE
 | 2.0     | 24.09.2026 | Neuer Abgleich gegen den Stand 3.0: Codebelege auf SQLite-Persistenz, transaktionalen Nummernkreis und JavaFX-Oberfläche umgestellt; Kapitel 5 mit den Anforderungen der Weiterentwicklung (Pflichtenheft v2.1–v2.4) |
 | 2.1 | 10.10.2026 | Review-Remediation 3.1.0-rc.1; historische Nachweise und offene Freigabeschranken getrennt |
 | 2.2 | 18.10.2026 | Q-04 mit gebündelter Laufzeit nachgewiesen |
+| 2.3 | 18.10.2026 | Installer-Upgrade mit Daten (MSI-UPG-01) |
 
 # Zweck
 
@@ -151,7 +152,7 @@ belegen weder SQLite-Performance noch die Startzeit des gepackten Programms.
 | Normvalidierung | ERechnungsPruefung, Mustang 2.24.0 | ERE-01 bis ERE-12, ERE-PAKET-01 |
 | CSV-Vollständigkeit | DokumentCsvExport, GesamtExport | REM-06 |
 | Sortierung/Einstellungen | Bausteine, SchliessSchutz | GUI-REM-02/03 |
-| Sicherung/Upgrade | AtomareDatei, Datensicherung, UpgradeSicherung | REM-04/06/08 |
+| Sicherung/Upgrade | AtomareDatei, Datensicherung, UpgradeSicherung; Installer-Upgrade im Release | REM-04/06/08, MSI-UPG-01 (3.0.0 → 3.1.0 mit Daten bestanden) |
 | Datenzugriff/Leistung | Bulk-Abfragen, gezieltes COUNT/EXISTS | REM-05, PERF-01, Paketstart |
 | Liefersicherheit | Wrapper-SHA512, Scans, Release-Abhängigkeiten | CI-Läufe erforderlich |
 

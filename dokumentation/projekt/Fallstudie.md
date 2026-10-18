@@ -3,7 +3,7 @@ title: "Fallstudie"
 subtitle: "Faktura — vom Hochschulprojekt zur auslieferbaren Fakturierungsanwendung"
 author: "Lucas Strubel"
 date: "18.10.2026"
-version: "1.3"
+version: "1.4"
 lang: de-DE
 numbersections: true
 ---
@@ -16,6 +16,7 @@ numbersections: true
 | 1.1     | 24.09.2026 | Abschluss der Version 3.0: Steuer je Steuersatz, Stornorechnung, Zahlungseingang, Aussteller-Snapshot; deutsche Fassung ist die einzige Fassung |
 | 1.2 | 10.10.2026 | Review-Remediation 3.1.0-rc.1; historische Nachweise und offene Freigabeschranken getrennt |
 | 1.3 | 18.10.2026 | Ausblick: Skizze der Version 4.0 mit Desktop- und Web-Variante |
+| 1.4 | 18.10.2026 | Freigabe 3.1.0: Stand aktualisiert |
 
 # Überblick
 
@@ -26,7 +27,7 @@ numbersections: true
 | **Rolle** | Version 1.0: Verwaltung des Repositorys und Verfassen sämtlicher Projektdokumente (Lastenheft, Pflichtenheft, Modultestplan und -bericht). Version 2.0 und 3.0: Neubau und Weiterentwicklung als Einzelentwickler |
 | **Umfang** | Java-Domänenmodell und Services, JavaFX/FXML-Oberfläche, sechs Flyway-Migrationen, automatisierte Regressionen und deutschsprachige Spezifikation |
 | **Technik** | Java 21 · Spring Boot · JavaFX · SQLite + Flyway · PDFBox · Mustang (EN 16931) · Maven · JUnit 5 |
-| **Stand** | RC 3.1.0-rc.1 unveröffentlicht; aktuelle Nachweise und ausstehende Freigaben im Modultestbericht |
+| **Stand** | Version 3.1.0 veröffentlicht (Startzeit Q-04 eingehalten, Installer-Upgrade geprüft); Nachweise im Modultestbericht |
 
 # Das Problem
 

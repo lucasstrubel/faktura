@@ -1,6 +1,20 @@
-# Betrieb und Upgrade auf 3.1.0-rc.1
+# Betrieb und Upgrade auf 3.1.0
 
-Dieser Release Candidate ist noch nicht zur Veröffentlichung freigegeben.
+Gilt für die endgültige Version 3.1.0; die Abschnitte zu Belegen, Einheiten, Export und
+Sicherung entstanden mit der Vorabversion 3.1.0-rc.1 und gelten unverändert.
+
+## Installation und Upgrade
+
+- **Von 3.0.0:** Den 3.1.0-Installer einfach ausführen; er ersetzt die alte Installation.
+  Beim ersten Start sichert Faktura den Bestand (`daten/sicherungen/vor-upgrade-<UUID>.zip`),
+  prüft die Migration an einer Kopie und hebt das Schema dann auf V6 (siehe unten).
+- **Von 3.1.0-rc.1:** Beide Installer tragen die Version 3.1.0; Windows lehnt das
+  Überinstallieren ab („Eine andere Version dieses Produkts ist bereits installiert“,
+  Fehler 1638). Die Vorabversion deshalb zuerst unter „Einstellungen › Apps“ deinstallieren,
+  danach 3.1.0 installieren. Die Daten liegen im Benutzerordner (`Faktura/daten`) und bleiben
+  beim Deinstallieren erhalten; das Schema ist bereits aktuell, eine Migration entfällt.
+- Beide Wege prüft der Release-Workflow auf einem Windows-Runner mit angelegten Daten
+  (MSI-UPG-01, Modultestbericht 9.8).
 
 ## Historische Belege
 

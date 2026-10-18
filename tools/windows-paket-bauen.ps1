@@ -29,6 +29,7 @@ try {
     $argumente = @(
         '--type', $Typ, '--name', 'Faktura', '--app-version', $version,
         '--vendor', 'Lucas Strubel',
+        '--description', 'Faktura - Desktop-Fakturierungsanwendung',
         '--input', $eingabe, '--main-jar', $hauptJar,
         '--icon', 'installer/faktura.ico',
         '--dest', $Ziel
