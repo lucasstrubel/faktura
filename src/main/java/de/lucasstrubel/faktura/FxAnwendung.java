@@ -33,9 +33,11 @@ public class FxAnwendung extends Application {
 
     @Override
     public void init() {
+        Startphasen.PROZESS.markiere("fxinit");
         kontext = new SpringApplicationBuilder(FakturaApplication.class)
                 .headless(false)
                 .run(getParameters().getRaw().toArray(new String[0]));
+        Startphasen.PROZESS.markiere("spring");
         LOG.info("Faktura startet; Datenverzeichnis: {}",
                 kontext.getBean(FakturaEigenschaften.class).datenVerzeichnis().toAbsolutePath());
     }
@@ -47,7 +49,9 @@ public class FxAnwendung extends Application {
         Erscheinungsbild erscheinungsbild = kontext.getBean(Erscheinungsbild.class);
         erscheinungsbild.wendeAn();
 
+        Startphasen.PROZESS.markiere("fxstart");
         Scene szene = new Scene(kontext.getBean(FxmlLader.class).lade("haupt_ansicht"));
+        Startphasen.PROZESS.markiere("szene");
         szene.getStylesheets().add(ressource("/css/faktura.css").toExternalForm());
         buehne.getIcons().addAll(
                 new Image(ressourcenStrom("/icon/faktura.png")),
@@ -62,7 +66,10 @@ public class FxAnwendung extends Application {
             }
         });
         buehne.show();
+        Startphasen.PROZESS.markiere("fenster");
         Platform.runLater(() -> {
+            Startphasen.PROZESS.markiere("bereit");
+            LOG.info(Startphasen.PROZESS.protokollzeile());
             LOG.info("FAKTURA_READY: Fenster angezeigt und erster Ereigniszyklus verarbeitet (Q-04)");
             if (Boolean.getBoolean("faktura.smoke")) {
                 Platform.exit();

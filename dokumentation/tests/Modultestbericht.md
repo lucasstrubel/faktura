@@ -2,8 +2,8 @@
 title: "Modultestbericht"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
 author: "Lucas Strubel"
-date: "10.10.2026"
-version: "1.2"
+date: "18.10.2026"
+version: "1.3"
 lang: de-DE
 ---
 
@@ -17,9 +17,12 @@ Modultests des Gesamtsystems *Desktop-Fakturierungsanwendung* (Komponenten A–D
 Infrastruktur sowie Performance-Nachweise) gemäß Modultestplan v2.0. Es ist nach Prüfung und
 Freigabe durch den Modulverantwortlichen verbindlicher Nachweis des durchgeführten Modultests.
 
-**Aktueller Freigabestand (10.10.2026):** 3.1.0-rc.1 ist noch nicht freigegeben.
-Die historische Abnahme bleibt unten erhalten. Kapitel 8 trennt aktuelle Regressionen
-von offenen Leistungs-, Plattform-, Installations- und Sicherheitsnachweisen.
+**Aktueller Freigabestand (18.10.2026):** 3.1.0-rc.1 ist als Vorabversion veröffentlicht.
+Die Startzeit Q-04 ist inzwischen mit der gebündelten Laufzeit nachgewiesen (Kapitel 9);
+für 3.1.0 stehen noch die Installer-Prüfung von der Vorabversion auf 3.1.0 und der
+Versionswechsel aus. Die historische Abnahme bleibt unten erhalten. Kapitel 8 trennt
+Regressionen von den damals offenen Leistungs-, Plattform-, Installations- und
+Sicherheitsnachweisen.
 
 ## Dokumentenhistorie
 
@@ -28,6 +31,7 @@ von offenen Leistungs-, Plattform-, Installations- und Sicherheitsnachweisen.
 | 1.0     | 24.06.2026 | Lucas Strubel  | Initiale Erstellung; Dokumentation der Modultest-Durchführung auf Basis des Modultestplans v2.0 |
 | 1.1     | 24.09.2026 | Lucas Strubel  | Kapitel 5: Nachtest Version 3.0 (201 Ausführungen, 0 Fehlschläge, Abdeckung und SpotBugs); Kapitel 1–4 unverändert |
 | 1.2 | 10.10.2026 | Lucas Strubel | Review-Remediation 3.1.0-rc.1; historische Nachweise und offene Freigabeschranken getrennt |
+| 1.3 | 18.10.2026 | Lucas Strubel | Kapitel 9: Startzeit Q-04 mit gebündelter Laufzeit nachgewiesen; Messmethode, Maßnahmen und verworfene Ansätze |
 
 
 ## 1. Einleitung
@@ -459,6 +463,7 @@ dem Referenzrechner eingehalten wird.
 
 - Die Startzeitgrenze ist lokal nicht nachgewiesen. Der dedizierte RC-Job muss drei frische
   Starts und alle Produktionsoperationen mit den unveränderten Grenzwerten bestehen.
+  *Nachtrag 18.10.2026:* mit der gebündelten Laufzeit nachgewiesen, siehe Kapitel 9.
 - Windows-JAR-Start und gepackte XML-Prüfung wurden lokal ausgeführt. Linux x64 und macOS
   arm64 mit demselben JAR sowie JDK 21 sind automatisiert eingerichtet, aber hier nicht
   ausgeführt. Die Plattformmatrix ist noch kein erfolgreicher Plattformnachweis.
@@ -516,3 +521,98 @@ installiert, getaggt oder veröffentlicht.
 
 Die [Portfolio-Abgrenzung](../projekt/Portfolio-Abschluss.md) benennt zurückgestellte
 Usability, spätere Produktfunktionen sowie die verbleibenden Abschlussnachweise.
+
+## 9. Startzeit Q-04 vor der Freigabe 3.1.0 (18.10.2026)
+
+### 9.1 Gegenstand und Umgebung
+
+Gemessen wird Q-04 (NF-PERF-01): Hauptfenster bedienbereit in höchstens 5 Sekunden mit dem
+Referenzbestand aus 8.3 (5.000 Kunden, 5.000 Produkte, 1.000 Belege mit je fünf Positionen).
+Rechner wie in 8.1, am Netzteil. Im Akkubetrieb dauerten dieselben Starts etwa doppelt so
+lange; solche Messungen sind nicht vergleichbar und wurden verworfen.
+
+Laufzeit ist die **gebündelte Java-Laufzeit des veröffentlichten 3.1.0-rc.1-MSI**
+(Temurin 21.0.12.1), administrativ entpackt (`msiexec /a`), also ohne Installation auf dem
+Entwicklungsrechner. `tools/paket-pruefen.ps1` misst wie bisher vom Prozessstart bis zum
+Bereitschaftsmarker nach Fensteranzeige und erstem JavaFX-Ereigniszyklus und startet jetzt
+wahlweise den Starter `Faktura.exe` (`-Starter`) statt `java -jar`. Jeder Start schreibt
+zusätzlich die Zeile `FAKTURA_STARTPHASEN` mit den Phasen in Millisekunden seit Prozessstart
+(`Startphasen`); das Skript übernimmt sie in `startzeiten.csv`. Änderungen wurden in
+abwechselnden A/B-Serien verglichen, weil derselbe Stand zu verschiedenen Zeiten um bis zu
+0,4 s streut.
+
+### 9.2 Ausgangslage
+
+3.1.0-rc.1 wie veröffentlicht: **5.834 / 4.536 / 4.923 ms**. Aufteilung eines Starts:
+rund 0,2 s bis `main`, 0,5 s JavaFX-Laufzeit, 2,3 s Spring-Kontext, 0,6 s Szenenaufbau
+einschließlich Übersicht und 0,6 s Fensteranzeige. Eine Auswertung des Klassenladens
+(`-Xlog:class+load`) zeigt rund 10.300 geladene Klassen ohne nennenswerte Wartezeiten:
+Der Start ist durchgehend durch Klassenladen bestimmt. Allein Flyway und das von Flyway
+für seine Konfiguration genutzte Jackson laden rund 950 Klassen, obwohl beim Start eines
+aktuellen Bestands nichts zu migrieren ist.
+
+### 9.3 Maßnahmen
+
+| Maßnahme | Vorher | Nachher | Wirkung |
+|----------------------------------|----------:|----------:|------:|
+| Paket enthält das entpackte Spring-Boot-Layout statt des Fat-JARs (`tools/windows-paket-bauen.ps1`) | 4.445–4.688 ms | 3.640–3.739 ms | ≈ −0,9 s |
+| Flyway entfällt, wenn der Bestand auf der ausgelieferten Version steht (`Schemastand`) | Median 3.995 ms | Median 3.561 ms | ≈ −0,4 s |
+| Übersicht wertet den Belegbestand im Hintergrund aus (`HintergrundAufgaben`) | Median 3.502 ms | Median 3.356 ms | ≈ −0,15 s |
+
+Das veröffentlichte Fat-JAR bleibt unverändert; das MSI enthält dasselbe geprüfte JAR,
+entpackt in Anwendungs-JAR und `lib/`. Jede Abweichung vom ausgelieferten Schemastand
+(neuer Bestand, ausstehende, fehlgeschlagene oder neuere Migration) läuft weiterhin über
+Flyway samt Upgradeprobe (Q-06). Die Übersicht zeigt bis zum Ergebnis Platzhalterkarten;
+das Fenster ist in dieser Zeit bedienbar.
+
+### 9.4 Geprüfte und verworfene Ansätze
+
+| Ansatz | Ergebnis | Entscheidung |
+|---|---|---|
+| Anwendungs-CDS-Archiv aus einem Trainingslauf | 2,3 s je Start, aber an den absoluten Installationspfad gebunden; nach dem Verschieben meldet Java 21 „Required classpath entry does not exist“ und startet ohne Archiv | verworfen |
+| `-XX:+AutoCreateSharedArchive` (Archiv entsteht beim Anwender) | Aufzeichnungslauf nach jeder Installation rund 20 s; ein mitgelieferter Platzhalter wird nicht ersetzt | verworfen |
+| CDS-Archiv der JDK-Klassen (`jlink --generate-cds-archive`) | Median 3.357 gegenüber 3.403 ms, also im Rauschen; rund 30 MB mehr und unverträglich mit `--strip-native-commands` | verworfen |
+| Spring-Kontext parallel zur JavaFX-Laufzeit starten | 3.600–4.218 gegenüber 3.640–3.739 ms; beide konkurrieren ums Klassenladen | verworfen |
+| Logging-System von Spring Boot abschalten | Median 3.989 gegenüber 3.959 ms | verworfen |
+
+Ein Java-25-AOT-Cache wurde nicht untersucht; die gebündelte Laufzeit bleibt Java 21.
+
+### 9.5 Nachweis
+
+Paket wie in der Release-Pipeline: gebündelte Laufzeit 21.0.12.1 und der von
+`tools/windows-paket-bauen.ps1` erzeugte Anwendungsordner. Drei frische Starts mit der
+unveränderten Grenze von 5.000 ms:
+
+| Start | Gesamt | bis `main` | JavaFX bereit | Spring-Kontext | Szene | Fenster | Bereit |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 3.730 ms | 122 | 841 | 2.673 | 3.155 | 3.656 | 3.707 |
+| 2 | 3.699 ms | 136 | 818 | 2.644 | 3.113 | 3.620 | 3.674 |
+| 3 | 3.536 ms | 135 | 827 | 2.547 | 2.960 | 3.451 | 3.507 |
+
+Q-04 ist damit **bestanden**. Eine anschließende Serie aus zehn Starts lag zwischen
+3.328 und 4.166 ms (Median 3.663 ms). Der allererste Start nach dem Kopieren frischer
+Dateien dauerte 7,0 s (Virenscan, leerer Dateicache); dasselbe ist für den ersten Start
+nach einer Installation zu erwarten. Q-04 misst wie bisher wiederholte Starts mit jeweils
+frischem Datenverzeichnis. Protokolle: `target/paketpruefung/20261018-203635-409` und
+`20261018-203651-134`. Der Release-Workflow behält die Startzeit als Regressionswächter
+mit 8 Sekunden (gehostete Runner, siehe 8.3).
+
+### 9.6 Testfälle und Qualitätsschranken
+
+Neu: SP-01 und SP-02 (`StartphasenTest`), SST-01 bis SST-05 (`SchemastandTest`).
+`./mvnw verify`: 232 Ausführungen, 0 Fehlschläge, 5 übersprungen (GUI- und
+Produktionsleistungstests nur auf Schalter), Abdeckungsschwellen und SpotBugs ohne
+Befund. `GuiRegressionTest` mit `-Dfaktura.gui.tests=true`: 4 von 4 bestanden.
+Die Übersicht wurde mit dem Referenzbestand im Ladezustand und gefüllt geprüft, ebenso
+mit einer Rechnung ohne gespeicherte Summen: Offener Betrag und Umsatz zeigen
+„unbekannt“ samt Anzahl.
+
+### 9.7 Offene Punkte
+
+- Das MSI mit dem neuen Layout wird ausschließlich auf einem disponiblen Windows-Runner
+  installiert, gestartet und entfernt (`tools/msi-pruefen.ps1`); dieser Lauf steht aus.
+- Upgrade von 3.1.0-rc.1 auf 3.1.0 mit dem Installer (beide MSI-Version 3.1.0) ist noch
+  nicht geprüft.
+- In über 100 lokalen Starts endete einer nach dem Bereitschaftsmarker mit einem
+  Exitcode ungleich 0; zehn gezielte Wiederholungen blieben fehlerfrei. Das Messskript
+  meldet den Exitcode jetzt ausdrücklich.

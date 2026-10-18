@@ -14,9 +14,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Führt länger laufende Vorgänge außerhalb des FX-Application-Threads aus
@@ -57,6 +61,9 @@ public class HintergrundAufgaben implements AutoCloseable {
     /** Anzahl gestarteter, noch nicht beendeter Vorgänge; nur auf dem FX-Thread geändert. */
     private int ausstehend;
 
+    /** Szenen mit Wartezeiger; nach dem letzten Vorgang zurückgesetzt, nur auf dem FX-Thread geändert. */
+    private final Set<Scene> szenenMitWartezeiger = new HashSet<>();
+
     /**
      * Führt {@code arbeit} im Hintergrund aus und meldet das Ergebnis auf dem
      * FX-Application-Thread.
@@ -68,18 +75,33 @@ public class HintergrundAufgaben implements AutoCloseable {
      * @param beiErfolg Rückruf nach fehlerfreiem Durchlauf, auf dem FX-Thread
      */
     public void starte(String titel, Node ausloeser, Runnable arbeit, Runnable beiErfolg) {
-        Task<Void> aufgabe = new Task<>() {
+        starte(titel, ausloeser, () -> {
+            arbeit.run();
+            return null;
+        }, ergebnis -> {
+            if (beiErfolg != null) {
+                beiErfolg.run();
+            }
+        });
+    }
+
+    /**
+     * Wie {@link #starte(String, Node, Runnable, Runnable)}, reicht aber das
+     * Ergebnis von {@code arbeit} an {@code beiErfolg} weiter — etwa einen im
+     * Hintergrund gelesenen Datenbestand, den die Ansicht dann anzeigt.
+     */
+    public <T> void starte(String titel, Node ausloeser, Supplier<T> arbeit, Consumer<T> beiErfolg) {
+        Task<T> aufgabe = new Task<>() {
             @Override
-            protected Void call() {
-                arbeit.run();
-                return null;
+            protected T call() {
+                return arbeit.get();
             }
         };
         boolean warGesperrt = ausloeser != null && ausloeser.isDisable();
         aufgabe.setOnSucceeded(ereignis -> {
             beende(ausloeser, warGesperrt);
             if (beiErfolg != null) {
-                beiErfolg.run();
+                beiErfolg.accept(aufgabe.getValue());
             }
         });
         aufgabe.setOnFailed(ereignis -> {
@@ -108,28 +130,26 @@ public class HintergrundAufgaben implements AutoCloseable {
         beschreibung.set(titel);
         if (ausloeser != null) {
             ausloeser.setDisable(true);
-            setzeMauszeiger(ausloeser, Cursor.WAIT);
+            Scene szene = ausloeser.getScene();
+            if (szene != null) {
+                szene.setCursor(Cursor.WAIT);
+                szenenMitWartezeiger.add(szene);
+            }
         }
     }
 
     private void beende(Node ausloeser, boolean warGesperrt) {
         ausstehend = Math.max(0, ausstehend - 1);
+        if (ausloeser != null) {
+            ausloeser.setDisable(warGesperrt);
+        }
         if (ausstehend == 0) {
             laeuft.set(false);
             beschreibung.set("");
-        }
-        if (ausloeser != null) {
-            ausloeser.setDisable(warGesperrt);
-            if (ausstehend == 0) {
-                setzeMauszeiger(ausloeser, Cursor.DEFAULT);
-            }
-        }
-    }
-
-    private static void setzeMauszeiger(Node bezug, Cursor zeiger) {
-        Scene szene = bezug.getScene();
-        if (szene != null) {
-            szene.setCursor(zeiger);
+            // Auch wenn der letzte Vorgang keinen Auslöser hatte (etwa die
+            // Aktualisierung der Übersicht nach einem Export)
+            szenenMitWartezeiger.forEach(szene -> szene.setCursor(Cursor.DEFAULT));
+            szenenMitWartezeiger.clear();
         }
     }
 

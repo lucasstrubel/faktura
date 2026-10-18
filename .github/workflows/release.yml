@@ -38,23 +38,16 @@ jobs:
       # Tag und Projektversion müssen übereinstimmen: Sonst enthielte etwa ein
       # MSI "3.0.1" das JAR faktura-3.0.0.jar. jpackage verlangt eine rein
       # numerische Version, deshalb trägt das MSI eines RC (3.1.0-rc.1) "3.1.0".
-      # Das installierte Paket wird anschließend auf dem Runner gestartet und
-      # wieder entfernt (tools/msi-pruefen.ps1).
+      # Das MSI enthält das geprüfte JAR im entpackten Spring-Boot-Layout
+      # (tools/windows-paket-bauen.ps1, Q-04). Das installierte Paket wird
+      # anschließend auf dem Runner gestartet und wieder entfernt
+      # (tools/msi-pruefen.ps1).
       - name: MSI bauen und installiert starten
         shell: pwsh
         run: |
           $version = ([xml](Get-Content pom.xml)).project.version
           if ('${{ github.ref_type }}' -eq 'tag' -and '${{ github.ref_name }}' -ne "v$version") { throw 'Tag und POM unterscheiden sich' }
-          $msiVersion = $version -replace '-.*$', ''
-          $jar = (Get-ChildItem build/paket/*.jar).Name
-          jpackage --type msi --name Faktura --app-version $msiVersion `
-            --vendor "Lucas Strubel" `
-            --input build/paket --main-jar $jar `
-            --icon installer/faktura.ico `
-            --win-menu --win-shortcut --win-per-user-install `
-            --win-upgrade-uuid 6ff17f18-0f83-4f66-9b3b-2f5c1a4de0aa `
-            --dest build/installer
-          if ($LASTEXITCODE -ne 0) { throw 'jpackage fehlgeschlagen' }
+          ./tools/windows-paket-bauen.ps1 -Jar (Get-ChildItem build/paket/*.jar).FullName -Typ msi -Ziel build/installer
           ./tools/msi-pruefen.ps1 -Msi (Get-ChildItem build/installer/*.msi).FullName
       - uses: actions/upload-artifact@v4
         with:
