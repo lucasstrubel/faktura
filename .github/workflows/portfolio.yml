@@ -25,12 +25,7 @@ jobs:
       - name: MSI auf disponiblem Runner installieren und entfernen
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force target/msi-eingabe | Out-Null
-          $jar = Get-ChildItem target/faktura-*.jar
-          Copy-Item $jar.FullName target/msi-eingabe
-          $version = ([xml](Get-Content pom.xml)).project.version -replace '-.*$', ''
-          jpackage --type msi --name Faktura --app-version $version --vendor 'Lucas Strubel' --input target/msi-eingabe --main-jar $jar.Name --icon installer/faktura.ico --win-menu --win-shortcut --win-per-user-install --win-upgrade-uuid 6ff17f18-0f83-4f66-9b3b-2f5c1a4de0aa --dest target/msi-pruefung
-          if ($LASTEXITCODE -ne 0) { throw 'MSI-Bau fehlgeschlagen' }
+          ./tools/windows-paket-bauen.ps1 -Jar (Get-ChildItem target/faktura-*.jar).FullName -Typ msi -Ziel target/msi-pruefung
           ./tools/msi-pruefen.ps1 -Msi (Get-ChildItem target/msi-pruefung/*.msi).FullName
       - uses: actions/upload-artifact@v4
         if: always()

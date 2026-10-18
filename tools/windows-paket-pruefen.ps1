@@ -4,14 +4,10 @@ $ErrorActionPreference = 'Stop'
 if (!(Get-Command jpackage -ErrorAction SilentlyContinue)) { throw 'JDK 21 mit jpackage im PATH erforderlich; eine reine Java-Laufzeit reicht nicht' }
 $jarPfad = (Resolve-Path -LiteralPath $Jar).Path
 $basis = Join-Path (Get-Location) ('target/windows-paket-' + [guid]::NewGuid())
-$eingabe = Join-Path $basis 'eingabe'
-New-Item -ItemType Directory -Path $eingabe -Force | Out-Null
-Copy-Item -LiteralPath $jarPfad -Destination $eingabe
-$version = ([xml](Get-Content pom.xml)).project.version -replace '-.*$', ''
-& jpackage --type app-image --name Faktura --app-version $version --input $eingabe --main-jar ([IO.Path]::GetFileName($jarPfad)) --icon installer/faktura.ico --dest $basis
-if ($LASTEXITCODE -ne 0) { throw 'Portables Paket konnte nicht gebaut werden' }
+& (Join-Path $PSScriptRoot 'windows-paket-bauen.ps1') -Jar $jarPfad -Typ app-image -Ziel $basis
 $paket = Join-Path $basis 'Faktura'
 if (!(Test-Path -LiteralPath (Join-Path $paket 'runtime/bin/java.dll'))) { throw 'Gebündelte Laufzeit fehlt' }
+if (!(Test-Path -LiteralPath (Join-Path $paket 'app/lib'))) { throw 'Entpacktes Layout fehlt (app/lib, Q-04)' }
 $daten = Join-Path $basis 'pruefdaten'
 $info = [Diagnostics.ProcessStartInfo]::new((Join-Path $paket 'Faktura.exe'))
 $info.UseShellExecute = $false

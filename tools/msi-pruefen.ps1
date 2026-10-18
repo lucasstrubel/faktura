@@ -10,6 +10,7 @@ try {
     if ($prozess.ExitCode -notin @(0,3010)) { throw "Installation fehlgeschlagen: $($prozess.ExitCode)" }
     $installiert = $true
     if (!(Test-Path -LiteralPath (Join-Path $installation 'runtime/bin/java.dll'))) { throw 'Gebündelte Java-Laufzeit fehlt' }
+    if (!(Test-Path -LiteralPath (Join-Path $installation 'app/lib'))) { throw 'Entpacktes Layout fehlt (app/lib, Q-04)' }
     $info = [Diagnostics.ProcessStartInfo]::new((Join-Path $installation 'Faktura.exe'))
     $info.UseShellExecute = $false
     $info.Environment['JAVA_TOOL_OPTIONS'] = '-Dfaktura.smoke=true'
