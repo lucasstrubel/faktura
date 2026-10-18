@@ -14,6 +14,7 @@ import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
@@ -34,7 +35,8 @@ import java.math.BigDecimal;
  * überfällig, wie viel wurde dieses Jahr fakturiert — und bietet die drei
  * häufigsten Aktionen direkt an.
  *
- * <p>Die Auswertung selbst liegt im GUI-freien {@link KennzahlenDienst}.
+ * <p>Die Auswertung selbst liegt im GUI-freien {@link KennzahlenDienst} und
+ * läuft über {@link HintergrundAufgaben}, damit sie den Start nicht aufhält (Q-04).
  */
 public class UebersichtAnsichtController {
 
@@ -44,6 +46,12 @@ public class UebersichtAnsichtController {
     private final KundenVerwaltungsService kundenVerwaltung;
     private final ProduktService produktService;
     private final EreignisBus ereignisBus;
+    private final HintergrundAufgaben hintergrund;
+
+    /** Leerzustand der Belegliste; erst nach der ersten Auswertung gezeigt. */
+    private final Node leerzustand = Bausteine.leerzustand(Feather.FILE_TEXT,
+            "Noch keine Belege",
+            "Erstellen Sie mit „Neue Rechnung“ Ihren ersten Beleg.");
 
     @FXML private Label untertitel;
     @FXML private FlowPane kennzahlen;
@@ -61,13 +69,15 @@ public class UebersichtAnsichtController {
                                        KundenService kundenService,
                                        KundenVerwaltungsService kundenVerwaltung,
                                        ProduktService produktService,
-                                       EreignisBus ereignisBus) {
+                                       EreignisBus ereignisBus,
+                                       HintergrundAufgaben hintergrund) {
         this.kennzahlenDienst = kennzahlenDienst;
         this.dokumentService = dokumentService;
         this.kundenService = kundenService;
         this.kundenVerwaltung = kundenVerwaltung;
         this.produktService = produktService;
         this.ereignisBus = ereignisBus;
+        this.hintergrund = hintergrund;
     }
 
     @FXML
@@ -87,22 +97,43 @@ public class UebersichtAnsichtController {
         Bausteine.alsBetragsspalte(bruttoSpalte);
         Bausteine.passeSpaltenAn(letzteBelege);
 
-        letzteBelege.setPlaceholder(Bausteine.leerzustand(Feather.FILE_TEXT,
-                "Noch keine Belege",
-                "Erstellen Sie mit „Neue Rechnung“ Ihren ersten Beleg."));
+        letzteBelege.setPlaceholder(new Label("Belege werden geladen…"));
 
         // Ohne dieses Minimum zwingt die Kartenreihe das Fenster auf ihre
         // Gesamtbreite, statt in eine zweite Reihe umzubrechen.
         kennzahlen.setMinWidth(0);
 
+        zeigeLadezustand();
         aktualisiere();
         // Kennzahlen hängen an Belegen; Kundennamen erscheinen in der Liste
         ereignisBus.abonniere(DatenBereich.DOKUMENTE, this::aktualisiere);
         ereignisBus.abonniere(DatenBereich.KUNDEN, this::aktualisiere);
     }
 
+    /**
+     * Die Auswertung liest den gesamten Belegbestand und läuft deshalb im
+     * Hintergrund (Q-04): Das Fenster ist sofort bedienbar, die Karten füllen
+     * sich, sobald das Ergebnis vorliegt. Die Vorgänge laufen nacheinander,
+     * das zuletzt angestoßene Ergebnis wird also auch zuletzt angezeigt.
+     */
     private void aktualisiere() {
-        Kennzahlen zahlen = kennzahlenDienst.ermittle(LocalDate.now());
+        LocalDate heute = LocalDate.now();
+        hintergrund.starte("Übersicht wird aktualisiert…", null,
+                () -> kennzahlenDienst.ermittle(heute), this::zeige);
+    }
+
+    /** Platzhalterkarten, bis die erste Auswertung vorliegt. */
+    private void zeigeLadezustand() {
+        untertitel.setText("Übersicht wird geladen…");
+        kennzahlen.getChildren().setAll(
+                karte(Feather.CLOCK, "Offener Betrag", "…", "", null),
+                karte(Feather.ALERT_TRIANGLE, "Überfällig", "…", "", null),
+                karte(Feather.TRENDING_UP, "Umsatz " + LocalDate.now().getYear(), "…", "", null),
+                karte(Feather.FILE_TEXT, "Belege gesamt", "…", "", null));
+    }
+
+    private void zeige(Kennzahlen zahlen) {
+        letzteBelege.setPlaceholder(leerzustand);
 
         untertitel.setText(zahlen.belegeGesamt() == 0
                 ? "Willkommen — legen Sie zunächst Kunden und Produkte an."

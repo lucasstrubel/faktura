@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Führt länger laufende Vorgänge außerhalb des FX-Application-Threads aus
@@ -68,18 +70,33 @@ public class HintergrundAufgaben implements AutoCloseable {
      * @param beiErfolg Rückruf nach fehlerfreiem Durchlauf, auf dem FX-Thread
      */
     public void starte(String titel, Node ausloeser, Runnable arbeit, Runnable beiErfolg) {
-        Task<Void> aufgabe = new Task<>() {
+        starte(titel, ausloeser, () -> {
+            arbeit.run();
+            return null;
+        }, ergebnis -> {
+            if (beiErfolg != null) {
+                beiErfolg.run();
+            }
+        });
+    }
+
+    /**
+     * Wie {@link #starte(String, Node, Runnable, Runnable)}, reicht aber das
+     * Ergebnis von {@code arbeit} an {@code beiErfolg} weiter — etwa einen im
+     * Hintergrund gelesenen Datenbestand, den die Ansicht dann anzeigt.
+     */
+    public <T> void starte(String titel, Node ausloeser, Supplier<T> arbeit, Consumer<T> beiErfolg) {
+        Task<T> aufgabe = new Task<>() {
             @Override
-            protected Void call() {
-                arbeit.run();
-                return null;
+            protected T call() {
+                return arbeit.get();
             }
         };
         boolean warGesperrt = ausloeser != null && ausloeser.isDisable();
         aufgabe.setOnSucceeded(ereignis -> {
             beende(ausloeser, warGesperrt);
             if (beiErfolg != null) {
-                beiErfolg.run();
+                beiErfolg.accept(aufgabe.getValue());
             }
         });
         aufgabe.setOnFailed(ereignis -> {
