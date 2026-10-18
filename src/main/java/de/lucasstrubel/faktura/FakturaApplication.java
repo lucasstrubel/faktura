@@ -21,6 +21,7 @@ public class FakturaApplication {
     static final String DATENVERZEICHNIS = "faktura.daten-verzeichnis";
 
     public static void main(String[] args) {
+        Startphasen.PROZESS.markiere("main");
         setzeDatenverzeichnis(args);
         Application.launch(FxAnwendung.class, args);
     }
