@@ -76,6 +76,11 @@ function Starte([string]$ort) {
     return $starter.ExitCode
 }
 
+function Bereitschaftsmarker {
+    @(Get-ChildItem -LiteralPath $daten -Filter '*.log' -ErrorAction SilentlyContinue |
+        Select-String 'FAKTURA_READY').Count
+}
+
 # Prüfkunde und Schemastand über Python/sqlite3 (auf gehosteten Windows-Runnern vorhanden)
 $sqlSkript = Join-Path $protokolle 'datenbank.py'
 @'
@@ -135,10 +140,12 @@ try {
     if ($jars.Count -ne 1 -or $jars[0] -ne "faktura-$NeueVersion.jar") { throw "Unerwartete Anwendungs-JARs nach dem Upgrade: $($jars -join ', ')" }
     if (!(Test-Path -LiteralPath (Join-Path $app 'lib'))) { throw 'Entpacktes Layout fehlt nach dem Upgrade (app/lib)' }
 
-    # 4. Neue Version startet auf den alten Daten
+    # 4. Neue Version startet auf den alten Daten. Das Protokoll wird fortgeschrieben und
+    # enthält bei Vorversionen ab 3.1.0-rc.1 schon deren Marker: Gezählt wird nur ein neuer.
+    $markerVorher = Bereitschaftsmarker
     $code = Starte $ort
     if ($code -ne 0) { throw "Neue Version beendet sich mit Exitcode $code" }
-    if (!(Get-ChildItem -LiteralPath $daten -Filter '*.log' | Select-String 'FAKTURA_READY')) { throw 'Bereitschaftsmarker der neuen Version fehlt' }
+    if ((Bereitschaftsmarker) -le $markerVorher) { throw 'Bereitschaftsmarker der neuen Version fehlt' }
     if ((Get-Item -LiteralPath $datenbank).CreationTimeUtc -ne $erstellt) { throw 'Datenbank wurde neu angelegt statt übernommen' }
     $nachher = Datenbank 'lesen'
     if ($nachher.Kunden -ne 1) { throw 'Prüfkunde nach dem Upgrade verloren' }
