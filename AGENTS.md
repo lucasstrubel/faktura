@@ -18,7 +18,7 @@ in `CLAUDE.md`.
 ./mvnw test -Dtest=KundenVerwaltungTest#testMethode   # Einzelne Testmethode
 ./mvnw verify                                         # Tests + JaCoCo + SpotBugs (wie CI)
 ./mvnw package                                        # Fat-JAR (spring-boot-maven-plugin repackage)
-java -jar target/faktura-3.1.0-rc.1.jar               # Anwendung starten
+java -jar target/faktura-3.1.0.jar                    # Anwendung starten
 ```
 
 Unter Windows ohne Git Bash `mvnw.cmd` statt `./mvnw` (in PowerShell `.\mvnw.cmd`, Systemeigenschaften in Anführungszeichen: `"-Dtest=KundenVerwaltungTest"`). `verify` ist das CI-Gate und bricht ab bei SpotBugs-Befunden (Ausnahmen in `spotbugs-exclude.xml`) oder unterschrittener JaCoCo-Schwelle (Bundle: 85 % Instruktionen, 70 % Zweige). Die Schwelle liegt bewusst knapp unter dem Ist-Stand — wer die Abdeckung hebt, zieht sie im `pom.xml` nach. FX-gebundene Klassen (`gui/*Ansicht*`, `*Dialog*`, `Bausteine`, `FxMeldung`, `HintergrundAufgaben`, `Tastenkuerzel`, `FxAnwendung` …) sind ausgenommen; Dialogführung und Logik gehören deshalb in GUI-freie `*Controller`-Klassen, die ohne JavaFX-Laufzeit testbar sind und mitgezählt werden.
