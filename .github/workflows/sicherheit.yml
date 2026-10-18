@@ -17,8 +17,8 @@ jobs:
     # NVD-Daten liegen in ~/nvd-daten, also außerhalb von ~/.m2: Der Maven-Cache
     # von setup-java soll sie weder mitspeichern noch veraltet zurückspielen.
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
@@ -29,7 +29,7 @@ jobs:
       # Caches aus Läufen auf main (z. B. dem wöchentlichen Zeitplan) stehen
       # auch Tag-Läufen des Release-Workflows zur Verfügung.
       - name: NVD-Daten wiederherstellen
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ~/nvd-daten
           key: nvd-daten-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -50,12 +50,12 @@ jobs:
       # Daten sind trotzdem gültig, und der nächste Lauf soll sie nicht neu laden.
       - name: NVD-Daten sichern
         if: always() && steps.daten.outputs.vorhanden == 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: ~/nvd-daten
           key: nvd-daten-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: dependency-scan

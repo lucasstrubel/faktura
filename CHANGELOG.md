@@ -18,6 +18,8 @@ Alle nennenswerten Änderungen an Faktura. Das Format folgt
     Platzhalterkarten.
 - Jeder Start protokolliert seine Phasen (`FAKTURA_STARTPHASEN`); `tools/paket-pruefen.ps1`
   misst wahlweise das Windows-Paket (`-Starter`) und meldet den Exitcode bei Fehlern.
+- GitHub Actions auf aktuelle Hauptversionen (Node.js 24) angehoben; Dependabot hält sie
+  künftig wöchentlich aktuell.
 
 ## [3.1.0-rc.1] — 2026-10-11 (Vorabversion)
 
