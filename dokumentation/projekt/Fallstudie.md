@@ -2,8 +2,8 @@
 title: "Fallstudie"
 subtitle: "Faktura — vom Hochschulprojekt zur auslieferbaren Fakturierungsanwendung"
 author: "Lucas Strubel"
-date: "10.10.2026"
-version: "1.2"
+date: "18.10.2026"
+version: "1.3"
 lang: de-DE
 numbersections: true
 ---
@@ -15,6 +15,7 @@ numbersections: true
 | 1.0     | 29.07.2026 | Erstfassung: Fallstudie zur Weiterentwicklung vom Hochschulprojekt zum Produkt |
 | 1.1     | 24.09.2026 | Abschluss der Version 3.0: Steuer je Steuersatz, Stornorechnung, Zahlungseingang, Aussteller-Snapshot; deutsche Fassung ist die einzige Fassung |
 | 1.2 | 10.10.2026 | Review-Remediation 3.1.0-rc.1; historische Nachweise und offene Freigabeschranken getrennt |
+| 1.3 | 18.10.2026 | Ausblick: Skizze der Version 4.0 mit Desktop- und Web-Variante |
 
 # Überblick
 
@@ -328,6 +329,11 @@ Dinge zu zerbrechen.
   nachdem Zahlungsziele und Zahlungseingänge existieren.
 - **Installationspakete für Linux und macOS** — das JAR läuft bereits unter Windows, Linux und macOS (Apple Silicon); Intel-Macs bauen aus den Quellen. Nur der Installer ist
   heute Windows-spezifisch.
+- **Zwei Betriebsarten: Desktop und Web (SaaS)** — aus einer Rückmeldung entstand der
+  Vorschlag, Faktura mandantenfähig ins Internet zu bringen. Weil die Fachpakete schon heute
+  ohne JavaFX auskommen, braucht das keine zweite Codebasis: Der Kern bleibt, hinzu kommen
+  eine Web-Oberfläche, Anmeldung und PostgreSQL mit getrennten Mandanten. Die Skizze steht in
+  der [Roadmap 4.0](Roadmap-4.0.md).
 
 
 # Ergänzung 3.1.0-rc.1 (10.10.2026)

@@ -182,6 +182,7 @@ Die vollständige Software-Engineering-Dokumentation liegt unter
 | [Modultestbericht](dokumentation/tests/Modultestbericht.md) | Historische Tests und aktueller RC-Nachweisstand | [PDF](dokumentation/pdf/Modultestbericht.pdf) |
 | [Projektübersicht](dokumentation/projekt/Projektuebersicht.md) | Ziele, Verlauf, Roadmap, offene Punkte | [PDF](dokumentation/pdf/Projektuebersicht.pdf) |
 | [Fallstudie](dokumentation/projekt/Fallstudie.md) | Entscheidungen und Erkenntnisse der Weiterentwicklung | [PDF](dokumentation/pdf/Fallstudie.pdf) |
+| [Roadmap 4.0](dokumentation/projekt/Roadmap-4.0.md) | Skizze: Desktop und Web (SaaS) aus einer Codebasis | [PDF](dokumentation/pdf/Roadmap-4.0.pdf) |
 | [Abschlusspräsentation](dokumentation/projekt/Praesentation.md) | Foliensatz der Abnahme im Modul SE1 (historischer Stand 1.0) | [PDF](dokumentation/pdf/Praesentation.pdf) |
 
 Die UML-Diagramme (PlantUML-Quellen und PNG) liegen unter
@@ -200,6 +201,11 @@ Erledigt:
 - [x] **Auslieferungsautomation** — Installer- und JAR-Workflows implementiert; aktuelle RC-Ausführung noch offen
 - [x] **Fachliche Schutzregeln** — transaktionale Nummernvergabe, Stornorechnung, Zahlungseingang,
       Steuer je Steuersatz, Aussteller-Snapshot
+
+Geplant (Skizze, siehe [Roadmap 4.0](dokumentation/projekt/Roadmap-4.0.md)):
+
+- [ ] **Zwei Betriebsarten** — neben der Desktop-Anwendung eine Web-Variante mit Anmeldung
+      und getrennten Mandanten, auf demselben fachlichen Kern
 
 Bewusst zurückgestellt bzw. spätere Erweiterungen:
 

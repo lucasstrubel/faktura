@@ -1,0 +1,41 @@
+@startuml komponenten_betriebsarten
+' Zielarchitektur Version 4.0: zwei Betriebsarten aus einer Codebasis (Roadmap 4.0, Skizze)
+!pragma layout smetana
+title Zielarchitektur 4.0 — zwei Betriebsarten, ein fachlicher Kern (Skizze)
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+actor "Anwender:in\n(lokal)" as lokal
+actor "Anwender:in\n(Browser)" as browser
+
+package "faktura-desktop" {
+  [JavaFX-Oberfläche\n(gui, FXML, AtlantaFX)] as fx
+  [Desktop-Dienste\n(BelegAusgabe, EreignisBus,\nDatensicherung)] as desktopdienste
+  database "SQLite\n(faktura.db)" as sqlite
+}
+
+package "faktura-kern" {
+  [Fachlogik\n(dokumente, kunden, produkte, firma)] as fachlogik
+  [Querschnitt\n(gemeinsam: Validierung, Nummernkreis,\nPDF, E-Rechnung, Export)] as querschnitt
+  [Repositories\n(Spring JDBC)] as repositories
+}
+
+package "faktura-web" {
+  [Web-Oberfläche\n(HTML, CSS, JavaScript)] as weboberflaeche
+  [REST-API\n(Spring MVC)] as api
+  [Anmeldung und Mandantenkontext\n(Spring Security)] as sicherheit
+  database "PostgreSQL\n(Trennung nach ADR-02)" as postgres
+}
+
+lokal --> fx
+fx --> fachlogik
+desktopdienste --> fachlogik
+browser --> weboberflaeche
+weboberflaeche --> api : HTTPS / JSON
+api --> sicherheit
+api --> fachlogik
+fachlogik --> querschnitt
+fachlogik --> repositories
+repositories ..> sqlite : Desktop
+repositories ..> postgres : Web
+@enduml

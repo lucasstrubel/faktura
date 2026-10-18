@@ -2,8 +2,8 @@
 title: "Projektübersicht"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
 author: "Lucas Strubel"
-date: "10.10.2026"
-version: "3.1"
+date: "18.10.2026"
+version: "3.2"
 lang: de-DE
 numbersections: true
 ---
@@ -16,6 +16,7 @@ numbersections: true
 | 2.0     | 18.07.2026 | Überarbeitung zur Projektübersicht des weitergeführten Einzelprojekts |
 | 3.0     | 24.09.2026 | Abschluss der Version 3.0 (Phase 12), offene Punkte, Teamzusammensetzung ergänzt |
 | 3.1 | 10.10.2026 | Review-Remediation 3.1.0-rc.1; historische Nachweise und offene Freigabeschranken getrennt |
+| 3.2 | 18.10.2026 | Skizze der Version 4.0 (Desktop und Web/SaaS) in die Roadmap aufgenommen |
 
 # Projektübersicht
 
@@ -63,10 +64,11 @@ mit dem Ziel, die Anwendung auf Produktqualität zu heben (siehe Roadmap).
 Die folgenden Punkte waren **explizit nicht** Teil der Version 1.0; einzelne davon
 sind Gegenstand der Weiterentwicklung (Kapitel „Roadmap der Weiterentwicklung“):
 
-- Mehrbenutzer- oder Netzwerkfähigkeit (gleichzeitiger Zugriff mehrerer Nutzer)
+- Mehrbenutzer- oder Netzwerkfähigkeit (gleichzeitiger Zugriff mehrerer Nutzer) → *für
+  Version 4.0 als Betriebsart Web geplant*
 - Vollständiges Buchhaltungsmodul (keine Bilanzierung)
 - Webshop-Anbindung (z. B. WooCommerce, Gambio Connectoren)
-- Mobile Clients oder Web-Applikation
+- Mobile Clients oder Web-Applikation → *Web-Applikation für Version 4.0 geplant*
 - Unterstützung von E-Rechnungsformaten (EN 16931 CII) → *in Version 2.0 umgesetzt*
 - Mahnwesen und automatisiertes Forderungsmanagement
 - Garantierter kommerzieller Support oder Service Level Agreements (SLAs)
@@ -168,6 +170,17 @@ und die Anwendung mit realistischen Demodaten durchgespielt. Ergebnis:
 13. **Auslieferung:** plattformübergreifendes JAR (Windows, Linux, macOS auf Apple
     Silicon), Versionsprüfung im Release-Workflow, Dokumentation vollständig auf Deutsch
     und als PDF.
+
+## Geplant: Version 4.0 — Desktop und Web (Skizze)
+
+Aus einer Rückmeldung zum Projekt entstand der Vorschlag, Faktura mandantenfähig im Internet
+anzubieten. Version 4.0 soll deshalb zwei Betriebsarten aus einer Codebasis bieten: die
+bisherige Desktop-Anwendung und eine Web-Variante mit Anmeldung und strikt getrennten
+Mandanten. Der fachliche Kern mit allen Belegregeln bleibt für beide derselbe. Die Phasen 13
+bis 19 setzen auf der Freigabe von 3.1.0 auf und begleiten die Module Software Engineering 2,
+Webbasierte Systeme und Datenmanagement. Zielbild, Phasen, offene Entscheidungen und Risiken
+stehen in der [Roadmap 4.0](Roadmap-4.0.md); verbindlich werden sie erst mit der Fortschreibung
+von Lastenheft und Pflichtenheft (Phase 14).
 
 ## Bewusst zurückgestellt / spätere Erweiterungen
 

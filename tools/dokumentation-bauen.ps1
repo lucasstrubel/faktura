@@ -3,7 +3,7 @@
   Baut die PDF-Fassungen der Projektdokumentation nach dokumentation/pdf/.
 
 .DESCRIPTION
-  Spezifikationen, Testdokumente, Projektübersicht und Fallstudie werden mit
+  Spezifikationen, Testdokumente, Projektübersicht, Fallstudie und Roadmap werden mit
   pandoc und XeLaTeX gesetzt (gemeinsames Layout in tools/pandoc/), die
   Abschlusspräsentation mit Marp. Optional werden vorher die UML-Diagramme
   mit PlantUML neu gerendert.
@@ -42,7 +42,8 @@ $dokumente = @(
     'tests\Modultestplan.md',
     'tests\Modultestbericht.md',
     'projekt\Projektuebersicht.md',
-    'projekt\Fallstudie.md'
+    'projekt\Fallstudie.md',
+    'projekt\Roadmap-4.0.md'
 )
 
 foreach ($relativ in $dokumente) {
