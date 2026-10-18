@@ -15,6 +15,10 @@ on:
         description: 'Vorversion (Tag) für die Upgrade-Prüfung; leer = neueste endgültige Version'
         required: false
         default: ''
+      vorversion_entfernen:
+        description: 'Vorversion vor der Installation entfernen (Weg für Vorabversionen gleicher MSI-Version)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -65,6 +69,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           UPGRADE_VON: ${{ inputs.upgrade_von }}
+          VORVERSION_ENTFERNEN: ${{ inputs.vorversion_entfernen }}
         run: |
           $version = ([xml](Get-Content pom.xml)).project.version
           $von = $env:UPGRADE_VON
@@ -77,7 +82,8 @@ jobs:
           gh release download $von --pattern '*.msi' --dir build/vorversion
           if ($LASTEXITCODE -ne 0) { throw "MSI der Vorversion $von nicht verfügbar" }
           ./tools/msi-upgrade-pruefen.ps1 -AltMsi (Get-ChildItem build/vorversion/*.msi).FullName `
-            -NeuMsi (Get-ChildItem build/installer/*.msi).FullName -NeueVersion $version
+            -NeuMsi (Get-ChildItem build/installer/*.msi).FullName -NeueVersion $version `
+            -VorversionEntfernen:($env:VORVERSION_ENTFERNEN -eq 'true')
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

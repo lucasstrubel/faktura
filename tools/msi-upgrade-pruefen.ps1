@@ -10,7 +10,10 @@ param(
     [Parameter(Mandatory=$true)][string]$AltMsi,
     [Parameter(Mandatory=$true)][string]$NeuMsi,
     # Projektversion des neuen Pakets, z. B. 3.1.0; bestimmt den erwarteten JAR-Namen
-    [Parameter(Mandatory=$true)][string]$NeueVersion
+    [Parameter(Mandatory=$true)][string]$NeueVersion,
+    # Vorversion vor der Installation entfernen, wie für Vorabversionen mit gleicher
+    # MSI-Version dokumentiert (Windows Installer lehnt das Überinstallieren mit 1638 ab)
+    [switch]$VorversionEntfernen
 )
 $ErrorActionPreference = 'Stop'
 if (!$env:RUNNER_TEMP) { throw 'Nur auf einem disponiblen CI-Runner ausführen' }
@@ -110,7 +113,14 @@ try {
     $erstellt = (Get-Item -LiteralPath $datenbank).CreationTimeUtc
     Write-Host "Vorversion $altVersion installiert unter $ort; Schema V$($vorher.Schema), Prüfkunde angelegt"
 
-    # 2. Neues MSI darüber installieren
+    # 2. Neues MSI darüber installieren (bzw. nach Entfernen der Vorversion)
+    if ($VorversionEntfernen) {
+        $code = Msiexec @('/x', "`"$altPfad`"") (Join-Path $protokolle 'vorversion-entfernen.log')
+        if ($code -notin @(0, 3010)) { throw "Entfernen der Vorversion fehlgeschlagen: $code" }
+        if ((Faktura-Eintraege).Count -ne 0) { throw 'Vorversion nach dem Entfernen noch eingetragen' }
+        if (!(Test-Path -LiteralPath $datenbank)) { throw 'Daten beim Entfernen der Vorversion verloren' }
+        Write-Host "Vorversion $altVersion entfernt; Datenverzeichnis unverändert vorhanden"
+    }
     $code = Msiexec @('/i', "`"$neuPfad`"") (Join-Path $protokolle 'upgrade.log')
     if ($code -notin @(0, 3010)) {
         # 1638: Windows Installer hält die Vorversion für dasselbe Produkt in anderer Fassung
