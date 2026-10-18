@@ -2,8 +2,8 @@
 title: "Modultestplan"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
 author: "Lucas Strubel"
-date: "10.10.2026"
-version: "3.1"
+date: "18.10.2026"
+version: "3.2"
 lang: de-DE
 ---
 
@@ -25,6 +25,7 @@ Performance-Nachweise).
 | 2.0     | 15.06.2026 | Lucas Strubel  | Konsolidierung aller Komponenten-Testfälle (A–D, gemeinsame Infrastruktur, Performance) in einen projektweiten Modultestplan |
 | 3.0     | 24.09.2026 | Lucas Strubel  | Kapitel 3: ergänzte Testfälle der Versionen 2.0 und 3.0 (164 Testmethoden, 201 Ausführungen); Testumfang-Übersicht auf Stand 3.0 |
 | 3.1 | 10.10.2026 | Lucas Strubel | Review-Remediation 3.1.0-rc.1; historische Nachweise und offene Freigabeschranken getrennt |
+| 3.2 | 18.10.2026 | Lucas Strubel | Startzeit Q-04: Abschnitte 3.17 (`StartphasenTest`) und 3.18 (`SchemastandTest`); Startmessung mit gebündelter Laufzeit |
 
 
 ## 1. Einleitung
@@ -395,6 +396,26 @@ Zwei Testfälle aus Kapitel 2 wurden mit Version 3.0 fachlich angepasst:
 | KTX-05 | Eine fehlerhafte JSON-Datei bricht die Übernahme vollständig ab; der nächste Start holt sie nach |
 | KTX-06 | Das Datenverzeichnis kommt aus dem Startargument, sonst aus dem Benutzerverzeichnis |
 
+### 3.17 Anwendung/Querschnitt: `StartphasenTest`
+
+| ID | Testfall |
+|----|----------|
+| SP-01 | Startphasen erscheinen in Reihenfolge als Millisekunden seit Prozessstart (Q-04) |
+| SP-02 | Der laufende Prozess misst ab seinem Start, nicht ab dem ersten Aufruf (Q-04) |
+
+### 3.18 Gemeinsame Infrastruktur: `SchemastandTest`
+
+Steht ein Bestand auf der ausgelieferten Schemaversion, startet die Anwendung ohne Flyway
+(Q-04); jede Abweichung läuft weiter über Flyway und die Upgradeprobe (Q-06).
+
+| ID | Testfall |
+|----|----------|
+| SST-01 | Die ausgelieferte Version entspricht der neuesten Migration im Klassenpfad (Q-04) |
+| SST-02 | Ein neuer Bestand ist nicht aktuell, nach der Migration schon (Q-04) |
+| SST-03 | Ausstehende Migrationen laufen weiter über Flyway und die Upgradeprobe (Q-06) |
+| SST-04 | Eine fehlgeschlagene Migration in der Historie ist nicht aktuell |
+| SST-05 | Ein Bestand aus einer neueren Version ist nicht aktuell; Flyway meldet ihn |
+
 ## 4. Testumfang-Übersicht
 
 ### 4.1 Stand Version 3.0
@@ -507,7 +528,9 @@ GUI- und Leistungstests sind getrennt aktivierbar. Der Release-Workflow verlangt
 zusätzlich zum regulären `verify`. Im Release-Workflow gilt für die Startzeit eine
 Regressionsgrenze von 8 Sekunden, weil gehostete Runner wechselnde Hardware erhalten;
 der Q-04-Nachweis (≤ 5 s) erfolgt getrennt auf dem Referenzrechner. Drei frische Starts messen bis zum Readiness-Marker
-nach Fensteranzeige und erstem JavaFX-Ereigniszyklus. Zeiten und Runnerdaten werden
+nach Fensteranzeige und erstem JavaFX-Ereigniszyklus. Gemessen wird das Windows-Paket mit
+gebündelter Laufzeit (`tools/paket-pruefen.ps1 -Starter <Faktura.exe>`), nicht das Fat-JAR
+mit einer System-Java. Zeiten, Startphasen und Runnerdaten werden
 archiviert. Derselbe JAR-Build wird auf drei Plattformen geprüft. Der MSI-Test installiert,
 startet mit gebündelter Laufzeit und deinstalliert auf einem disponiblen Windows-Runner.
 

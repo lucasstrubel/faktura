@@ -2,8 +2,8 @@
 title: "Anforderungsabgleich und Traceability-Matrix"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
 author: "Lucas Strubel"
-date: "10.10.2026"
-version: "2.1"
+date: "18.10.2026"
+version: "2.2"
 lang: de-DE
 ---
 
@@ -14,6 +14,7 @@ lang: de-DE
 | 1.0     | 06/2026    | Nachweis der Lastenheft-Anforderungen zur Abnahme der Version 1.0 |
 | 2.0     | 24.09.2026 | Neuer Abgleich gegen den Stand 3.0: Codebelege auf SQLite-Persistenz, transaktionalen Nummernkreis und JavaFX-Oberfläche umgestellt; Kapitel 5 mit den Anforderungen der Weiterentwicklung (Pflichtenheft v2.1–v2.4) |
 | 2.1 | 10.10.2026 | Review-Remediation 3.1.0-rc.1; historische Nachweise und offene Freigabeschranken getrennt |
+| 2.2 | 18.10.2026 | Q-04 mit gebündelter Laufzeit nachgewiesen |
 
 # Zweck
 
@@ -64,7 +65,7 @@ belegt; **organisatorisch** — nur durch einen Nachweis außerhalb des Codes be
 | Q-01 | 5.000 Kunden, 5.000 Produkte, 1.000 Belege mit je 5 Positionen | SQLite mit Spring-Services | `ProduktionsPerformanceTest` PERF-01 | lokal gemessen |
 | Q-02 | Suche/Auflistung ≤ 1 s | SQLite-Produktionspfad | `ProduktionsPerformanceTest` PERF-01 | lokal und im RC-Job bestanden |
 | Q-03 | PDF ≤ 2 s, 50 Positionen | `PdfBoxPdfExporter` | `ProduktionsPerformanceTest` PERF-01 | lokal und im RC-Job bestanden |
-| Q-04 | Gepackter Start ≤ 5 s | Fenster plus erster FX-Ereigniszyklus | `tools/paket-pruefen.ps1`, drei frische Starts | nicht zuverlässig erfüllt (lokal 4,5–5,3 s); RC als Vorabversion mit dokumentierter Lücke, 3.1.0 gesperrt |
+| Q-04 | Gepackter Start ≤ 5 s | Fenster plus erster FX-Ereigniszyklus; Paket im entpackten Spring-Boot-Layout, Start ohne Flyway bei aktuellem Schema (`Schemastand`), Übersicht im Hintergrund | `tools/paket-pruefen.ps1 -Starter`, drei frische Starts mit gebündelter Laufzeit; `SchemastandTest` SST-01–05, `StartphasenTest` SP-01–02 | erfüllt (18.10.2026: 3,7 / 3,7 / 3,5 s; Modultestbericht 9.5) |
 | Q-05 | Ersterstellung Rechnung < 10 min (≥ 5 Personen) | Wizard `RechnungsWizardController` | Usability-Test | zurückgestellt; Studie nicht durchgeführt |
 | Q-06 | 100 % lokale Datenhaltung | SQLite-Datenbank im Benutzerverzeichnis; Mailversand nur über den lokalen Standard-Client (IF-03) | `FakturaApplicationTest` KTX-02, KTX-06; Code-Inspektion | implementiert; Netzwerk-Monitoring offen |
 | Q-07 | Unveränderlichkeit versendeter Rechnungen | `Dokument.pruefeAenderbar`, Stornorechnung statt Änderung | `DokumentzyklusTest` TC-08, DZ-01 | erfüllt |

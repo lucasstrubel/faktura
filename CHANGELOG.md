@@ -4,6 +4,21 @@ Alle nennenswerten Änderungen an Faktura. Das Format folgt
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [Unveröffentlicht]
+
+- **Startzeit Q-04 eingehalten:** Mit dem Referenzbestand (5.000 Kunden, 5.000 Produkte,
+  1.000 Belege) startet das Windows-Paket mit gebündelter Java-21-Laufzeit in 3,5–3,7 s
+  statt 4,5–5,8 s (Modultestbericht Kapitel 9).
+  - Der Installer enthält das geprüfte JAR im entpackten Spring-Boot-Layout statt des
+    Fat-JARs; das Paket baut `tools/windows-paket-bauen.ps1` für Release und Prüfläufe.
+  - Steht der Bestand auf der ausgelieferten Schemaversion, startet die Anwendung ohne
+    Flyway; ausstehende, fehlgeschlagene oder neuere Migrationen laufen wie bisher über
+    Flyway samt Upgradeprobe.
+  - Die Übersicht wertet den Belegbestand im Hintergrund aus und zeigt bis dahin
+    Platzhalterkarten.
+- Jeder Start protokolliert seine Phasen (`FAKTURA_STARTPHASEN`); `tools/paket-pruefen.ps1`
+  misst wahlweise das Windows-Paket (`-Starter`) und meldet den Exitcode bei Fehlern.
+
 ## [3.1.0-rc.1] — 2026-10-11 (Vorabversion)
 
 - Preise mit eindeutigem deutschem Editorformat; strenge Kalenderprüfung.
