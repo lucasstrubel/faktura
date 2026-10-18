@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import de.lucasstrubel.faktura.gemeinsam.Schemastand;
 import de.lucasstrubel.faktura.gemeinsam.UpgradeSicherung;
 
 /**
@@ -38,7 +39,9 @@ public class PersistenzKonfiguration {
      * Einzelplatzbetrieb: einfache {@link SQLiteDataSource} ohne
      * Verbindungspool; Fremdschlüsselprüfung ist je Verbindung aktiviert.
      * Flyway migriert das Schema unmittelbar hier — damit ist es garantiert
-     * vorhanden, bevor irgendein anderer Bean die Datenbank anspricht.
+     * vorhanden, bevor irgendein anderer Bean die Datenbank anspricht. Steht
+     * der Bestand schon auf der ausgelieferten Version, entfällt Flyway
+     * ({@link Schemastand}, Q-04).
      *
      * <p>Der WAL-Journalmodus hält Lesevorgänge während eines Schreibvorgangs
      * offen (die Oberfläche liest jetzt aus Hintergrundaufgaben) und übersteht
@@ -60,9 +63,12 @@ public class PersistenzKonfiguration {
         konfiguration.setBusyTimeout(SPERR_ZEITSCHRANKE_MS);
         SQLiteDataSource dataSource = new SQLiteDataSource(konfiguration);
         dataSource.setUrl("jdbc:sqlite:" + verzeichnis.resolve("faktura.db"));
-        Flyway flyway = Flyway.configure().dataSource(dataSource).load();
-        UpgradeSicherung.pruefe(dataSource, verzeichnis, flyway);
-        flyway.migrate();
+        // Aktueller Bestand: nichts zu migrieren, Flyway bleibt außen vor (Q-04)
+        if (!Schemastand.istAktuell(dataSource)) {
+            Flyway flyway = Flyway.configure().dataSource(dataSource).load();
+            UpgradeSicherung.pruefe(dataSource, verzeichnis, flyway);
+            flyway.migrate();
+        }
         return dataSource;
     }
 
