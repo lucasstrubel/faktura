@@ -1,0 +1,15 @@
+# Hält die Versionen der GitHub Actions aktuell; ein gemeinsamer Pull Request je Woche.
+# Maven-Abhängigkeiten laufen weiter über die Dependabot-Sicherheitsmeldungen und den
+# OWASP-Abhängigkeitsscan (sicherheit.yml).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "Build"
+    groups:
+      actions:
+        patterns:
+          - "*"
