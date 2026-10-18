@@ -124,8 +124,9 @@ Web-Variante erhält eigene Anforderungen.
 
 ## Zielarchitektur
 
-Der Build wird in drei Maven-Module geteilt. Der Kern kennt weder JavaFX noch einen bestimmten
-Datenbankdialekt; beide Betriebsarten binden ihn ein.
+Der Build wird in drei Maven-Module geteilt, die gemeinsam in diesem Repository liegen
+(ADR-06). Der Kern kennt weder JavaFX noch einen bestimmten Datenbankdialekt; beide
+Betriebsarten binden ihn ein.
 
 ![Zielarchitektur 4.0 — zwei Betriebsarten, ein fachlicher Kern (Skizze)](../diagramme/komponenten_betriebsarten.png)
 
@@ -184,8 +185,11 @@ Baustellen vermischen.
 **Ziel:** Die Desktop-Variante verhält sich danach exakt wie vorher, aber der fachliche Kern
 ist ohne JavaFX und ohne SQLite nutzbar.
 
-- Maven-Multi-Modul mit `faktura-kern` und `faktura-desktop`; CI- und Release-Workflows auf
-  die neue Struktur umstellen (JAR-Pfad, Abdeckung über alle Module)
+- Maven-Multi-Modul mit `faktura-kern` und `faktura-desktop` im bestehenden Repository
+  (ADR-06); CI- und Release-Workflows auf die neue Struktur umstellen (JAR-Pfad, Abdeckung
+  über alle Module)
+- Modulgrenzen im Build prüfen: Der Kern darf weder JavaFX noch Spring Web oder Spring
+  Security einbinden (Maven Enforcer oder ArchUnit)
 - Regeln aus FX-Klassen in den Kern verschieben: Steuersatzauswahl (`ProduktFormularDialog`),
   Freigabe der E-Rechnung und Folgebeleg-Regeln (`DokumentAnsichtController`), Anzeigestatus
   (`Bausteine`), Wahl der Erstellungsmethode je Belegtyp (`BelegDialog`); die Fehlerzuordnung
@@ -197,7 +201,7 @@ ist ohne JavaFX und ohne SQLite nutzbar.
   `JsonDatenUebernahme`, SQLite-Konfiguration
 
 **Nachweis:** `verify` und GUI-Regressionen unverändert grün, Abdeckungsschwelle gehalten,
-JAR- und MSI-Prüfung wie bisher.
+JAR- und MSI-Prüfung wie bisher; eine verbotene Abhängigkeit im Kern lässt den Build scheitern.
 
 ## Phase 16 — Datenbank (Datenmanagement)
 
@@ -288,7 +292,8 @@ abgewiesen, Beleg eines fremden Mandanten nicht auffindbar).
 ## Offene Entscheidungen
 
 Jede Entscheidung wird in Phase 14 als Architecture Decision Record (ADR) festgehalten. Die
-Empfehlungen sind Vorschläge, keine Festlegungen.
+Empfehlungen sind Vorschläge, keine Festlegungen. ADR-06 ist im Anschluss bereits vollständig
+ausgeführt und dient als Vorlage für die übrigen.
 
 | ID | Frage | Optionen | Empfehlung |
 |-------|----------------|---------------------------|------------------------------|
@@ -297,6 +302,46 @@ Empfehlungen sind Vorschläge, keine Festlegungen.
 | ADR-03 | Benutzer und Rollen | ein Benutzer je Mandant; Rollen innerhalb eines Mandanten | zunächst ein Benutzer je Mandant plus Betreiberrolle; Einladungen später |
 | ADR-04 | Kennungen der neuen Pflichtenheft-Teile | fortlaufende Buchstaben (E, F) oder sprechende Kürzel | E für Web-Oberfläche und API, F für Mandanten und Benutzer |
 | ADR-05 | Hosting der Demo-Instanz | Anbieter und Standort | Standort in der EU, vorzugsweise Deutschland; Anbieter offen |
+| ADR-06 | Repository- und Modulstruktur | (a) getrennte Repositories mit veröffentlichtem Kern; (b) ein Modul mit Profilen je Betriebsart; (c) ein Repository mit mehreren Modulen | (c); ausgeführt im folgenden Abschnitt |
+
+### ADR-06: Repository- und Modulstruktur
+
+**Status:** vorgeschlagen (18.10.2026)
+
+**Kontext:** Desktop und Web teilen den fachlichen Kern mit allen Belegregeln (GR-01, GR-02,
+Snapshots, E-Rechnung). Eine Änderung an diesen Regeln muss für beide Varianten zugleich
+gelten. Entwickelt wird allein; Prüfung, Review und Release laufen bisher über ein Repository.
+
+**Optionen:**
+
+- **(a)** getrennte Repositories für Kern, Desktop und Web; der Kern wird als versionierte
+  Bibliothek veröffentlicht
+- **(b)** ein einziges Maven-Modul; die Betriebsart wird über Profile gewählt
+- **(c)** ein Repository mit mehreren Maven-Modulen (`faktura-kern`, `faktura-desktop`,
+  `faktura-web`)
+
+**Entscheidung:** (c). Option (a) verteilt jede Regeländerung auf mehrere Repositories und
+Releases; Desktop und Web liefen zeitweise mit unterschiedlichen Regelständen. Option (b)
+scheidet aus: Liegt der Web-Starter auf dem Klassenpfad, startet Spring Boot standardmäßig
+einen Webserver, auch in der Desktop-Variante. Dass die Desktop-App ohne Netzwerkdienst
+auskommt (vgl. Q-06), hinge dann an einer Profileinstellung statt an der Struktur. Zudem
+enthielte das MSI Webserver und Sicherheitsbibliotheken, das Web-Image die JavaFX-Laufzeit.
+
+**Folgen:**
+
+- Eine Regeländerung ist ein Pull Request und wird gegen beide Varianten geprüft.
+- Der Build prüft die Modulgrenzen: Der Kern darf weder JavaFX noch Spring Web oder Spring
+  Security einbinden.
+- Beide Varianten tragen eine gemeinsame Versionsnummer; getrennte Tags erst, wenn sich die
+  Release-Takte trennen.
+- Der Abhängigkeitsscan gilt für das ganze Repository: Ein Befund in einer reinen
+  Web-Abhängigkeit blockiert auch ein Desktop-Release, solange Befunde nicht je Modul
+  ausgewertet werden.
+- Die PHP-Website (ADR-01) teilt keinen Code mit dem Kern und ist ausgenommen; sie kann ein
+  eigenes Repository erhalten.
+
+**Neu prüfen, wenn** ein eigenes Team die Web-Variante übernimmt oder ein anderes Projekt den
+Kern als Bibliothek nutzen will.
 
 ## Risiken
 
