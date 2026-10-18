@@ -3,7 +3,7 @@ title: "Modultestbericht"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
 author: "Lucas Strubel"
 date: "18.10.2026"
-version: "1.3"
+version: "1.4"
 lang: de-DE
 ---
 
@@ -17,12 +17,10 @@ Modultests des Gesamtsystems *Desktop-Fakturierungsanwendung* (Komponenten A–D
 Infrastruktur sowie Performance-Nachweise) gemäß Modultestplan v2.0. Es ist nach Prüfung und
 Freigabe durch den Modulverantwortlichen verbindlicher Nachweis des durchgeführten Modultests.
 
-**Aktueller Freigabestand (18.10.2026):** 3.1.0-rc.1 ist als Vorabversion veröffentlicht.
-Die Startzeit Q-04 ist inzwischen mit der gebündelten Laufzeit nachgewiesen (Kapitel 9);
-für 3.1.0 stehen noch die Installer-Prüfung von der Vorabversion auf 3.1.0 und der
-Versionswechsel aus. Die historische Abnahme bleibt unten erhalten. Kapitel 8 trennt
-Regressionen von den damals offenen Leistungs-, Plattform-, Installations- und
-Sicherheitsnachweisen.
+**Aktueller Freigabestand (18.10.2026):** Version 3.1.0. Die Startzeit Q-04 ist mit der
+gebündelten Laufzeit nachgewiesen, das Upgrade des Installers mit Daten geprüft (Kapitel 9).
+Die historische Abnahme bleibt unten erhalten. Kapitel 8 trennt Regressionen von den damals
+offenen Leistungs-, Plattform-, Installations- und Sicherheitsnachweisen.
 
 ## Dokumentenhistorie
 
@@ -32,6 +30,7 @@ Sicherheitsnachweisen.
 | 1.1     | 24.09.2026 | Lucas Strubel  | Kapitel 5: Nachtest Version 3.0 (201 Ausführungen, 0 Fehlschläge, Abdeckung und SpotBugs); Kapitel 1–4 unverändert |
 | 1.2 | 10.10.2026 | Lucas Strubel | Review-Remediation 3.1.0-rc.1; historische Nachweise und offene Freigabeschranken getrennt |
 | 1.3 | 18.10.2026 | Lucas Strubel | Kapitel 9: Startzeit Q-04 mit gebündelter Laufzeit nachgewiesen; Messmethode, Maßnahmen und verworfene Ansätze |
+| 1.4 | 18.10.2026 | Lucas Strubel | 9.8: Installer-Upgrade mit Daten (MSI-UPG-01); Freigabestand 3.1.0 |
 
 
 ## 1. Einleitung
@@ -610,9 +609,33 @@ mit einer Rechnung ohne gespeicherte Summen: Offener Betrag und Umsatz zeigen
 ### 9.7 Offene Punkte
 
 - Das MSI mit dem neuen Layout wird ausschließlich auf einem disponiblen Windows-Runner
-  installiert, gestartet und entfernt (`tools/msi-pruefen.ps1`); dieser Lauf steht aus.
-- Upgrade von 3.1.0-rc.1 auf 3.1.0 mit dem Installer (beide MSI-Version 3.1.0) ist noch
-  nicht geprüft.
+  installiert, gestartet und entfernt (`tools/msi-pruefen.ps1`). *Nachtrag:* bestanden
+  (manueller Lauf von `portfolio.yml` am 18.10.2026 und Release-Läufe in 9.8).
+- Upgrade von 3.1.0-rc.1 auf 3.1.0 mit dem Installer (beide MSI-Version 3.1.0).
+  *Nachtrag:* geprüft, siehe 9.8.
 - In über 100 lokalen Starts endete einer nach dem Bereitschaftsmarker mit einem
   Exitcode ungleich 0; zehn gezielte Wiederholungen blieben fehlerfrei. Das Messskript
   meldet den Exitcode jetzt ausdrücklich.
+
+### 9.8 Upgrade des Installers mit Daten (MSI-UPG-01)
+
+`tools/msi-upgrade-pruefen.ps1` installiert auf einem disponiblen Windows-Runner die
+Vorversion aus dem GitHub-Release, startet sie auf einem isolierten Datenverzeichnis, legt
+einen Prüfkunden an und installiert dann das neue MSI. Geprüft werden: genau eine
+Faktura-Installation, nur das neue Anwendungs-JAR im entpackten Layout, Start der neuen
+Version auf den alten Daten mit Bereitschaftsmarker, erhaltener Prüfkunde, bei
+Schemawechsel die Sicherung vor dem Upgrade und eine rückstandsfreie Deinstallation.
+Der Release-Workflow führt die Prüfung bei jedem Release gegen die neueste endgültige
+Vorversion aus; andere Vorversionen lassen sich manuell wählen.
+
+Läufe vom 18.10.2026 (`release.yml`, Zweig `release/3.1.0`, ohne Veröffentlichung):
+
+| Weg | Ergebnis |
+|---|---|
+| 3.0.0 → 3.1.0 (Standard) | **bestanden**: eine Installation; Schema V4 → V6 mit bestandener Upgradeprobe und Sicherung `vor-upgrade-*.zip`; Prüfkunde erhalten; Deinstallation rückstandsfrei. 3.0.0 kennt keinen Smoke-Modus und wurde regulär über das Fenster geschlossen. |
+| 3.1.0-rc.1 → 3.1.0, überinstallieren | **abgelehnt**: Windows Installer meldet 1638 („eine andere Version dieses Produkts ist bereits installiert“). Beide MSI tragen die Version 3.1.0, weil jpackage nur numerische Versionen erlaubt. Die Vorabversion bleibt dabei unverändert installiert. |
+| 3.1.0-rc.1 → 3.1.0, Vorabversion zuerst entfernt | **bestanden**: Datenverzeichnis nach dem Entfernen vorhanden; 3.1.0 startet auf dem V6-Bestand ohne Migration; Prüfkunde erhalten; Deinstallation rückstandsfrei. |
+
+Für Nutzer der Vorabversion gilt deshalb der dokumentierte Weg über die Deinstallation
+(CHANGELOG, README, Betrieb 3.1). Künftige Vorabversionen behandelt die Roadmap 4.0
+(Phase 13).

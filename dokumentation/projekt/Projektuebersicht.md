@@ -3,7 +3,7 @@ title: "Projektübersicht"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
 author: "Lucas Strubel"
 date: "18.10.2026"
-version: "3.2"
+version: "3.3"
 lang: de-DE
 numbersections: true
 ---
@@ -17,6 +17,7 @@ numbersections: true
 | 3.0     | 24.09.2026 | Abschluss der Version 3.0 (Phase 12), offene Punkte, Teamzusammensetzung ergänzt |
 | 3.1 | 10.10.2026 | Review-Remediation 3.1.0-rc.1; historische Nachweise und offene Freigabeschranken getrennt |
 | 3.2 | 18.10.2026 | Skizze der Version 4.0 (Desktop und Web/SaaS) in die Roadmap aufgenommen |
+| 3.3 | 18.10.2026 | Abschluss der Version 3.1.0 |
 
 # Projektübersicht
 
@@ -170,6 +171,16 @@ und die Anwendung mit realistischen Demodaten durchgespielt. Ergebnis:
 13. **Auslieferung:** plattformübergreifendes JAR (Windows, Linux, macOS auf Apple
     Silicon), Versionsprüfung im Release-Workflow, Dokumentation vollständig auf Deutsch
     und als PDF.
+
+## Abgeschlossen: Version 3.1.0 (18.10.2026)
+
+Version 3.1 entstand aus einem externen Review (Vorabversion 3.1.0-rc.1, Details in der
+Ergänzung unten und in [Betrieb 3.1](Betrieb-3.1.md)). Die endgültige Freigabe hing an der
+Startzeit: Mit 5.000 Kunden, 5.000 Produkten und 1.000 Belegen startet das Windows-Paket
+jetzt in 3,5–3,7 statt 4,5–5,8 Sekunden (Q-04). Dazu kommen ein Installer im entpackten
+Spring-Boot-Layout, ein Start ohne Flyway bei aktuellem Schema, die Übersicht im
+Hintergrund und eine Upgrade-Prüfung des Installers mit Daten in jedem Release
+([Modultestbericht](../tests/Modultestbericht.md), Kapitel 9).
 
 ## Geplant: Version 4.0 — Desktop und Web (Skizze)
 

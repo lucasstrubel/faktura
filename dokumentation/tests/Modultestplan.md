@@ -3,7 +3,7 @@ title: "Modultestplan"
 subtitle: "Faktura — Desktop-Fakturierungsanwendung"
 author: "Lucas Strubel"
 date: "18.10.2026"
-version: "3.2"
+version: "3.3"
 lang: de-DE
 ---
 
@@ -26,6 +26,7 @@ Performance-Nachweise).
 | 3.0     | 24.09.2026 | Lucas Strubel  | Kapitel 3: ergänzte Testfälle der Versionen 2.0 und 3.0 (164 Testmethoden, 201 Ausführungen); Testumfang-Übersicht auf Stand 3.0 |
 | 3.1 | 10.10.2026 | Lucas Strubel | Review-Remediation 3.1.0-rc.1; historische Nachweise und offene Freigabeschranken getrennt |
 | 3.2 | 18.10.2026 | Lucas Strubel | Startzeit Q-04: Abschnitte 3.17 (`StartphasenTest`) und 3.18 (`SchemastandTest`); Startmessung mit gebündelter Laufzeit |
+| 3.3 | 18.10.2026 | Lucas Strubel | MSI-UPG-01: Upgrade-Prüfung des Installers mit Daten |
 
 
 ## 1. Einleitung
@@ -538,6 +539,7 @@ startet mit gebündelter Laufzeit und deinstalliert auf einem disponiblen Window
 |---|---|---|
 | ERE-12 | Fremde Schemaquellen, Pfadmanipulation und Aufweichen der JAXP-Sperre werden abgelehnt | `KlassenpfadSchemaFactoryTest` |
 | ERE-PAKET-01 | Gültiges XML und ungültiger Käufername mit unverändertem Ziel im gepackten JAR; Flyway findet dort V1–V6 inkl. Java-Migration | `PaketXmlPruefung`, Plattformmatrix |
+| MSI-UPG-01 | Upgrade des Installers mit Daten: Vorversion installieren und starten, Prüfkunden anlegen, neues MSI darüber installieren; genau eine Installation im neuen Layout, Start auf den alten Daten, Kunde erhalten, bei Schemawechsel Sicherung vor dem Upgrade, rückstandsfreie Deinstallation. Variante: Vorversion zuerst entfernen | `tools/msi-upgrade-pruefen.ps1`, Release-Workflow (Vorversion: neueste endgültige; manuell `upgrade_von`, `vorversion_entfernen`) |
 
 GUI-REM-03 prüft zusätzlich einen echten Datenbankfehler beim Speichern: Die Anwendung bleibt offen und die bearbeiteten Felder samt Ungespeichert-Anzeige bleiben erhalten.
 

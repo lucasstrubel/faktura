@@ -1,9 +1,9 @@
 # Portfolio-Abschluss und Vorführung
 
-Stand: 10.10.2026. Ziel ist ein nachvollziehbares studentisches Softwareprojekt mit
-reproduzierbarer Windows-Demo. Die vollständige Produktfreigabe 3.1.0-rc.1 bleibt ein
-separates Ziel. Bestehende Anforderungen und historische Ergebnisse werden nicht
-nachträglich als bestanden umgedeutet.
+Stand: 18.10.2026. Ziel ist ein nachvollziehbares studentisches Softwareprojekt mit
+reproduzierbarer Windows-Demo. Grundlage ist die veröffentlichte Version 3.1.0.
+Bestehende Anforderungen und historische Ergebnisse werden nicht nachträglich als
+bestanden umgedeutet.
 
 ## Umfang und bewusste Zurückstellungen
 
@@ -14,17 +14,17 @@ nachträglich als bestanden umgedeutet.
 | Portables Windows-Paket mit Laufzeit | Lokal bestanden | `tools/windows-paket-pruefen.ps1`, PORT-02; Details im Testbericht 8.5 |
 | Abhängigkeitsscan | Bestanden (11.10.2026) | Mit NVD-Schlüssel und NVD-Cache; zuvor gemeldete Funde behoben durch Spring Boot 4.1.1, PDFBox 3.0.8, Rhino 1.7.15.1 |
 | MSI-Installation / Deinstallation | Bestanden (11.10.2026) | Release-Workflow: MSI gebaut, auf disponiblem Windows-Runner installiert, gestartet (Readiness-Marker) und deinstalliert |
-| Startzeit höchstens 5 Sekunden | Weiterhin nicht zuverlässig erfüllt | Serie 11.10.2026 lokal 4.502 / 4.964 / 5.270 ms; Anforderung unverändert, CI nur noch Regressionswächter (8 s); RC als Vorabversion, 3.1.0 gesperrt |
+| Startzeit höchstens 5 Sekunden | Bestanden (18.10.2026) | Windows-Paket mit gebündelter Laufzeit und Referenzbestand: 3.730 / 3.699 / 3.536 ms (Modultestbericht 9.5); CI weiterhin Regressionswächter (8 s) |
+| Installer-Upgrade mit Daten | Bestanden (18.10.2026) | 3.0.0 → 3.1.0 direkt; 3.1.0-rc.1 erst deinstallieren (gleiche MSI-Version); MSI-UPG-01 im Release-Workflow |
 | Linux-/macOS-JAR | JAR-Smoke-Test bestanden (11.10.2026) | Dasselbe JAR startet in CI unter Windows, Ubuntu und macOS 14 und besteht dort die XML- und Migrationsprüfung |
 | Usability mit mindestens fünf Personen | Auf Wunsch des Projektverantwortlichen zurückgestellt | Q-05/Q-09 bleiben ohne empirischen Nachweis; keine erfundenen Ergebnisse |
 | Netzwerk-Monitoring | Noch nicht durchgeführt | Spezifizierte Nachweismethode für Q-06 bleibt offen; Codeprüfung ersetzt sie nicht |
 | Steuerbefreiungen/Kleinunternehmer, Mahnwesen, native Linux-/macOS-Pakete | Spätere Erweiterungen | Kein Bestandteil des Portfolio-Abschlusses |
 | Rechtliche Gesamtbewertung | Außerhalb des Portfolio-Abschlusses | Keine pauschale Compliance- oder Produktivfreigabe |
 
-Eine Vorführung ist trotz dokumentierter Grenzen möglich. Der Portfolio-Abschluss
-ist erst vollständig nachgewiesen, wenn die vorgesehenen Sicherheits- und
-Windows-Installationsprüfungen tatsächlich bestanden sind. Der RC verlangt zusätzlich
-alle ursprünglich vereinbarten Release-Gates. Veröffentlichung und Tags bleiben separat.
+Eine Vorführung ist trotz dokumentierter Grenzen möglich. Die vorgesehenen Sicherheits-,
+Windows-Installations-, Upgrade- und Startzeitprüfungen sind für 3.1.0 bestanden; offen
+bleiben die oben genannten Zurückstellungen.
 
 ## Reproduzierbare Vorbereitung
 
@@ -60,7 +60,7 @@ PORT-01 prüft beim Aufbau die unveränderte Rechnung nach einer Produktpreisän
 | 1:15–1:45 | PDF exportieren und öffnen | Preis, Einheit, Steuersatz und Summen vollständig lesbar |
 | 1:45–2:20 | Produkt Beratung von 80,00 auf 95,00 EUR ändern; bestehende Rechnung erneut öffnen | Bestehender Beleg bleibt bei 220,15 EUR; neue Berechnung wäre 255,85 EUR brutto |
 | 2:20–2:45 | XML-Ausgabe und vorbereiteten Gesamtexport zeigen | Schema-/Schematron-Prüfung; dokumentierte CSV-Daten; historische Einschränkungen nennen |
-| 2:45–3:00 | Grenzen nennen | Usability zurückgestellt; Startzeit (Q-04) mit großem Bestand nicht zuverlässig erfüllt; 3.1.0-rc.1 ist Vorabversion |
+| 2:45–3:00 | Grenzen nennen | Usability zurückgestellt; Netzwerk-Monitoring (Q-06) offen; nächster Schritt Roadmap 4.0 |
 
 Die Tabelle ist ein Drehbuch, keine Behauptung über eine bereits aufgezeichnete
 Video-Demo oder eine durchgeführte Usability-Studie. Für einen neuen Versuch das Skript
@@ -69,7 +69,7 @@ erneut starten; so bleiben Produktpreise und Ausgangsbelege reproduzierbar.
 ## Technische Prüfungen ohne Veröffentlichung
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File tools/windows-paket-pruefen.ps1 -Jar target/faktura-3.1.0-rc.1.jar
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/windows-paket-pruefen.ps1 -Jar target/faktura-3.1.0.jar
 ```
 
 Das Skript baut mit `jpackage` ein portables App-Verzeichnis und startet dessen EXE mit
@@ -90,8 +90,8 @@ $paketpfad = Get-Content target/windows-paket-pfad.txt
 echten MSI-Test aus; der vollständige Sicherheitsscan läuft unabhängig daneben.
 Der Workflow veröffentlicht nichts und lockert keine Release-Gates; er ist manuell auf
 `main` startbar. Das `NVD_API_KEY`-Secret ist hinterlegt; der vollständige Scan ist seit dem
-11.10.2026 grün. Release-Prüfungen und MSI-Test liefen zusätzlich im Release-Workflow für
-3.1.0-rc.1.
+11.10.2026 grün. Release-Prüfungen, MSI-Test und Upgrade-Prüfung laufen zusätzlich im
+Release-Workflow (zuletzt für 3.1.0).
 
 ## Eigenleistung und KI-Unterstützung erläutern
 

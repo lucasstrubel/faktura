@@ -4,7 +4,15 @@ Alle nennenswerten Änderungen an Faktura. Das Format folgt
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung
 [Semantic Versioning](https://semver.org/lang/de/).
 
-## [Unveröffentlicht]
+## [3.1.0] — 2026-10-18
+
+Endgültige Fassung der Version 3.1; enthält alle Änderungen aus 3.1.0-rc.1 (unten).
+
+**Hinweis für Nutzer der Vorabversion:** Windows lehnt die Installation von 3.1.0 über
+3.1.0-rc.1 ab, weil beide Installer die Version 3.1.0 tragen. Die Vorabversion vorher unter
+„Einstellungen › Apps“ deinstallieren; die Daten im Benutzerordner (`Faktura/daten`) bleiben
+dabei erhalten und werden von 3.1.0 unverändert übernommen. Von 3.0.0 aus aktualisiert der
+Installer direkt.
 
 - **Startzeit Q-04 eingehalten:** Mit dem Referenzbestand (5.000 Kunden, 5.000 Produkte,
   1.000 Belege) startet das Windows-Paket mit gebündelter Java-21-Laufzeit in 3,5–3,7 s
@@ -18,6 +26,10 @@ Alle nennenswerten Änderungen an Faktura. Das Format folgt
     Platzhalterkarten.
 - Jeder Start protokolliert seine Phasen (`FAKTURA_STARTPHASEN`); `tools/paket-pruefen.ps1`
   misst wahlweise das Windows-Paket (`-Starter`) und meldet den Exitcode bei Fehlern.
+- **Installer-Upgrade geprüft:** Jedes Release installiert auf einem Windows-Runner die
+  neueste endgültige Vorversion, legt Daten an und installiert das neue MSI darüber
+  (`tools/msi-upgrade-pruefen.ps1`, MSI-UPG-01). Für 3.0.0 → 3.1.0 bestanden: eine
+  Installation, Schema V4 → V6 mit Sicherung vor dem Upgrade, Daten erhalten.
 - GitHub Actions auf aktuelle Hauptversionen (Node.js 24) angehoben; Dependabot hält sie
   künftig wöchentlich aktuell.
 
@@ -50,7 +62,7 @@ Alle nennenswerten Änderungen an Faktura. Das Format folgt
 nicht zuverlässig eingehalten; gemessen 4,5–5,3 s auf dem Entwicklungsrechner und bis 6,6 s
 auf langsameren CI-Runnern. Der Release-Workflow prüft die Startzeit deshalb nur noch als
 Regressionswächter (8 s). Diese Version erscheint als Vorabversion; 3.1.0 bleibt gesperrt,
-bis die Startzeit eingehalten wird.
+bis die Startzeit eingehalten wird. *In 3.1.0 behoben.*
 
 ### Portfolio-Aufbereitung (Teil von 3.1.0-rc.1)
 

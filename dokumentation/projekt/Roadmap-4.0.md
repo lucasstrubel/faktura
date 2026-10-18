@@ -3,7 +3,7 @@ title: "Roadmap 4.0"
 subtitle: "Faktura — Desktop und Web (SaaS) aus einer Codebasis"
 author: "Lucas Strubel"
 date: "18.10.2026"
-version: "0.1"
+version: "0.2"
 lang: de-DE
 numbersections: true
 ---
@@ -13,6 +13,7 @@ numbersections: true
 | Version | Datum      | Grund der Änderung  |
 |----|------|------------------------------|
 | 0.1 | 18.10.2026 | Erstfassung: Skizze der Weiterentwicklung zu zwei Betriebsarten (Desktop und Web/SaaS) |
+| 0.2 | 18.10.2026 | Phase 13 erledigt (Freigabe 3.1.0); Lehre zu Vorabversionen im Installer |
 
 # Anlass und Zielbild
 
@@ -157,12 +158,16 @@ ein Vorschlag; Phase 14 legt Umfang und Prioritäten fest.
 
 ## Phase 13 — Ausgangsbasis
 
-**Ziel:** Der Umbau beginnt auf einem freigegebenen Stand. Für 3.1.0 sind noch
-Freigabeschranken offen, allen voran die Startzeit (Q-04, höchstens 5 Sekunden); 3.1.0-rc.1
-ist deshalb Vorabversion. Ein Umbau auf einem nicht freigegebenen Stand würde zwei offene
-Baustellen vermischen.
+**Ziel:** Der Umbau beginnt auf einem freigegebenen Stand. Ein Umbau auf einem nicht
+freigegebenen Stand würde zwei offene Baustellen vermischen.
 
-**Nachweis:** Freigabe 3.1.0 oder ausdrücklich dokumentierte Entscheidung zur offenen Grenze.
+**Nachweis:** Freigabe 3.1.0. **Erledigt am 18.10.2026:** Startzeit Q-04 eingehalten
+(3,5–3,7 s), Upgrade des Installers von 3.0.0 mit Daten geprüft (Modultestbericht 9).
+
+**Lehre für Vorabversionen:** jpackage braucht rein numerische MSI-Versionen; 3.1.0-rc.1 und
+3.1.0 trugen beide „3.1.0“, und Windows lehnt das Überinstallieren ab (Fehler 1638). Künftige
+Vorabversionen erscheinen deshalb nur als JAR oder mit einer eigenen, niedrigeren
+MSI-Version; Phase 14 legt das fest.
 
 ## Phase 14 — Anforderungen fortschreiben (SE2)
 
